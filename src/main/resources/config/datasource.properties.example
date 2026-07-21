@@ -1,0 +1,4 @@
+db.driverClass=com.mysql.cj.jdbc.Driver
+db.url=jdbc:mysql://localhost:3307/eapproval_Backend?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+db.username=본인계정
+db.password=본인비밀번호
