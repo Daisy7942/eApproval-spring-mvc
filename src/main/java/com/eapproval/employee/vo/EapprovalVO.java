@@ -1,4 +1,4 @@
-package com.eapproval.web.vo;
+package com.eapproval.employee.vo;
 
 public class EapprovalVO {
 

@@ -1,10 +1,10 @@
-package com.eapproval.web.service;
+package com.eapproval.employee.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.eapproval.web.dao.EmployeeMapper;
-import com.eapproval.web.vo.EapprovalVO;
+import com.eapproval.employee.dao.EmployeeMapper;
+import com.eapproval.employee.vo.EapprovalVO;
 
 @Service
 public class LoginService {

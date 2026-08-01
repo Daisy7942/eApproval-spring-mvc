@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.eapproval.web.dao.EmployeeMapper">
+<mapper namespace="com.eapproval.employee.dao.EmployeeMapper">
 
 
-   <select id="selectUserById" parameterType="string" resultType="com.eapproval.web.vo.EapprovalVO">
+   <select id="selectUserById" parameterType="string" resultType="employee">
       SELECT 
          employee_id,
          employee_code,

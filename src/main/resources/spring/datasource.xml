@@ -44,7 +44,8 @@
     
         <!-- 5. Mapper 인터페이스 자동 등록 -->
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-        <property name="basePackage" value="com.eapproval.web.dao"/>
+        <property name="basePackage" value="com.eapproval"/>
+        <property name="annotationClass" value="org.apache.ibatis.annotations.Mapper"/>
     </bean>
     
 </beans>
