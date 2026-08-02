@@ -404,7 +404,7 @@ body {
 		<div class="profile">
 			<div class="avatar">김</div>
 			<div>
-				<b>김수현</b><span>백엔드팀 · 사원</span>
+				<b>${sessionScope.loginUser.name}</b><span>백엔드팀 · 사원</span>
 			</div>
 		</div>
 
@@ -420,7 +420,7 @@ body {
 		</nav>
 
 		<div class="sidebar-bottom">
-			<a href="#">[→ 로그아웃</a>
+			<a href="${pageContext.request.contextPath}/logout">[→ 로그아웃</a>
 		</div>
 	</aside>
 

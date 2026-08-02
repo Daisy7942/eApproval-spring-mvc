@@ -10,19 +10,14 @@ import com.eapproval.employee.vo.EapprovalVO;
 public class LoginService {
 
 	@Autowired
-	private EmployeeMapper employeeMapper;
+    private EmployeeMapper employeeMapper;
 
-	public boolean checkEmployee(String employeeCode) {
-	
-
-		EapprovalVO eapprovalVO = employeeMapper.selectUserById(employeeCode);
-		
-
-		if (eapprovalVO != null) {
-
-			return true;
-		} else {
-			return false;
-		}
-	}
+    /**
+     * 사원 코드로 사원 정보(VO)를 조회합니다.
+     * @param employeeCode 사원 코드
+     * @return 사원 정보가 존재하면 EapprovalVO, 없으면 null 반환
+     */
+    public EapprovalVO getEmployee(String employeeCode) {
+        return employeeMapper.selectUserById(employeeCode);
+    }
 }
