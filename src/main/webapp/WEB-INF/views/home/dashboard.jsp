@@ -420,7 +420,7 @@ body {
 		</nav>
 
 		<div class="sidebar-bottom">
-			<a href="#">[→ 로그아웃</a>
+			<a href="${pageContext.request.contextPath}/logout">[→ 로그아웃</a>
 		</div>
 	</aside>
 
