@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+    <!-- 1. properties 파일 읽기 -->
+    <context:property-placeholder location="classpath:config/datasource.properties"/>
+    
+        <!-- 2. DB 연결 정보 -->
+    <bean id="dataSource"
+          class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+
+        <property name="driverClass" value="${db.driverClass}"/>
+        <property name="url" value="${db.url}"/>
+        <property name="username" value="${db.username}"/>
+        <property name="password" value="${db.password}"/>
+    </bean>
+    
+        <!-- 3. MyBatis 핵심 객체 -->
+    <bean id="sqlSessionFactory"
+          class="org.mybatis.spring.SqlSessionFactoryBean">
+
+        <!-- DB 연결 -->
+        <property name="dataSource" ref="dataSource"/>
+
+        <!-- MyBatis 설정 파일 -->
+        <property name="configLocation"
+                  value="classpath:config/SqlMapConfig.xml"/>
+
+        <!-- SQL XML 파일 위치 -->
+        <property name="mapperLocations"
+                  value="classpath:mappers/**/*.xml"/>
+    </bean>
+    
+    
+        <!-- 4. SQL 실행 도구 -->
+    <bean id="sqlSession"
+          class="org.mybatis.spring.SqlSessionTemplate">
+
+        <constructor-arg ref="sqlSessionFactory"/>
+    </bean>
+    
+        <!-- 5. Mapper 인터페이스 자동 등록 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.eapproval"/>
+        <property name="annotationClass" value="org.apache.ibatis.annotations.Mapper"/>
+    </bean>
+    
+</beans>

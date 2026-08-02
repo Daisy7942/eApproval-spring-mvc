@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<settings>
+		<!-- DB의 snake_case 컬럼을 자바 camelCase 필드에 자동 매핑 -->
+		<setting name="mapUnderscoreToCamelCase" value="true" />
+	</settings>
+	
+	<!-- typeAliases: VO 만들 때마다 여기에 별명 추가 -->
+	<typeAliases>
+		<!-- UserVO를 매퍼에서 그냥 'user'라고 짧게 부를 수 있게 설정 -->
+
+		<typeAlias alias="employee" type="com.eapproval.employee.vo.EapprovalVO" />
+	</typeAliases>
+</configuration>
