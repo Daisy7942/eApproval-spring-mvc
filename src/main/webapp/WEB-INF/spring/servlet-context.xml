@@ -22,6 +22,13 @@
 			<bean
 				class="com.eapproval.common.interceptor.LoginCheckInterceptor" />
 		</mvc:interceptor>
+
+	<!-- 관리자 인터셉터 -->
+		<mvc:interceptor>
+			<mvc:mapping path="/admin/**" />
+			<bean
+				class="com.eapproval.common.interceptor.AdminCheckInterceptor" />
+		</mvc:interceptor>
 	</mvc:interceptors>
 
 	<!-- JSP 위치 설정 -->

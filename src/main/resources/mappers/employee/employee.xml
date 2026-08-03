@@ -10,7 +10,8 @@
          employee_id,
          employee_code,
          name,
-         email
+         email,
+         role
       FROM employee
       WHERE employee_code = #{employee_code}
    </select>

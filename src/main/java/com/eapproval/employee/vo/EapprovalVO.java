@@ -6,6 +6,7 @@ public class EapprovalVO {
 	private String employeeCode;
 	private String name;
     private String email;
+    private String role;
     
     
 	public int getEmployeeId() {
@@ -20,7 +21,10 @@ public class EapprovalVO {
 	public String getEmail() {
 		return email;
 	}
-	
+	public String getRole() {
+		return role;
+	}
+
 	
 	
 	public void setEmployeeId(int employeeId) {
@@ -35,7 +39,10 @@ public class EapprovalVO {
 	public void setEmail(String email) {
 		this.email = email;
 	}
-
+	public void setRole(String role) {
+		this.role = role;
+	}
+	
 }
 
 
