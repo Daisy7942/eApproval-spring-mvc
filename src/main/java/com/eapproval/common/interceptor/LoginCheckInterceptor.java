@@ -13,7 +13,8 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
 			throws Exception {
 		// TODO Auto-generated method stub
 
-		// getSession(true)-> 세션을 새로 만들고, (false)-> 없으면 null 처리
+		// getSession(true)-> 있으면 기존세션 가져오고 없으면 세션을 새로 만들고, 
+		// (false)-> 있으면 기존세션을 가져오고  없으면 null 처리
 		HttpSession session = request.getSession(false);
 
 		if (session != null && session.getAttribute("loginUser") != null) {

@@ -13,7 +13,7 @@ public class LoginService {
     private EmployeeMapper employeeMapper;
 
     /**
-     * 사원 코드로 사원 정보(VO)를 조회합니다.
+     * 사원 코드로 사원 정보(VO)를 조회
      * @param employeeCode 사원 코드
      * @return 사원 정보가 존재하면 EapprovalVO, 없으면 null 반환
      */
