@@ -22,7 +22,7 @@ body {
 /* ===== 좌측 사이드바 ===== */
 .sidebar {
 	width: 230px;
-	background: #1c2a47;
+	background: #1C2A3C;
 	color: #cdd6e6;
 	display: flex;
 	flex-direction: column;
