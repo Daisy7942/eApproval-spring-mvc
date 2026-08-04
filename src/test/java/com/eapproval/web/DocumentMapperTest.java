@@ -19,13 +19,13 @@ public class DocumentMapperTest {
 	@Test
 	public void testInsert() {
         DocumentVO vo = new DocumentVO();
-        vo.setDocumentType("FREE");
-        vo.setTitle("테스트 기안");
-        vo.setContent("내용 테스트");
-        vo.setEmployeeId(18L);         
-        vo.setApprovalType("SEQUENTIAL");
-        vo.setStatus("DRAFT");
-        vo.setIsUrgent(false);
+        vo.setDocumentType("FREE"); // 어떤 양식인가 , 자유형식, 휴가양식
+        vo.setTitle("테스트 기안"); // 문서 제목, 8월 연차 신청
+        vo.setContent("내용 테스트"); // 본문 내용
+        vo.setEmployeeId(18L);         // 기안자
+        vo.setApprovalType("SEQUENTIAL"); // 결재순서, 순차, 병렬
+        vo.setStatus("DRAFT"); // 어떤 단계인가 , DRAFT(임시저장), PENDING(결재 진행중-결정대기) 
+        vo.setIsUrgent(false); //긴급한가
 
         int result = documentMapper.insertDocument(vo);
 
