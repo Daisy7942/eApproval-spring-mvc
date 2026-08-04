@@ -413,7 +413,8 @@ body {
 
 				<div class="modal-foot">
 					<a class="btn" href="#" onclick="closeSelf(); return false;">취소</a>
-					<a class="btn primary" href="#" id="goDraft">이 양식으로 기안하기</a>
+					<a class="btn primary" id="goDraft" href="#"
+						onclick="openDraft(); return false;">이 양식으로 기안하기</a>
 					<!-- 추후: FREE→기안 작성, VACATION→휴가 신청 화면 -->
 				</div>
 			</div>
@@ -438,6 +439,18 @@ body {
 				approval : "순차 / 병렬"
 			}
 		};
+		var currentKey = "free";
+
+		function openDraft() {
+			var type = (currentKey === "vacation") ? "VACATION" : "FREE";
+			var url = "${pageContext.request.contextPath}/document/write?documentType="
+					+ type;
+
+			window.open(url, "docWrite_" + Date.now(),
+					"width=1000,height=800,resizable=yes,scrollbars=yes");
+
+			closeSelf(); // 양식 선택 모달은 닫기
+		}
 
 		function pick(el, key) {
 			document.querySelectorAll(".form-item").forEach(function(i) {
