@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.eapproval.approval.dao.DocumentMapper">
+
+      <insert id="insertDocument" parameterType="document"
+              useGeneratedKeys="true" keyProperty="docId">
+              INSERT INTO document (
+                      document_type,
+                      title,
+                      content,
+                      employee_id,
+                      approval_type,
+                      status,
+                      is_urgent
+              ) VALUES (
+                      #{documentType},
+                      #{title},
+                      #{content},
+                      #{employeeId},
+                      #{approvalType},
+                      #{status},
+                      #{isUrgent}
+              )
+      </insert>
+
+</mapper>
