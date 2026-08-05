@@ -15,9 +15,15 @@
 	<!-- Controller 찾기 -->
 	<context:component-scan
 		base-package="com.eapproval" />
-	<!--  트랜잭션 추가 하면서 추가함-->
-	<tx:annotation-driven transaction-manager="transactionManager" />
-	
+	<!-- 트랜잭션 추가 하면서 추가함 -->
+	<tx:annotation-driven
+		transaction-manager="transactionManager" />
+
+	<!-- css, js, 이미지는 Controller를 거치지 않고 그대로 내려보낸다 -->
+	<mvc:resources mapping="/resources/**"
+		location="/resources/" />
+
+
 	<!-- 인터셉터 -->
 	<mvc:interceptors>
 		<mvc:interceptor>

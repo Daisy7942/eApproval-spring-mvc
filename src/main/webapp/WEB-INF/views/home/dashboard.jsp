@@ -1,210 +1,18 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>eApproval - 대시보드</title>
+<%-- 공통 레이아웃(헤더/사이드바/본문) 스타일 --%>
+<link rel="stylesheet"
+	href="${pageContext.request.contextPath}/resources/css/common.css">
 <style>
-* {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
-	font-family: "Malgun Gothic", "Segoe UI", sans-serif;
-}
-
-body {
-	display: flex;
-	background: #f0f2f7;
-	min-height: 100vh;
-}
-
-/* ===== 좌측 사이드바 ===== */
-.sidebar {
-	width: 230px;
-	background: #1C2A3C;
-	color: #cdd6e6;
-	display: flex;
-	flex-direction: column;
-	position: fixed;
-	top: 0;
-	bottom: 0;
-}
-
-.logo {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	padding: 18px 20px;
-}
-
-.logo .mark {
-	width: 34px;
-	height: 34px;
-	background: #2f6bff;
-	border-radius: 8px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: #fff;
-	font-weight: bold;
-}
-
-.logo b {
-	color: #fff;
-	font-size: 15px;
-	display: block;
-}
-
-.logo span {
-	font-size: 11px;
-	color: #8fa0bd;
-}
-
-.btn-new {
-	margin: 6px 16px 14px;
-	padding: 11px;
-	background: #2f6bff;
-	color: #fff;
-	border: none;
-	border-radius: 8px;
-	font-size: 14px;
-	cursor: pointer;
-	width: calc(100% - 32px);
-}
-
-.btn-new:hover {
-	background: #2456d6;
-}
-
-.profile {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	background: #24345a;
-	margin: 0 12px 16px;
-	padding: 10px 12px;
-	border-radius: 10px;
-}
-
-.avatar {
-	width: 34px;
-	height: 34px;
-	border-radius: 50%;
-	background: #2f6bff;
-	color: #fff;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 14px;
-}
-
-.profile b {
-	color: #fff;
-	font-size: 13px;
-	display: block;
-}
-
-.profile span {
-	font-size: 11px;
-	color: #8fa0bd;
-}
-
-.menu {
-	flex: 1;
-	overflow-y: auto;
-}
-
-.menu .section {
-	font-size: 11px;
-	color: #7487a8;
-	padding: 12px 20px 4px;
-}
-
-.menu a {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 9px 20px;
-	color: #cdd6e6;
-	text-decoration: none;
-	font-size: 13px;
-}
-
-.menu a:hover {
-	background: #24345a;
-	color: #fff;
-}
-
-.menu a.active {
-	background: #2c3e66;
-	color: #fff;
-	border-radius: 8px;
-	margin: 0 8px;
-	padding: 9px 12px;
-}
-
-.menu a .badge {
-	background: #e5484d;
-	color: #fff;
-	font-size: 10px;
-	border-radius: 9px;
-	padding: 2px 7px;
-}
-
-.sidebar-bottom {
-	border-top: 1px solid #2c3a5c;
-	padding: 10px 0;
-}
-
-.sidebar-bottom a {
-	display: block;
-	padding: 8px 20px;
-	color: #9fb0ca;
-	font-size: 13px;
-	text-decoration: none;
-}
-
-.sidebar-bottom a:hover {
-	color: #fff;
-}
-
-/* ===== 우측 메인 ===== */
-.main {
-	flex: 1;
-	margin-left: 230px;
-}
-
-.topbar {
-	background: #fff;
-	border-bottom: 1px solid #e3e7ef;
-	padding: 12px 28px;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	font-size: 13px;
-	color: #666;
-}
-
-.topbar .crumb b {
-	color: #222;
-}
-
-.content {
-	padding: 24px 28px;
-	max-width: 1400px;
-}
-
-.page-title h2 {
-	font-size: 20px;
-	color: #1c2a47;
-}
-
-.page-title p {
-	font-size: 13px;
-	color: #777;
-	margin: 6px 0 20px;
-}
+/* ===== 이 화면에서만 쓰는 스타일 =====
+   레이아웃(헤더/사이드바/메인/패널)은 common.css 에 있다. */
 
 /* 상태 카드 4개 */
 .stats {
@@ -271,19 +79,6 @@ body {
 	display: grid;
 	grid-template-columns: 2fr 1fr;
 	gap: 16px;
-}
-
-.panel {
-	background: #fff;
-	border: 1px solid #e3e7ef;
-	border-radius: 10px;
-}
-
-.panel h3 {
-	font-size: 14px;
-	color: #1c2a47;
-	padding: 16px 20px;
-	border-bottom: 1px solid #eef1f6;
 }
 
 /* 처리 필요 문서 리스트 */
@@ -390,54 +185,24 @@ body {
 </head>
 <body>
 
-	<!-- ===== 사이드바 ===== -->
-	<aside class="sidebar">
-		<div class="logo">
-			<div class="mark">e</div>
-			<div>
-				<b>eApproval</b><span>전자결재 시스템</span>
-			</div>
-		</div>
-		<button class="btn-new" onclick="openFormModal()">＋ 새 결재</button>
+	<%@ include file="/WEB-INF/views/common/header.jsp"%>
 
-		<!-- 로그인 연동 후: 세션의 이름/직급/팀으로 교체 -->
-		<div class="profile">
-			<div class="avatar">김</div>
-			<div>
-				<b>${sessionScope.loginUser.name}</b><span>백엔드팀 · 사원</span>
-			</div>
-		</div>
+	<%-- module(결재/휴가)은 sidebar.jsp 가 주소를 보고 알아서 판단한다 --%>
+	<c:set var="menu" value="dashboard" />
+	<%@ include file="/WEB-INF/views/common/sidebar.jsp"%>
 
-		<nav class="menu">
-			<a href="#" class="active">◧ 대시보드</a>
-			<div class="section">결재함</div>
-			<a href="#">◷ 결재 대기 문서 <span class="badge">2</span></a> <a href="#">↥
-				상신 문서</a> <a href="#">✓ 완료 문서</a>
-			<div class="section">휴가</div>
-			<a href="#">✈ 휴가 신청</a> <a href="#">▤ 휴가 이력</a>
-			<div class="section">관리자</div>
-			<a href="#">⚙ 조직 관리</a> <a href="#">◔ 연차 관리</a>
-		</nav>
-
-		<div class="sidebar-bottom">
-			<a href="${pageContext.request.contextPath}/logout">[→ 로그아웃</a>
-		</div>
-	</aside>
-
-	<!-- ===== 메인 ===== -->
 	<div class="main">
-		<div class="topbar">
+		<div class="content">
+
 			<div class="crumb">
 				전자결재 &gt; <b>대시보드</b>
 			</div>
-			<div>2026-07-22 (수)</div>
-		</div>
 
-		<div class="content">
 			<div class="page-title">
 				<h2>대시보드</h2>
-				<!-- 로그인 연동 후: "OOO님, 안녕하세요"로 교체 -->
-				<p>김수현님, 안녕하세요.</p>
+				<p>
+					<c:out value="${sessionScope.loginUser.name}" />님, 안녕하세요.
+				</p>
 			</div>
 
 			<!-- 숫자 4개: 추후 Controller가 DB 집계값을 Model로 전달 -->
@@ -537,25 +302,9 @@ body {
 					</div>
 				</div>
 			</div>
+
 		</div>
 	</div>
-	<!-- 결재 양식 선택 팝업 -->
-	<div id="formModal"
-		style="display: none; position: fixed; inset: 0; z-index: 1000;">
-		<iframe id="formFrame" src=""
-			style="width: 100%; height: 100%; border: none;"></iframe>
-	</div>
-
-	<script>
-		function openFormModal() {
-			document.getElementById("formFrame").src = "forms"; // FormController의 @GetMapping("/forms")
-			document.getElementById("formModal").style.display = "block";
-		}
-		function closeFormModal() {
-			document.getElementById("formModal").style.display = "none";
-			document.getElementById("formFrame").src = ""; // 닫을 때 비워서 초기화
-		}
-	</script>
 
 </body>
 </html>
