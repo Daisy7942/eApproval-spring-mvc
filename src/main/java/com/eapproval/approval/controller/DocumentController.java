@@ -36,6 +36,6 @@ public class DocumentController {
 		
 		documentService.saveDraft(documentVO);
 		
-		return "approval/documentForm";
+		return "approval/saveResult";
 	}
 }
