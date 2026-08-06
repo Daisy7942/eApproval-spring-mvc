@@ -36,8 +36,8 @@ public class LoginController {
 			request.getSession().setAttribute("loginUser", eapprovalVO);
 
 			// 확인용
-			Object sessionValue = request.getSession().getAttribute("loginUser");
-			System.out.println("세션 데이터: " + sessionValue);
+//			Object sessionValue = request.getSession().getAttribute("loginUser");
+//			System.out.println("세션 데이터: " + sessionValue);
 
 			return "redirect:/";
 		} else {
