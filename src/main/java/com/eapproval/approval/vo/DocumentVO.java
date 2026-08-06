@@ -10,7 +10,7 @@ public class DocumentVO {
     private String content;
     private Long employeeId;         // 기안자
     private String approvalType;     // SEQUENTIAL, PARALLEL
-    private String status;           // DRAFT, PENDING, APPROVED, REJECTED, WITHDRAWN
+    private String status;           // DRAFT(임시저장), PENDING(결재 진행 중), APPROVED(승인), REJECTED(반려), WITHDRAWN(회수)
     private Boolean isUrgent;
     private Long draftSignatureId;
     private LocalDateTime signedAt;
