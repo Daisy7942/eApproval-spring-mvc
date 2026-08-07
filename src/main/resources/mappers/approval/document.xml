@@ -4,25 +4,34 @@
 
 <mapper namespace="com.eapproval.approval.dao.DocumentMapper">
 
-      <insert id="insertDocument" parameterType="document"
-              useGeneratedKeys="true" keyProperty="docId">
-              INSERT INTO document (
-                      document_type,
-                      title,
-                      content,
-                      employee_id,
-                      approval_type,
-                      status,
-                      is_urgent
-              ) VALUES (
-                      #{documentType},
-                      #{title},
-                      #{content},
-                      #{employeeId},
-                      #{approvalType},
-                      #{status},
-                      #{isUrgent}
-              )
-      </insert>
+	<insert id="insertDocument" parameterType="document"
+		useGeneratedKeys="true" keyProperty="docId">
+		INSERT INTO document (
+		document_type,
+		title,
+		content,
+		employee_id,
+		approval_type,
+		status,
+		is_urgent
+		) VALUES (
+		#{documentType},
+		#{title},
+		#{content},
+		#{employeeId},
+		#{approvalType},
+		#{status},
+		#{isUrgent}
+		)
+	</insert>
+<!--아래는 resultType 에 "document" 쓰면 되는데 그게 뭘 의미하는건지 적기위해서 이번에는 풀어서 씀 alias 된거임 config에서 설정해놓음--> 
+	<select id="selectDraftList" parameterType ="long"  resultType = "com.eapproval.approval.vo.DocumentVO"
+	>
+		SELECT *
+		FROM document
+		WHERE employee_id = #{employeeId}
+		AND status = 'DRAFT'
+		ORDER BY doc_id DESC
+	</select>
 
 </mapper>

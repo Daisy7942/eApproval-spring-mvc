@@ -1,5 +1,7 @@
 package com.eapproval.approval.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,9 @@ public class DocumentService {
 		return documentMapper.insertDocument(documentVO);
 	}
 	
-	
-	
+	public List<DocumentVO> getDraftList(Long employeeId){
+
+		return documentMapper.selectDraftList(employeeId);
+	}
+
 }
