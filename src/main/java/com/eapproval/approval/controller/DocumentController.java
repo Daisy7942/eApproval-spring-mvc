@@ -21,27 +21,43 @@ public class DocumentController {
 	@Autowired
 	private DocumentService documentService;
 
+	// 결재 페이지 조회(새결재, 재조회)-----------------------------------------
 	@GetMapping("/document/write")
-	public String writeForm() {
-		System.out.println("요청은옴");
-		return "approval/documentForm";
+	public String writeForm(HttpServletRequest request,Model model,@RequestParam(required = false) Long docId ) {
+		if (docId == null) {
+			return "approval/documentForm";
+		}else {
+			EapprovalVO loginUser = (EapprovalVO)request.getSession().getAttribute("loginUser");
+			long empId = loginUser.getEmployeeId();
+			
+			DocumentVO doc = documentService.getDraft(docId,empId);
+			model.addAttribute("doc", doc);
+			return "approval/documentForm";
+			
+		}
 	}
 	
+	// 새결재 페이지 작성------------------------------------------
 	@PostMapping("/document/write")
-	public String saveDraft(DocumentVO documentVO, HttpServletRequest request ) {
+	public String saveDraft(DocumentVO documentVO, HttpServletRequest request) {
 		
-		System.out.println("저장요청");
 		EapprovalVO loginUser = (EapprovalVO)request.getSession().getAttribute("loginUser");
 		
 		long empId = loginUser.getEmployeeId();
+		Long docId = documentVO.getDocId();
 		documentVO.setEmployeeId(empId);
 		
+		if (docId == null) {
+			documentService.saveDraft(documentVO);
+		}else {
+			
+		//	documentService.updateDraft(documentVO);
+		}
 		
-		documentService.saveDraft(documentVO);
 		
 		return "approval/saveResult";
 	}
-	
+	// 임시저장목록 조회 ---------------------------------------------
 	@GetMapping("/document/drafts")
 	public String draftList(HttpServletRequest request ,Model model) {
 		System.out.println("임시저장조회");

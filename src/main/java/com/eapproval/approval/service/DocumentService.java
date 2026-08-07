@@ -21,10 +21,17 @@ public class DocumentService {
 		documentVO.setApprovalType("SEQUENTIAL");   // 기본값: 순차 결재
 		return documentMapper.insertDocument(documentVO);
 	}
-	
+	// 리스트 조회
 	public List<DocumentVO> getDraftList(Long employeeId){
 
 		return documentMapper.selectDraftList(employeeId);
 	}
-
+	
+	// 임시저장 1건 조회
+	public DocumentVO getDraft( Long docId,Long employeeId) {
+		return documentMapper.selectDraft(docId, employeeId);
+	}
+	
+	
+	
 }

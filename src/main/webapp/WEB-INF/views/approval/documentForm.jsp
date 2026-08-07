@@ -119,6 +119,9 @@ body { background:#f4f6fa; padding:30px; }
 
               <input type="hidden" name="documentType"
                      value="${empty param.documentType ? 'FREE' : param.documentType}">
+              <input type="hidden" name="docId"
+                     value="${doc.docId }">
+              
 
               <!-- ===== 헤더 (제목 + 긴급) ===== -->
               <div class="head">
@@ -171,14 +174,14 @@ body { background:#f4f6fa; padding:30px; }
                       <div class="row">
                               <label class="tit">제목</label>
                               <input type="text" id="title" name="title" maxlength="200"
-                                     placeholder="제목을 입력하세요">
-                              <p class="err" id="titleErr">제목을 입력해주세요.</p>
+                                     placeholder="제목을 입력하세요" value="${doc.title}">
+                              <p class="err" id="titleErr" >제목을 입력해주세요.</p>
                       </div>
 
                       <!-- ===== 내용 ===== -->
                       <div class="row">
                               <label class="tit">내용</label>
-                              <textarea id="summernote" name="content"></textarea>
+                              <textarea id="summernote" name="content" >${doc.content}</textarea>
                               <p class="err" id="contentErr">내용을 입력해주세요.</p>
                       </div>
 
@@ -186,7 +189,7 @@ body { background:#f4f6fa; padding:30px; }
                       <div class="row">
                               <label class="tit">첨부파일</label>
                               <div class="todo">
-                                      <button type="button" class="ghost" disabled>파일 선택</button>
+                                      <button type="button" class="ghost" disabled >파일 선택</button>
                                       <span class="note">추후구현 — attachment 테이블 사용 예정</span>
                               </div>
                       </div>

@@ -24,14 +24,30 @@
 		#{isUrgent}
 		)
 	</insert>
-<!--아래는 resultType 에 "document" 쓰면 되는데 그게 뭘 의미하는건지 적기위해서 이번에는 풀어서 씀 alias 된거임 config에서 설정해놓음--> 
-	<select id="selectDraftList" parameterType ="long"  resultType = "com.eapproval.approval.vo.DocumentVO"
-	>
+
+	<!--리스트 조회 // 아래는 resultType 에 "document" 쓰면 되는데 그게 뭘 의미하는건지 적기위해서 이번에는 
+		풀어서 씀 alias 된거임 config에서 설정해놓음 -->
+	<select id="selectDraftList" parameterType="long"
+		resultType="com.eapproval.approval.vo.DocumentVO">
+		SELECT *
+		FROM
+		document
+		WHERE employee_id = #{employeeId}
+		AND
+		status = 'DRAFT'
+		ORDER BY
+		doc_id DESC
+	</select>
+
+	<!-- 임시저장 1건 조회 -->
+	<select id="selectDraft"
+		resultType="com.eapproval.approval.vo.DocumentVO">
 		SELECT *
 		FROM document
 		WHERE employee_id = #{employeeId}
 		AND status = 'DRAFT'
-		ORDER BY doc_id DESC
+		and doc_id = #{docId}
 	</select>
+
 
 </mapper>
