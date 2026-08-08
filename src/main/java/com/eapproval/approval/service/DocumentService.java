@@ -36,5 +36,9 @@ public class DocumentService {
 	public int updateDraft(DocumentVO documentVO) {
 		return documentMapper.updateDraft(documentVO);
 	}
+	@Transactional
+	public int deleteDrafts(List<Long> docIds, Long employeeId) {
+		return documentMapper.deleteDrafts(docIds, employeeId);
+	}
 	
 }

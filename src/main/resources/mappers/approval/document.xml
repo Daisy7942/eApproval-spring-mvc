@@ -51,12 +51,25 @@
 	</select>
 	<update id="updateDraft" parameterType="document">
 		UPDATE document
-		SET title = #{title} ,
+		SET title
+		= #{title} ,
 		content = #{content},
 		updated_at = NOW(),
-		is_urgent =#{isUrgent}
-		WHERE doc_id = #{docId} AND employee_id = #{employeeId} AND status =
+		is_urgent
+		=#{isUrgent}
+		WHERE doc_id = #{docId} AND employee_id = #{employeeId}
+		AND status =
 		'DRAFT'
 	</update>
+	<delete id="deleteDrafts">
+		delete from document
+		WHERE doc_id IN
+		<foreach collection="docIds" item="id" open="(" separator=","
+			close=")">
+			#{id}
+		</foreach>
+		AND employee_id = #{employeeId}
+		AND status = 'DRAFT'
+	</delete>
 
 </mapper>

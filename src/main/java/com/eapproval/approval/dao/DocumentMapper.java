@@ -21,5 +21,6 @@ public interface DocumentMapper {
 	// 수정저장
 	int updateDraft(DocumentVO documentVO);
 	
-	
+	// 삭제
+	int deleteDrafts(@Param("docIds") List<Long> docIds, @Param("employeeId") Long employeeId);
 }
