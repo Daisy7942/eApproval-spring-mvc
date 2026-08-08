@@ -31,7 +31,10 @@ public class DocumentService {
 	public DocumentVO getDraft( Long docId,Long employeeId) {
 		return documentMapper.selectDraft(docId, employeeId);
 	}
-	
-	
+	@Transactional
+	// 임시저장 1건 수정저장
+	public int updateDraft(DocumentVO documentVO) {
+		return documentMapper.updateDraft(documentVO);
+	}
 	
 }

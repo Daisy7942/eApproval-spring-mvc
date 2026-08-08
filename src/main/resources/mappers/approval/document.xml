@@ -45,9 +45,18 @@
 		SELECT *
 		FROM document
 		WHERE employee_id = #{employeeId}
-		AND status = 'DRAFT'
+		AND
+		status = 'DRAFT'
 		and doc_id = #{docId}
 	</select>
-
+	<update id="updateDraft" parameterType="document">
+		UPDATE document
+		SET title = #{title} ,
+		content = #{content},
+		updated_at = NOW(),
+		is_urgent =#{isUrgent}
+		WHERE doc_id = #{docId} AND employee_id = #{employeeId} AND status =
+		'DRAFT'
+	</update>
 
 </mapper>

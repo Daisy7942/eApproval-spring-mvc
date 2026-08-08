@@ -50,8 +50,7 @@ public class DocumentController {
 		if (docId == null) {
 			documentService.saveDraft(documentVO);
 		}else {
-			
-		//	documentService.updateDraft(documentVO);
+			documentService.updateDraft(documentVO);
 		}
 		
 		
