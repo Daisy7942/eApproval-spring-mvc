@@ -415,11 +415,15 @@ td.attach {
 			}
 			document.getElementById("deleteForm").submit();
 		}
-		// ===== 아래는 아직 서버에 만들지 않은 기능이다 =====
-		function editDraft(docId) {
-			alert("편집 기능은 아직 준비 중입니다.\n문서번호: " + docId);
-		}
 
+		function editDraft(docId) {
+			var url = "${pageContext.request.contextPath}/document/write?docId="+docId;
+			window.open(url, "docWrite_" + docId,
+		"width=1000,height=800,resizable=yes,scrollbars=yes");
+
+		}
+		
+		// ===== 아래는 아직 서버에 만들지 않은 기능이다 =====
 		function downloadList() {
 			alert("목록 다운로드는 아직 준비 중입니다.");
 		}
