@@ -229,6 +229,13 @@ td.title a:hover {
 	text-decoration: underline;
 }
 
+/* 긴급 칸 : 머리글과 ⚠ 를 가운데로.
+   앞에 .doc-table 을 붙인 건 위의 thead th / tbody td 규칙보다 세게 만들기 위해서다 */
+.doc-table .col-urgent {
+	width: 80px;
+	text-align: center;
+}
+
 /* 긴급 표시 */
 .urgent-mark {
 	color: #e5484d;
@@ -317,7 +324,7 @@ td.attach {
 							<%-- 정렬 표시는 뺐다. 지금은 SQL의 ORDER BY doc_id DESC 로 최신순 고정 --%>
 							<th style="width: 130px;">생성일</th>
 							<th style="width: 150px;">결재양식</th>
-							<th style="width: 80px;">긴급</th>
+							<th class="col-urgent">긴급</th>
 							<th>제목</th>
 							<th style="width: 80px;">첨부</th>
 							<th style="width: 110px;">결재상태</th>
@@ -339,8 +346,8 @@ td.attach {
 										<c:otherwise>${doc.documentType}</c:otherwise>
 									</c:choose></td>
 
-								<td><c:if test="${doc.isUrgent}">
-										<span class="urgent-mark" title="긴급">!</span>
+								<td class="col-urgent"><c:if test="${doc.isUrgent}">
+										<span class="urgent-mark" title="긴급">⚠</span>
 									</c:if></td>
 
 								<td class="title"><a href="#"

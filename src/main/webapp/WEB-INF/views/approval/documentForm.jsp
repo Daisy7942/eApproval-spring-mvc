@@ -129,7 +129,7 @@ body { background:#f4f6fa; padding:30px; }
                               <b>기안 작성</b>
                               <label class="urgent"
                                      title="긴급 문서로 지정하면 결재자에게 우선 표시됩니다">
-                                      <input type="checkbox" name="isUrgent" value="true">
+                                      <input type="checkbox" name="isUrgent" value="true" ${doc.isUrgent ? 'checked' : ''}>
                                       <span class="chip"><span class="dot"></span>긴급 문서</span>
                               </label>
                       </div>
