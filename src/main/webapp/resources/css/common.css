@@ -1,0 +1,663 @@
+@charset "UTF-8";
+
+/* =========================================================
+   공통 레이아웃 (헤더 + 아이콘 레일 + 메뉴 패널 + 본문)
+   화면 전체에서 공유하는 것만 여기에 둔다.
+   특정 화면에서만 쓰는 스타일은 각 JSP 안에 <style>로 둘 것.
+   ========================================================= */
+
+:root {
+	--header-h: 60px;      /* 상단 헤더 높이 */
+	--rail-w: 62px;        /* 좌측 아이콘 레일 너비 */
+	--panel-w: 230px;      /* 메뉴 패널 너비 */
+	--sidebar-w: 292px;    /* 레일 + 패널 = 본문이 밀려나는 거리 */
+	--navy-deep: #16223A;  /* 아이콘 레일 배경 (패널보다 더 진하게) */
+	--navy: #1C2A3C;       /* 메뉴 패널 배경 */
+	--navy-hover: #24345a;
+	--navy-active: #2c3e66;
+	--navy-line: #253350;  /* 어두운 배경 위 구분선 */
+	--blue: #2f6bff;       /* 포인트 컬러 */
+	--blue-dark: #2456d6;
+	--red: #e5484d;        /* 경고 · 로그아웃 */
+	--line: #eaeef5;       /* 밝은 배경 위 구분선 */
+	--bg: #f0f2f7;         /* 본문 배경 */
+	--ink: #1c2a47;        /* 진한 글자 */
+	--ink-soft: #5b6779;   /* 중간 글자 */
+	--muted: #8fa0bd;      /* 어두운 배경 위 흐린 글자 */
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: "Malgun Gothic", "Segoe UI", sans-serif;
+}
+
+body {
+	background: var(--bg);
+	min-height: 100vh;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* =========================================================
+   1. 상단 헤더 — 화면 전체 폭, 항상 고정
+
+   [로고]        [통합 검색]        [날짜 · 알림 · 프로필]
+   왼쪽/오른쪽 덩어리에 같은 flex-basis 를 줘서
+   가운데 검색창이 화면 정중앙에 오도록 맞췄다.
+   ========================================================= */
+.header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: var(--header-h);
+	z-index: 100;
+	background: #fff;
+	border-bottom: 1px solid var(--line);
+	box-shadow: 0 1px 3px rgba(16, 24, 40, .04);
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	padding: 0 18px 0 14px;
+}
+
+/* --- 왼쪽: 로고 + 회사명 --- */
+/* 글자 길이만큼만 차지해야 hover 배경이 로고 영역에만 깔린다 */
+.header .brand {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	text-decoration: none;
+	padding: 5px 10px 5px 5px;
+	border-radius: 10px;
+	transition: background .12s;
+}
+
+.header .brand:hover {
+	background: #f5f7fb;
+}
+
+.header .brand .mark {
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+	background: linear-gradient(135deg, #5b8cff, #2f6bff);
+	box-shadow: 0 2px 6px rgba(47, 107, 255, .35);
+	border-radius: 10px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-weight: 700;
+	font-size: 16px;
+}
+
+.header .brand .name {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.2;
+}
+
+.header .brand .name b {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--ink);
+	letter-spacing: .4px;
+}
+
+/* 회사명 아래 한 줄 — 자간을 넓혀 로고처럼 보이게 */
+.header .brand .name span {
+	font-size: 9px;
+	color: #a5b0c2;
+	letter-spacing: 1.8px;
+}
+
+/* --- 가운데: 통합 검색 --- */
+/* 좌우 덩어리 너비와 무관하게 항상 화면 정중앙에 두려고
+   흐름에서 빼서(absolute) 배치했다. */
+.header .search {
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+	width: min(420px, 34vw);
+}
+
+.header .search .s-ico {
+	position: absolute;
+	left: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: 12px;
+	opacity: .45;
+	pointer-events: none;
+}
+
+.header .search .s-input {
+	width: 100%;
+	height: 38px;
+	padding: 0 14px 0 34px;
+	background: #f4f6fa;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	font-size: 13px;
+	color: var(--ink);
+	outline: none;
+	transition: background .12s, border-color .12s, box-shadow .12s;
+}
+
+.header .search .s-input::placeholder {
+	color: #a5b0c2;
+}
+
+.header .search .s-input:focus {
+	background: #fff;
+	border-color: var(--blue);
+	box-shadow: 0 0 0 3px rgba(47, 107, 255, .12);
+}
+
+/* --- 오른쪽: 날짜 · 알림 · 프로필 --- */
+.header .util {
+	margin-left: auto;   /* 남는 공간을 다 밀어 오른쪽 끝에 붙인다 */
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* 오늘 날짜 — 배경 없이 옅은 글자로만 (창이 좁으면 숨김) */
+.header .util .today {
+	font-size: 12px;
+	color: #98a2b3;
+	letter-spacing: .2px;
+	white-space: nowrap;
+	margin-right: 4px;
+}
+
+/* 알림 등 아이콘 버튼 */
+.icon-btn {
+	position: relative;
+	width: 36px;
+	height: 36px;
+	border: none;
+	background: transparent;
+	border-radius: 10px;
+	cursor: pointer;
+	font-size: 15px;
+	color: #667085;
+	transition: background .12s;
+}
+
+.icon-btn:hover {
+	background: #f4f6fa;
+}
+
+.icon-btn .badge {
+	position: absolute;
+	top: 3px;
+	right: 3px;
+	min-width: 17px;
+	height: 17px;
+	padding: 0 4px;
+	background: var(--red);
+	color: #fff;
+	font-size: 10px;
+	font-weight: 600;
+	line-height: 17px;
+	border-radius: 9px;
+	box-shadow: 0 0 0 2px #fff; /* 버튼과 겹쳐도 또렷하게 */
+}
+
+/* 세로 구분선 */
+.header .divider {
+	width: 1px;
+	height: 22px;
+	background: var(--line);
+	margin: 0 6px;
+}
+
+/* --- 프로필 (클릭하면 드롭다운) --- */
+.profile-box {
+	position: relative;
+}
+
+.profile-btn {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	border: 1px solid transparent;
+	background: transparent;
+	border-radius: 22px;
+	padding: 4px 12px 4px 4px;
+	cursor: pointer;
+	transition: background .12s, border-color .12s;
+}
+
+.profile-btn:hover, .profile-box.open .profile-btn {
+	background: #f5f7fb;
+	border-color: #e4eaf3;
+}
+
+.profile-btn .avatar {
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #5b8cff, #2f6bff);
+	box-shadow: 0 2px 5px rgba(47, 107, 255, .3);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 14px;
+	font-weight: 600;
+	flex-shrink: 0;
+}
+
+/* 이름(주) / 소속(부) 두 줄. 사원번호는 드롭다운으로 옮겨서
+   버튼 안에서 크기가 비슷한 글자가 섞이지 않게 했다. */
+.profile-btn .who {
+	display: flex;
+	flex-direction: column;
+	text-align: left;
+	line-height: 1.25;
+}
+
+.profile-btn .who b {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--ink);
+	white-space: nowrap;
+}
+
+.profile-btn .who span {
+	font-size: 11px;
+	color: #98a2b3;
+	white-space: nowrap;
+}
+
+.profile-btn .caret {
+	font-size: 10px;
+	color: #a5b0c2;
+	margin-left: 2px;
+	transition: transform .15s;
+}
+
+.profile-box.open .caret {
+	transform: rotate(180deg);
+}
+
+/* 드롭다운 메뉴 */
+.profile-menu {
+	display: none;
+	position: absolute;
+	top: calc(100% + 8px);
+	right: 0;
+	min-width: 210px;
+	background: #fff;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	box-shadow: 0 12px 32px rgba(16, 24, 40, .13), 0 2px 6px rgba(16, 24, 40, .05);
+	padding: 6px;
+	overflow: hidden;
+}
+
+.profile-box.open .profile-menu {
+	display: block;
+	animation: dropIn .14s ease-out;
+}
+
+@keyframes dropIn {
+	from { opacity: 0; transform: translateY(-5px); }
+	to   { opacity: 1; transform: none; }
+}
+
+/* 메뉴 맨 위 사용자 정보 — 사원번호는 여기서만 보여준다 */
+.profile-menu .pm-head {
+	padding: 10px 12px 12px;
+	margin-bottom: 4px;
+	border-bottom: 1px solid var(--line);
+}
+
+.profile-menu .pm-head b {
+	display: block;
+	font-size: 13.5px;
+	color: var(--ink);
+}
+
+.profile-menu .pm-head span {
+	display: block;
+	margin-top: 3px;
+	font-size: 11px;
+	color: #98a2b3;
+}
+
+.profile-menu a {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 9px 11px;
+	font-size: 13px;
+	color: #344054;
+	text-decoration: none;
+	border-radius: 8px;
+}
+
+.profile-menu a:hover {
+	background: #f4f6fa;
+}
+
+.profile-menu a .mi {
+	width: 16px;
+	text-align: center;
+	color: #98a2b3;
+	font-size: 13px;
+}
+
+/* 로그아웃처럼 되돌리기 어려운 항목은 빨간 계열로 */
+.profile-menu a.danger, .profile-menu a.danger .mi {
+	color: #d64545;
+}
+
+.profile-menu a.danger:hover {
+	background: #fdf3f3;
+}
+
+.profile-menu .sep {
+	height: 1px;
+	background: var(--line);
+	margin: 5px 4px;
+}
+
+/* 화면이 좁으면 가운데 검색과 날짜부터 접는다 */
+@media ( max-width : 1100px) {
+	.header .util .today {
+		display: none;
+	}
+}
+
+@media ( max-width : 900px) {
+	.header .search {
+		display: none;
+	}
+}
+
+/* =========================================================
+   2-1. 아이콘 레일 — 맨 왼쪽 좁은 띠 (모듈 전환)
+   ========================================================= */
+.rail {
+	position: fixed;
+	top: var(--header-h);
+	left: 0;
+	bottom: 0;
+	width: var(--rail-w);
+	background: var(--navy-deep);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 10px 0 8px;
+	z-index: 90;
+}
+
+/* 아이콘 한 칸 (a = 사용 가능, span = 준비 중) */
+.rail-item {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	width: 100%;
+	padding: 7px 0;
+	text-decoration: none;
+	color: #7d8cab;
+	font-size: 10.5px;
+	letter-spacing: -.2px;
+	transition: color .12s;
+}
+
+.rail-item .ico-box {
+	position: relative;
+	width: 38px;
+	height: 38px;
+	border-radius: 11px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 17px;
+	transition: background .12s, color .12s;
+}
+
+.rail-item:hover {
+	color: #fff;
+}
+
+.rail-item:hover .ico-box {
+	background: #223252;
+	color: #fff;
+}
+
+/* 지금 보고 있는 모듈 */
+.rail-item.active {
+	color: #fff;
+}
+
+.rail-item.active .ico-box {
+	background: var(--blue);
+	color: #fff;
+	box-shadow: 0 3px 9px rgba(47, 107, 255, .45);
+}
+
+/* 왼쪽 끝 흰 막대로 현재 위치를 한 번 더 알려준다 */
+.rail-item.active::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 12px;
+	width: 3px;
+	height: 28px;
+	background: #fff;
+	border-radius: 0 3px 3px 0;
+}
+
+/* 아직 안 만든 모듈 — 눌리지 않게 */
+.rail-item.disabled {
+	color: #495874;
+	cursor: not-allowed;
+}
+
+.rail-item.disabled:hover {
+	color: #495874;
+}
+
+.rail-item.disabled:hover .ico-box {
+	background: transparent;
+	color: #495874;
+}
+
+/* 아이콘 위 빨간 숫자 */
+.rail-item .dot {
+	position: absolute;
+	top: -3px;
+	right: -3px;
+	min-width: 17px;
+	height: 17px;
+	padding: 0 4px;
+	background: var(--red);
+	color: #fff;
+	font-size: 10px;
+	font-weight: 600;
+	line-height: 17px;
+	border-radius: 9px;
+	box-shadow: 0 0 0 2px var(--navy-deep);
+}
+
+/* --- 레일 맨 아래 로그아웃 --- */
+.rail-bottom {
+	margin-top: auto;
+	width: 100%;
+	padding-top: 8px;
+	border-top: 1px solid #243352;
+}
+
+.rail-logout {
+	color: #6b7a99;
+}
+
+.rail-logout .ico-box {
+	font-size: 15px;
+}
+
+.rail-logout:hover {
+	color: #ff9a9d;
+}
+
+.rail-logout:hover .ico-box {
+	background: rgba(229, 72, 77, .15);
+	color: #ff9a9d;
+}
+
+/* =========================================================
+   2-2. 메뉴 패널 — 레일 오른쪽
+   ========================================================= */
+.sidebar {
+	position: fixed;
+	top: var(--header-h);
+	left: var(--rail-w);
+	bottom: 0;
+	width: var(--panel-w);
+	background: var(--navy);
+	color: #cdd6e6;
+	display: flex;
+	flex-direction: column;
+}
+
+/* 패널 맨 위 — 지금 모듈 이름 */
+.panel-head {
+	padding: 17px 20px 15px;
+	border-bottom: 1px solid var(--navy-line);
+}
+
+.panel-head b {
+	display: block;
+	color: #fff;
+	font-size: 16px;
+	letter-spacing: -.2px;
+}
+
+.panel-head span {
+	font-size: 11px;
+	color: var(--muted);
+}
+
+.btn-new {
+	margin: 14px 16px;
+	padding: 11px;
+	background: var(--blue);
+	color: #fff;
+	border: none;
+	border-radius: 9px;
+	font-size: 14px;
+	cursor: pointer;
+	width: calc(100% - 32px);
+	box-shadow: 0 3px 10px rgba(47, 107, 255, .3);
+	transition: background .12s;
+}
+
+.btn-new:hover {
+	background: var(--blue-dark);
+}
+
+.menu {
+	flex: 1;
+	overflow-y: auto;
+	padding-bottom: 16px;
+}
+
+.menu .section {
+	font-size: 11px;
+	color: #7487a8;
+	padding: 12px 20px 4px;
+}
+
+.menu a {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 9px 20px;
+	color: #cdd6e6;
+	text-decoration: none;
+	font-size: 13px;
+}
+
+.menu a:hover {
+	background: var(--navy-hover);
+	color: #fff;
+}
+
+.menu a.active {
+	background: var(--navy-active);
+	color: #fff;
+	border-radius: 8px;
+	margin: 0 8px;
+	padding: 9px 12px;
+}
+
+.menu a .badge {
+	background: var(--red);
+	color: #fff;
+	font-size: 10px;
+	font-weight: 600;
+	border-radius: 9px;
+	padding: 2px 7px;
+}
+
+/* =========================================================
+   3. 메인 영역
+   ========================================================= */
+.main {
+	margin-left: var(--sidebar-w);
+	padding-top: var(--header-h);
+	min-height: 100vh;
+}
+
+.content {
+	padding: 20px 28px 40px;
+	max-width: 1400px;
+}
+
+/* 브레드크럼 — 흰 바가 아니라 본문 위 작은 안내 텍스트 */
+.crumb {
+	font-size: 12px;
+	color: #8b95a8;
+	margin-bottom: 12px;
+}
+
+.crumb b {
+	color: #475467;
+	font-weight: 500;
+}
+
+.page-title h2 {
+	font-size: 20px;
+	color: var(--ink);
+}
+
+.page-title p {
+	font-size: 13px;
+	color: #777;
+	margin: 6px 0 20px;
+}
+
+/* 여러 화면에서 공통으로 쓰는 카드 껍데기 */
+.panel {
+	background: #fff;
+	border: 1px solid #e3e7ef;
+	border-radius: 10px;
+}
+
+.panel h3 {
+	font-size: 14px;
+	color: var(--ink);
+	padding: 16px 20px;
+	border-bottom: 1px solid #eef1f6;
+}
