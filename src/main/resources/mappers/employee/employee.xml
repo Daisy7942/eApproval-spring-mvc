@@ -5,15 +5,28 @@
 <mapper namespace="com.eapproval.employee.dao.EmployeeMapper">
 
 
-   <select id="selectUserById" parameterType="string" resultType="employee">
-      SELECT 
-         employee_id,
-         employee_code,
-         name,
-         email,
-         role
-      FROM employee
-      WHERE employee_code = #{employee_code}
-   </select>
+	<select id="selectUserById" parameterType="string"
+		resultType="employee">
+		SELECT
+		employee_id,
+		employee_code,
+		name,
+		email,
+		role
+		FROM employee
+		WHERE employee_code = #{employee_code}
+	</select>
+
+	<select id="selectEmployeesByName" parameterType="string"
+		resultType="employee">
+		SELECT
+		employee_id,
+		employee_code,
+		name,
+		email,
+		role
+		FROM employee
+		WHERE name LIKE CONCAT('%', #{name}, '%')
+	</select>
 
 </mapper>
