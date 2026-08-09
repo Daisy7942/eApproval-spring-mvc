@@ -100,6 +100,39 @@ body { background:#f4f6fa; padding:30px; }
                background:#fff; color:#b4bcc9; font-size:13px; cursor:not-allowed; }
 .todo .note { font-size:11px; color:#a5aebd; }
 
+/* ===== 결재선 영역 ===== */
+.appr-head { display:flex; justify-content:space-between; align-items:center;
+             margin-bottom:10px; }
+.appr-edit { display:inline-flex; align-items:center; gap:6px;
+             padding:7px 14px; border:1px solid #dbe1ea; border-radius:8px;
+             background:#fff; color:#3d4756; font-size:12.5px; cursor:pointer; }
+.appr-edit:hover { border-color:#2f6bff; color:#2f6bff; }
+
+/* 아직 아무도 안 고른 상태. 예전 점선 상자 모습 그대로 쓰되
+   버튼은 이제 진짜 눌리니까 회색·금지 커서만 걷어낸다 */
+.todo .ghost.on { color:#3d4756; cursor:pointer; }
+.todo .ghost.on:hover { border-color:#2f6bff; color:#2f6bff; }
+
+.appr-flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.appr-flow .sep { color:#c9ced7; font-size:11px; }
+.appr-flow .none { font-size:12px; color:#a5aebd; }
+
+/* 사람 한 칸 : 동그란 이름표 + 이름 + 역할 */
+.pchip { display:inline-flex; align-items:center; gap:8px;
+         border:1px solid #dbe4f5; background:#f2f6ff; border-radius:10px;
+         padding:7px 13px 7px 8px; }
+.pchip .av { width:26px; height:26px; border-radius:50%; background:#2f6bff;
+             color:#fff; font-size:11px; display:flex;
+             align-items:center; justify-content:center; flex:none; }
+.pchip .nm { font-size:12.5px; font-weight:700; color:#2b3444; line-height:1.25; }
+.pchip .rl { font-size:10.5px; color:#8b94a3; }
+
+/* 승인 = 초록, 합의 = 주황 */
+.pchip.approval  { border-color:#bfe6cd; background:#eefaf2; }
+.pchip.approval  .av { background:#1f8a4c; }
+.pchip.agreement { border-color:#f2ddb8; background:#fdf7ec; }
+.pchip.agreement .av { background:#d08a1e; }
+
 /* 하단 버튼 */
 .foot { border-top:1px solid #e9edf3; padding:16px 24px;
         display:flex; justify-content:flex-end; gap:10px; }
@@ -199,11 +232,25 @@ body { background:#f4f6fa; padding:30px; }
                            모달이 '결재선 확정'을 누르면 setApprovalLine() 만 불러주면 되고,
                            그러면 위 결재란 칸이 결재자 수만큼 자동으로 늘어난다. -->
                       <div class="row">
-                              <label class="tit">결재선</label>
-                              <div class="todo">
-                                      <button type="button" class="ghost" id="btnApprovalLine"
-                                              disabled title="3.2에서 구현">＋ 결재선 지정</button>
-                                      <span class="note" id="apprLineNote">아직 지정되지 않았습니다</span>
+
+                              <%-- ① 아직 아무도 안 골랐을 때 : 예전 그대로 --%>
+                              <div id="apprEmpty">
+                                      <label class="tit">결재선</label>
+                                      <div class="todo">
+                                              <button type="button" class="ghost on" id="btnApprovalLine">＋ 결재선 지정</button>
+                                              <span class="note">아직 지정되지 않았습니다</span>
+                                      </div>
+                              </div>
+
+                              <%-- ② 골랐을 때 : 기안자 ▸ 결재자… 흐름. renderApprFlow() 가 그린다 --%>
+                              <div id="apprPicked" style="display:none;">
+                                      <div class="appr-head">
+                                              <label class="tit" style="margin:0;">결재선 설정</label>
+                                              <button type="button" class="appr-edit" id="btnApprovalLineEdit">
+                                                      <span>👥</span> 결재선 편집
+                                              </button>
+                                      </div>
+                                      <div class="appr-flow" id="apprFlow"></div>
                               </div>
                       </div>
 
@@ -274,7 +321,6 @@ $(document).ready(function() {
               if (approvalLine.length === 0) {
                       $box.append(makeSignCell('결재', '미지정', true));
                       $('#signNote').text('결재선을 지정하면 결재자 수만큼 칸이 생깁니다.');
-                      $('#apprLineNote').text('아직 지정되지 않았습니다');
                       return;
               }
 
@@ -285,9 +331,42 @@ $(document).ready(function() {
                       $box.append(makeSignCell(label, a.name, false));
               });
 
-              var names = approvalLine.map(function(a) { return a.name; });
-              $('#signNote').text('결재자 ' + names.length + '명');
-              $('#apprLineNote').text(names.join(' → '));
+              $('#signNote').text('결재자 ' + approvalLine.length + '명');
+      }
+
+      /* 결재선 흐름 칸.
+         [기안자] ▸ [결재자1] ▸ [결재자2] … 를 사람 칸으로 늘어놓는다.
+         이름은 .text() 로 넣어 <, & 같은 글자가 그대로 글자로 나오게 한다. */
+      function makePersonChip(name, sub, kind) {
+              var $c = $('<span class="pchip"></span>').addClass(kind || '');
+              $('<span class="av"></span>').text((name || '?').substring(0, 1)).appendTo($c);
+              var $t = $('<span></span>').appendTo($c);
+              $('<div class="nm"></div>').text(name || '').appendTo($t);
+              $('<div class="rl"></div>').text(sub || '').appendTo($t);
+              return $c;
+      }
+
+      function renderApprFlow() {
+              var $flow = $('#apprFlow').empty();
+
+              // 아직 아무도 안 골랐으면 예전 점선 상자만 보여준다. 둘 중 하나만 켠다.
+              if (approvalLine.length === 0) {
+                      $('#apprEmpty').show();
+                      $('#apprPicked').hide();
+                      return;
+              }
+              $('#apprEmpty').hide();
+              $('#apprPicked').show();
+
+              $flow.append(makePersonChip(drafterName, '기안자', ''));
+
+              $.each(approvalLine, function(i, a) {
+                      // roleCode 는 팝업이 넘겨준 APPROVAL / AGREEMENT
+                      var kind = (a.roleCode === 'AGREEMENT') ? 'agreement' : 'approval';
+                      $flow.append('<span class="sep">›</span>');
+                      $flow.append(makePersonChip(a.name, a.role, kind));
+              });
+
       }
 
       // [결재선 설정] 모달과 이어지는 유일한 지점.
@@ -297,12 +376,20 @@ $(document).ready(function() {
       window.setApprovalLine = function(list) {
               approvalLine = list || [];
               renderSignArea();
+              renderApprFlow();
       };
 
-      // TODO 3.2: 아래 주석을 풀고 조직도 모달을 띄운다. (버튼의 disabled 도 함께 제거)
-      // $('#btnApprovalLine').on('click', openApprovalLineModal);
+      // [＋ 결재선 지정] → 조직도 팝업. 팝업이 setApprovalLine() 을 불러준다.
+      // 창 이름을 고정해 둬서 여러 번 눌러도 창이 하나만 뜬다.
+      $('#btnApprovalLine, #btnApprovalLineEdit').on('click', function() {
+              var url = '${pageContext.request.contextPath}/approval/line';
+              var win = window.open(url, 'approvalLine',
+                              'width=980,height=760,resizable=yes,scrollbars=yes');
+              if (win) { win.focus(); }
+      });
 
       renderSignArea();   // 첫 진입 시 한 번 그려서 HTML 기본 모습과 상태를 맞춘다
+      renderApprFlow();
 
       $('#summernote').summernote({
               lang : 'ko-KR',
