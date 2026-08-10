@@ -29,13 +29,8 @@
 	</a>
 
 
-	<!-- ═══════ 가운데 : 통합 검색 ═══════ -->
-	<%-- TODO WBS 5.x : 통합 검색 만들면 form 으로 바꾸고 action 연결 --%>
-	<div class="search">
-		<span class="s-ico">&#128269;</span>
-		<input type="text" class="s-input" placeholder="문서 · 사원 검색"
-			onkeydown="if (event.key === 'Enter') { alert('통합 검색은 준비 중입니다.'); return false; }">
-	</div>
+	<%-- 가운데 통합 검색은 뺐다 (WBS 5.x 에 실제로 만들 때 다시 넣는다).
+	     스타일은 common.css 의 ".header .search" 에 그대로 남아 있다. --%>
 
 
 	<!-- ═══════ 오른쪽 : 날짜 · 알림 · 프로필 ═══════ -->
