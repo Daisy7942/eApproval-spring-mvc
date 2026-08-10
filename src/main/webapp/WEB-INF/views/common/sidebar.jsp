@@ -90,6 +90,13 @@
 				</a>
 				<a href="#" class="${menu eq 'apprSent' ? 'active' : ''}">↥ 상신 문서</a>
 				<a href="#" class="${menu eq 'apprDone' ? 'active' : ''}">✓ 완료 문서</a>
+
+				<%-- 임시저장함은 결재함 3종과 성격이 다르다. 남이 볼 문서가 아니라
+				     아직 상신하지 않은 내 문서라서 구분선을 두고 따로 뺀다.
+				     draftList.jsp 가 menu="draft" 를 세팅한다. --%>
+				<div class="section">내 문서</div>
+				<a href="${cp}/document/drafts"
+					class="${menu eq 'draft' ? 'active' : ''}">▤ 임시저장함</a>
 			</nav>
 		</c:when>
 

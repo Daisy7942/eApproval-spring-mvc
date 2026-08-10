@@ -63,12 +63,15 @@
 				</span>
 				<span class="who">
 					<b><c:out value="${sessionScope.loginUser.name}" /></b>
-					<%-- TODO 팀·직급 하드코딩 상태.
-					     EapprovalVO 에 teamName / position 을 추가하고
-					     employee.xml 로그인 SELECT 에 team 테이블을 LEFT JOIN 하면
-					     아래 한 줄을 이렇게 바꾸면 된다.
-					     <span>${sessionScope.loginUser.teamName} ${sessionScope.loginUser.position}</span> --%>
-					<span>재무팀 부장</span>
+					<%-- 팀·직책은 로그인 시 세션에 담긴다(employee.xml selectUserById 가 LEFT JOIN).
+					     title(팀장·본부장 같은 직책)이 있으면 그걸 쓰고 없으면 position(직급)을 쓴다.
+					     둘 다 팀 미배정이면 비어서 이름만 남는다. --%>
+					<span>
+						<c:out value="${sessionScope.loginUser.teamName}" />
+						<c:out value="${empty sessionScope.loginUser.title
+						               ? sessionScope.loginUser.position
+						               : sessionScope.loginUser.title}" />
+					</span>
 				</span>
 				<span class="caret">&#9662;</span>
 			</button>
@@ -79,7 +82,13 @@
 				     사원번호는 버튼에서 빼고 여기로 옮겼다. --%>
 				<div class="pm-head">
 					<b><c:out value="${sessionScope.loginUser.name}" /></b>
-					<span><c:out value="${sessionScope.loginUser.employeeCode}" /> · 재무팀 부장</span>
+					<span><c:out value="${sessionScope.loginUser.employeeCode}" /> ·
+						<c:out value="${sessionScope.loginUser.departmentName}" />
+						<c:out value="${sessionScope.loginUser.teamName}" />
+						<c:out value="${empty sessionScope.loginUser.title
+						               ? sessionScope.loginUser.position
+						               : sessionScope.loginUser.title}" />
+					</span>
 				</div>
 
 				<a href="#" onclick="alert('내 정보는 준비 중입니다.'); return false;">

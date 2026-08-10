@@ -7,8 +7,35 @@ public class EapprovalVO {
 	private String name;
     private String email;
     private String role;
+    private String teamName;
+    private String departmentName;
+    private String position;
+    private String title;
     
-    
+	public String getTeamName() {
+		return teamName;
+	}
+	public String getDepartmentName() {
+		return departmentName;
+	}
+	public String getPosition() {
+		return position;
+	}
+	public String getTitle() {
+		return title;
+	}
+	public void setTeamName(String teamName) {
+		this.teamName = teamName;
+	}
+	public void setDepartmentName(String departmentName) {
+		this.departmentName = departmentName;
+	}
+	public void setPosition(String position) {
+		this.position = position;
+	}
+	public void setTitle(String title) {
+		this.title = title;
+	}
 	public int getEmployeeId() {
 		return employeeId;
 	}

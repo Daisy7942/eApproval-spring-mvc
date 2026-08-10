@@ -177,8 +177,9 @@ body { background:#f4f6fa; padding:30px; }
                                       <dl><dt>문서번호</dt><dd>저장 후 부여</dd></dl>
                                       <dl><dt>기안일</dt><dd id="draftDate">-</dd></dl>
                                       <dl><dt>기안자</dt><dd>${loginUser.name} (${loginUser.employeeCode})</dd></dl>
-                                      <!-- TODO: 부서명은 세션에 없음. EapprovalVO + employee.xml 확장 필요 -->
-                                      <dl><dt>기안부서</dt><dd>-</dd></dl>
+                                      <%-- 부서·팀은 로그인 시 세션에 담긴다. 팀 미배정이면 부서만 나온다 --%>
+                                      <dl><dt>기안부서</dt>
+                                          <dd>${loginUser.departmentName} ${loginUser.teamName}</dd></dl>
                               </div>
 
                               <%-- 결재란.

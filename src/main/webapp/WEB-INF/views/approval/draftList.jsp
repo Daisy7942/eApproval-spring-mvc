@@ -274,7 +274,7 @@ td.attach {
 
 	<%@ include file="/WEB-INF/views/common/header.jsp"%>
 
-	<%-- 임시저장함 메뉴는 사이드바에 아직 없다. 나중에 추가 --%>
+	<%-- 사이드바 '내 문서 > 임시저장함' 이 이 값으로 활성 표시된다 --%>
 	<c:set var="menu" value="draft" />
 	<%@ include file="/WEB-INF/views/common/sidebar.jsp"%>
 
