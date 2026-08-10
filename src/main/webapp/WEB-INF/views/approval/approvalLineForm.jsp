@@ -244,7 +244,7 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 				data-tid="${o.teamId}" data-tname="${o.teamName}"
 				data-eid="${o.employeeId}" data-name="${o.name}"
 				data-pos="${o.position}" data-title="${o.title}"
-				data-lvl="${o.positionLevel}"></span>
+				data-lvl="${o.positionLevel}" data-mgr="${o.managerId}"></span>
 		</c:forEach>
 	</div>
 	<span id="meId" data-eid="${sessionScope.loginUser.employeeId}"
@@ -269,13 +269,37 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 					pos   : s.getAttribute("data-pos") || "",
 					title : s.getAttribute("data-title") || "",
 					// 직급 레벨. 사원·대리 1 < 과장·차장·부장 2 < 사장·이사 3
-					lvl   : parseInt(s.getAttribute("data-lvl"), 10) || 0
+					lvl   : parseInt(s.getAttribute("data-lvl"), 10) || 0,
+					mgr   : s.getAttribute("data-mgr") || ""
 				});
 			}
 		})();
 
+		// 본부장처럼 팀이 없는 사람은 부서 이름이 안 딸려온다.
+		// employee ─team─▶ department 로만 이어져 있어서 팀이 없으면 길이 끊기기 때문이다.
+		// 대신 내 밑에 달린 사람(manager_id 가 나를 가리키는 사람)의 부서를 빌려 온다.
+		(function () {
+			var byMgr = {};
+			ORG.forEach(function (o) {
+				if (!o.mgr) return;
+				(byMgr[o.mgr] = byMgr[o.mgr] || []).push(o);
+			});
+			ORG.forEach(function (o) {
+				if (o.did !== "0") return;          // 부서를 이미 아는 사람은 볼 것 없다
+				var kids = byMgr[o.eid] || [];
+				for (var i = 0; i < kids.length; i++) {
+					if (kids[i].did !== "0") { o.ownDept = kids[i].dname; break; }
+				}
+			});
+		})();
+
 		// 결재란에 쓸 이름표. 직책이 있으면 직책, 없으면 직급.
 		function rank(o) { return o.title || o.pos || ""; }
+
+		// 트리에만 쓰는 이름표. 본부장은 어느 본부인지까지 붙여준다
+		function treeLabel(o) {
+			return o.ownDept ? (rank(o) + " · " + o.ownDept) : rank(o);
+		}
 
 		var ME       = document.getElementById("meId");
 		var MY_ID    = ME.getAttribute("data-eid");
@@ -299,7 +323,9 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 			var q = document.getElementById("q").value.trim();
 			var rows = ORG.filter(function (o) {
 				if (!q) return true;
-				return (o.name + o.pos + o.tname + o.dname).indexOf(q) >= 0;
+				// ownDept 도 넣어야 '개발본부' 로 검색했을 때 그 본부장이 걸린다
+				return (o.name + o.pos + o.tname + o.dname
+						+ (o.ownDept || "")).indexOf(q) >= 0;
 			});
 
 			// 부서 → 팀 → 사원 으로 묶는다. 평평한 줄을 계단으로 접는 작업이다
@@ -337,7 +363,7 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 						h += '<div class="node emp' + on + '" onclick="toggleEmp(\'' + e.eid + '\')">'
 						   +   '<span class="av">' + e.name.substring(0, 1) + '</span>'
 						   +   '<span class="nm"><span>' + e.name + '</span>'
-						   +     '<span class="pos">' + rank(e) + '</span></span>'
+						   +     '<span class="pos">' + treeLabel(e) + '</span></span>'
 						   +   '<span class="chk">✔</span>'
 						   + '</div>';
 					});
@@ -407,8 +433,9 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 			} else {
 				if (eid === MY_ID) { alert("기안자는 결재자로 넣을 수 없습니다."); return; }
 				var o = ORG.filter(function (x) { return x.eid === eid; })[0];
+				// dname 은 결재선에 찍을 본부. 본부장은 팀이 없어 빌려온 ownDept 가 진짜 본부다
 				var row = { eid:o.eid, name:o.name, pos:rank(o), lvl:o.lvl,
-							tname:o.tname, dname:o.dname, role:role };
+							tname:o.tname, dname:(o.ownDept || o.dname), role:role };
 
 				// 결재는 아래에서 위로 올라간다. 나보다 높은 직급 앞에 끼워 넣어
 				// 사장이 가운데 박히지 않게 한다. (▲▼ 로 손수 고칠 수는 있다)
@@ -460,7 +487,7 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 					   +   '<span class="no">' + (i + 1) + '</span>'
 					   +   '<span class="av">' + p.name.substring(0, 1) + '</span>'
 					   +   '<span class="who"><div class="n">' + p.name + '</div>'
-					   +     '<div class="s">' + p.pos + ' · ' + p.tname + '</div></span>'
+					   +     '<div class="s">' + p.pos + ' · ' + p.dname + '</div></span>'
 					   +   '<button type="button" class="mv" onclick="move(' + i + ',-1)">▲</button>'
 					   +   '<button type="button" class="mv" onclick="move(' + i + ',1)">▼</button>'
 					   +   '<select onchange="setRole(' + i + ', this.value)">'
@@ -511,6 +538,7 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 					name       : p.name,
 					position   : p.pos,
 					department : p.tname,
+					dept       : p.dname,          // 부서 (본부)
 					role       : (p.role === "AGREEMENT" ? "합의" : "승인"),
 					roleCode   : p.role,           // 저장할 때 쓸 값
 					order      : i + 1             // 결재 순서
@@ -525,6 +553,29 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 				alert("기안 작성 창을 찾을 수 없습니다.");
 			}
 		}
+
+		// ===== 6. 기안 작성 창이 이미 고른 결재선이 있으면 그걸 물려받는다 =====
+		// confirmLine() 이 내보낸 모양({employeeId,...})으로 돌아오므로 팝업이 쓰는 모양으로 되돌린다.
+		// lvl(직급 레벨)은 안 넘어오니 조직도에서 다시 찾아 채운다 — ▲▼ 자동 끼워넣기가 이 값을 쓴다
+		(function () {
+			if (!window.opener || window.opener.closed
+					|| !window.opener.getApprovalLine) return;
+
+			var prev = window.opener.getApprovalLine() || [];
+			picked = prev.map(function (a) {
+				var eid = String(a.employeeId);
+				var o = ORG.filter(function (x) { return x.eid === eid; })[0];
+				return {
+					eid   : eid,
+					name  : a.name,
+					pos   : a.position,
+					lvl   : o ? o.lvl : 0,
+					tname : a.department,
+					dname : o ? (o.ownDept || o.dname) : (a.dept || ""),
+					role  : a.roleCode || "APPROVAL"
+				};
+			});
+		})();
 
 		drawDrafter();
 		drawAll();
