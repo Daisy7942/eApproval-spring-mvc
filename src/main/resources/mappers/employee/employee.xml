@@ -17,7 +17,7 @@
 		employee
 		WHERE employee_code = #{employee_code}
 	</select>
-	
+
 	<!-- 이름검색 -->
 	<select id="selectEmployeesByName" parameterType="string"
 		resultType="employee">
@@ -32,19 +32,25 @@
 		WHERE name LIKE CONCAT('%', #{name}, '%')
 	</select>
 
-	<!-- 조직도 : 부서 -> 팀 -> 사원  -->
+	<!-- 조직도 : 부서 -> 팀 -> 사원 -->
 	<select id="selectOrgTree"
 		resultType="com.eapproval.employee.vo.OrgVO">
 		SELECT
 		d.department_id, d.department_name,
-		t.team_id, t.team_name,
+		t.team_id,
+		t.team_name,
 		e.employee_id, e.employee_code, e.name,
-		e.position, e.position_level,
+		e.position,
+		e.position_level,
 		e.title
 		FROM employee e
-		LEFT JOIN team t ON e.team_id = t.team_id
+		LEFT JOIN team t ON e.team_id =
+		t.team_id
 		LEFT JOIN department d ON t.department_id = d.department_id
-		ORDER BY d.department_id, t.team_id, e.position_level, e.name
+		ORDER BY d.department_id, t.team_id,
+		(e.title != '팀장'),
+		e.position_level DESC,
+		e.name
 	</select>
 
 </mapper>
