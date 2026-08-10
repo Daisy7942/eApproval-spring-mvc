@@ -99,4 +99,29 @@ public class DocumentController {
 
 		return "redirect:/document/drafts";
 	}
+	
+	
+	
+	// 상신 목록 조회 ---------------------------------------------
+	@GetMapping("/document/submitted")
+	public String submittedList(HttpServletRequest request, Model model) {
+	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+	    long empId = loginUser.getEmployeeId();
+
+	    List<DocumentVO> submittedList = documentService.getSubmittedList(empId);
+	    model.addAttribute("submittedList", submittedList);
+	    return "approval/submittedList";
+	}
+	
+	
+	// 결재 대기 목록 조회 ---------------------------------------------
+	@GetMapping("/document/pending")
+	public String pendingList(HttpServletRequest request, Model model) {
+	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+	    long empId = loginUser.getEmployeeId();
+
+	    List<DocumentVO> pendingList  = documentService.getPendingList(empId);
+	    model.addAttribute("pendingList", pendingList );
+	    return "approval/pendingList";
+	}
 }

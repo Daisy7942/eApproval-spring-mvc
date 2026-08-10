@@ -30,4 +30,10 @@ public interface DocumentMapper {
 	
 	// 상신 : status DRAFT → PENDING 
 	int submitDocument(DocumentVO documentVO);
+	
+	// 상신함 조회
+	List<DocumentVO> selectSubmittedList(Long employeeId);
+	
+	// 대기함 조회
+	List<DocumentVO> selectPendingList(Long employeeId);
 }

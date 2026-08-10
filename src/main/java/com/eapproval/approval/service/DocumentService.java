@@ -52,7 +52,7 @@ public class DocumentService {
 		documentMapper.insertApprovalLines(lines);
 	}
 
-	// 리스트 조회
+	// 임시저장 리스트 조회
 	public List<DocumentVO> getDraftList(Long employeeId) {
 
 		return documentMapper.selectDraftList(employeeId);
@@ -69,9 +69,22 @@ public class DocumentService {
 		return documentMapper.updateDraft(documentVO);
 	}
 
+	//임시저장 삭제
 	@Transactional
 	public int deleteDrafts(List<Long> docIds, Long employeeId) {
 		return documentMapper.deleteDrafts(docIds, employeeId);
 	}
 
+	
+	// 상신함 리스트 조회
+	public List<DocumentVO> getSubmittedList(Long employeeId) {
+
+		return documentMapper.selectSubmittedList(employeeId);
+	}
+	
+	// 결재대기함 리스트 조회
+	public List<DocumentVO> getPendingList(Long employeeId) {
+
+		return documentMapper.selectPendingList(employeeId);
+	}
 }

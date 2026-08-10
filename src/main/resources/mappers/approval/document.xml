@@ -49,7 +49,7 @@
 		status = 'DRAFT'
 		and doc_id = #{docId}
 	</select>
-	
+
 	<!-- 수정 -->
 	<update id="updateDraft" parameterType="document">
 		UPDATE document
@@ -63,7 +63,7 @@
 		AND status =
 		'DRAFT'
 	</update>
-		<!-- 삭제 -->
+	<!-- 삭제 -->
 	<delete id="deleteDrafts">
 		delete from document
 		WHERE doc_id IN
@@ -86,14 +86,44 @@
 			#{line.approvalType}, #{line.approvalStatus})
 		</foreach>
 	</insert>
-	
+
 	<!-- 상신 -->
 	<update id="submitDocument" parameterType="document">
 		UPDATE document
-		SET status = 'PENDING', updated_at = NOW()
-		WHERE doc_id = #{docId} AND employee_id = #{employeeId} AND status =
+		SET
+		status = 'PENDING', updated_at = NOW()
+		WHERE doc_id = #{docId} AND
+		employee_id = #{employeeId} AND status =
 		'DRAFT'
 	</update>
 
+
+
+	<!--상신함 조회 -->
+	<select id="selectSubmittedList" parameterType="long"
+		resultType="com.eapproval.approval.vo.DocumentVO">
+		SELECT *
+		FROM
+		document
+		WHERE employee_id = #{employeeId}
+		AND
+		status != 'DRAFT'
+		ORDER BY
+		doc_id DESC
+	</select>
+
+	<!--대기함 조회 -->
+	<select id="selectPendingList" parameterType="long"
+		resultType="com.eapproval.approval.vo.DocumentVO">
+		SELECT d.*
+		FROM
+		document d
+		JOIN approval_line a ON d.doc_id =
+		a.doc_id
+		WHERE a.approver_id = #{employeeId}
+		AND a.approval_status = 'PENDING'
+		ORDER BY
+		d.doc_id DESC
+	</select>
 
 </mapper>
