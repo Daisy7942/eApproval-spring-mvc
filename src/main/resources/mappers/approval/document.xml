@@ -125,5 +125,19 @@
 		ORDER BY
 		d.doc_id DESC
 	</select>
+	
+		<!--완료함 조회 -->
+	<select id="selectCompletedList" parameterType="long"
+		resultType="com.eapproval.approval.vo.DocumentVO">
+		SELECT d.*
+		FROM
+		document d
+		JOIN approval_line a ON d.doc_id =
+		a.doc_id
+		WHERE a.approver_id = #{employeeId}
+		AND a.approval_status != 'PENDING'
+		ORDER BY
+		d.doc_id DESC
+	</select>
 
 </mapper>

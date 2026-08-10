@@ -124,4 +124,16 @@ public class DocumentController {
 	    model.addAttribute("pendingList", pendingList );
 	    return "approval/pendingList";
 	}
+	
+	
+	// 결재 완료 목록 조회 ---------------------------------------------
+	@GetMapping("/document/completed")
+	public String completedList(HttpServletRequest request, Model model) {
+	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+	    long empId = loginUser.getEmployeeId();
+
+	    List<DocumentVO> completedList  = documentService.getCompletedList(empId);
+	    model.addAttribute("completedList", completedList );
+	    return "approval/completedList";
+	}
 }

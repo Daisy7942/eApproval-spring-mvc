@@ -34,6 +34,9 @@ public interface DocumentMapper {
 	// 상신함 조회
 	List<DocumentVO> selectSubmittedList(Long employeeId);
 	
-	// 대기함 조회
+	// 결재 대기함 조회
 	List<DocumentVO> selectPendingList(Long employeeId);
+	
+	// 완료함 조회
+	List<DocumentVO> selectCompletedList(Long employeeId);
 }

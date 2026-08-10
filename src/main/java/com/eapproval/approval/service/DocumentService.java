@@ -87,4 +87,10 @@ public class DocumentService {
 
 		return documentMapper.selectPendingList(employeeId);
 	}
+	
+	// 결재완료함 리스트 조회
+	public List<DocumentVO> getCompletedList(Long employeeId) {
+
+		return documentMapper.selectCompletedList(employeeId);
+	}
 }
