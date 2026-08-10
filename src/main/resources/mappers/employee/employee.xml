@@ -42,7 +42,8 @@
 		e.employee_id, e.employee_code, e.name,
 		e.position,
 		e.position_level,
-		e.title
+		e.title,
+		e.manager_id
 		FROM employee e
 		LEFT JOIN team t ON e.team_id =
 		t.team_id
