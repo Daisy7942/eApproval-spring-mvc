@@ -42,7 +42,39 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 .role-chip.on { background:#e9f7ef; border-color:#a9dfc0; color:#1f8a4c;
                 font-weight:700; }
 
+/* 맨 위 탭 : 결재선 / 참조자 / 열람자 */
+.tabs { display:flex; gap:18px; padding:12px 14px 0; border-bottom:1px solid #eceff3; }
+.tabs .tab { padding:0 2px 9px; font-size:13px; color:#9aa3b0; cursor:pointer;
+             border-bottom:2px solid transparent; margin-bottom:-1px; }
+.tabs .tab.on { color:#2b3444; font-weight:700; border-bottom-color:#2b3444; }
+.tabs .req { color:#e5484d; margin-right:2px; }
+
+/* 그 아래 탭 : 조직도 / 나의 결재선 */
+.subtabs { display:flex; margin:12px 12px 0; border:1px solid #e3e7ed;
+           border-radius:6px 6px 0 0; overflow:hidden; }
+.subtabs .stab { flex:1; text-align:center; padding:8px 0; font-size:12.5px;
+                 color:#8b94a3; background:#f7f8fa; cursor:pointer;
+                 border-right:1px solid #e3e7ed; }
+.subtabs .stab:last-child { border-right:none; }
+.subtabs .stab.on { background:#fff; color:#2b3444; font-weight:700; }
+
 .tree { flex:1; overflow-y:auto; padding:6px 0 14px; }
+
+/* 나의 결재선 목록 */
+.mine { flex:1; overflow-y:auto; padding:6px 0 14px; }
+.mine-row { display:flex; align-items:center; gap:7px; padding:9px 14px;
+            cursor:pointer; }
+.mine-row:hover { background:#f6f8fb; }
+.mine-row .nm  { font-size:12.5px; }
+.mine-row .cnt { flex:1; font-size:11.5px; color:#2f6bff; }
+.mine-row .del { border:none; background:none; color:#c9ced7; cursor:pointer;
+                 font-size:12px; }
+.mine-row .del:hover { color:#e5484d; }
+.mine-save { margin:8px 12px 4px; }
+.mine-save button { width:100%; height:30px; border:1px dashed #cfd6e0;
+                    border-radius:8px; background:#fff; color:#5b6576;
+                    font-size:12px; cursor:pointer; }
+.mine-save button:hover { border-color:#2f6bff; color:#2f6bff; }
 
 .node { display:flex; align-items:center; gap:7px; cursor:pointer;
         padding:6px 12px; user-select:none; }
@@ -94,11 +126,12 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 .line-row select { border:1px solid #cfe9da; background:#f1faf5; color:#1f8a4c;
                    border-radius:6px; font-size:11.5px; padding:3px 6px;
                    cursor:pointer; }
+.line-row .who { flex:1; min-width:0; }   /* 이름칸이 남은 자리를 다 먹어야 ✕ 가 끝으로 밀린다 */
 .line-row .mv { border:none; background:none; color:#b3bac4; cursor:pointer;
                 font-size:11px; padding:0 1px; }
 .line-row .mv:hover { color:#2f6bff; }
-.line-row .del { border:none; background:none; color:#c9ced7; cursor:pointer;
-                 font-size:13px; }
+.line-row .del { margin-left:auto; border:none; background:none; color:#c9ced7;
+                 cursor:pointer; font-size:13px; }
 .line-row .del:hover { color:#e5484d; }
 
 .empty-line { text-align:center; color:#aeb6c2; font-size:12px;
@@ -136,23 +169,34 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 
 		<div class="m-body">
 
-			<!-- ===== 왼쪽 : 조직도 ===== -->
+			<!-- ===== 왼쪽 : 조직도 / 나의 결재선 ===== -->
 			<div class="pane-left">
-				<div class="side-top">
+
+				<div class="tabs">
+					<div class="tab on" onclick="pickTab(this,'LINE')">
+						<span class="req">*</span>결재선
+					</div>
+					<div class="tab" onclick="pickTab(this,'REF')">참조자</div>
+					<div class="tab" onclick="pickTab(this,'VIEW')">열람자</div>
+				</div>
+
+				<div class="subtabs">
+					<div class="stab on" onclick="pickSide(this,'ORG')">조직도</div>
+					<div class="stab" onclick="pickSide(this,'MINE')">나의 결재선</div>
+				</div>
+
+				<!-- 조직도 탭 -->
+				<div class="side-top" id="sideTop">
 					<div class="side-search">
 						<span class="ico">🔍</span>
 						<input type="text" id="q" placeholder="이름, 부서, 직책 검색..."
 							oninput="drawTree()">
 					</div>
-					<div class="role-pick">
-						<span class="lbl">추가 역할</span>
-						<button type="button" class="role-chip" data-role="AGREEMENT"
-							onclick="pickRole(this)">합의</button>
-						<button type="button" class="role-chip on" data-role="APPROVAL"
-							onclick="pickRole(this)">승인</button>
-					</div>
 				</div>
 				<div class="tree" id="tree"></div>
+
+				<!-- 나의 결재선 탭 -->
+				<div class="mine" id="mine" style="display: none;"></div>
 			</div>
 
 			<!-- ===== 오른쪽 : 결재선 ===== -->
@@ -165,6 +209,13 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 				<div id="lineList"></div>
 
 				<div class="flow-box">
+					<div class="role-pick" style="margin-bottom: 12px;">
+						<span class="lbl">합의 방식</span>
+						<button type="button" class="role-chip on" data-mode="SEQUENTIAL"
+							onclick="pickAgreeMode(this)">순차합의</button>
+						<button type="button" class="role-chip" data-mode="PARALLEL"
+							onclick="pickAgreeMode(this)">병렬합의</button>
+					</div>
 					<div class="cap">결재 흐름</div>
 					<div class="flow" id="flow"></div>
 				</div>
@@ -231,13 +282,16 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 		var MY_NAME  = ME.getAttribute("data-name");
 
 		var picked   = [];              // 고른 결재자 [{eid,name,pos,tname,role}]
-		var role     = "APPROVAL";      // 지금 고르면 붙을 역할
-		var closed   = {};              // 접어둔 부서·팀
+		var role     = "APPROVAL";      // 새로 고른 사람에게 붙을 역할. 합의는 아직 못 쓴다
+		var agreeMode = "SEQUENTIAL";   // 합의 방식 : 순차 / 병렬
+		// 접어둔 부서·팀. 이름을 closed 로 두면 안 된다 —
+		// window.closed(창이 닫혔는지 알려주는 읽기 전용 값)와 겹쳐서 대입이 통째로 무시된다
+		var folded   = {};
 
 		// 처음에는 부서·팀을 전부 접어 둔다. 1806명이 한 번에 펼쳐지면 못 본다
 		ORG.forEach(function (o) {
-			closed["d" + o.did] = true;
-			closed["t" + o.did + "_" + o.tid] = true;
+			folded["d" + o.did] = true;
+			folded["t" + o.did + "_" + o.tid] = true;
 		});
 
 		// ===== 2. 왼쪽 트리 그리기 =====
@@ -268,12 +322,12 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 			// 검색 중일 때는 접힘을 무시하고 다 펼친다. 안 그러면 찾은 사람이 안 보인다
 			var h = "";
 			depts.forEach(function (d) {
-				var dOpen = q ? true : !closed["d" + d.id];
+				var dOpen = q ? true : !folded["d" + d.id];
 				h += row("dept", "d" + d.id, "🏢", d.name, d.cnt + "명", dOpen);
 				if (!dOpen) return;
 
 				d.teams.forEach(function (t) {
-					var tOpen = q ? true : !closed["t" + t.key];
+					var tOpen = q ? true : !folded["t" + t.key];
 					h += row("team", "t" + t.key, "👥", t.name,
 							 t.emps.length + "명", tOpen);
 					if (!tOpen) return;
@@ -305,16 +359,41 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 		}
 
 		function fold(key) {
-			closed[key] = !closed[key];
+			folded[key] = !folded[key];
 			drawTree();
 		}
 
-		function pickRole(btn) {
-			role = btn.getAttribute("data-role");
+		// ===== 2-1. 탭 =====
+		// 참조자·열람자는 아직 안 만들었다. 눌러도 결재선 탭에 그대로 남는다
+		function pickTab(el, kind) {
+			if (kind !== "LINE") { alert("구현 예정입니다."); return; }
+			var tabs = document.querySelectorAll(".tabs .tab");
+			for (var i = 0; i < tabs.length; i++) {
+				tabs[i].className = (tabs[i] === el) ? "tab on" : "tab";
+			}
+		}
+
+		// 조직도 ↔ 나의 결재선. 둘 중 하나만 보이게 한다
+		function pickSide(el, kind) {
+			var stabs = document.querySelectorAll(".subtabs .stab");
+			for (var i = 0; i < stabs.length; i++) {
+				stabs[i].className = (stabs[i] === el) ? "stab on" : "stab";
+			}
+			var org = (kind === "ORG");
+			document.getElementById("sideTop").style.display = org ? ""     : "none";
+			document.getElementById("tree").style.display    = org ? ""     : "none";
+			document.getElementById("mine").style.display    = org ? "none" : "";
+			if (!org) drawMine();
+		}
+
+		// 합의 방식 : 순차 / 병렬
+		function pickAgreeMode(btn) {
+			agreeMode = btn.getAttribute("data-mode");
 			var chips = document.querySelectorAll(".role-chip");
 			for (var i = 0; i < chips.length; i++) {
 				chips[i].className = (chips[i] === btn) ? "role-chip on" : "role-chip";
 			}
+			drawLine();
 		}
 
 		// ===== 3. 결재자 담기 / 빼기 =====
@@ -352,7 +431,12 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 			drawAll();
 		}
 
-		function setRole(i, v) { picked[i].role = v; drawAll(); }
+		// 합의는 아직 안 만들었다. 고르면 알리고 승인으로 되돌린다
+		function setRole(i, v) {
+			if (v === "AGREEMENT") { alert("구현 예정입니다."); drawLine(); return; }
+			picked[i].role = v;
+			drawAll();
+		}
 
 		// ===== 4. 오른쪽 그리기 =====
 		function drawDrafter() {
@@ -400,6 +484,19 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 			document.getElementById("footCnt").innerHTML =
 				"결재자 " + picked.length + "명 설정됨";
 		}
+
+		// ===== 4-1. 나의 결재선 =====
+		// 저장할 테이블(approval_line_template 같은 것)이 아직 없다.
+		// 지금은 틀만 있고, 서버 저장이 붙을 때 여기를 채운다
+		function drawMine() {
+			document.getElementById("mine").innerHTML =
+				  '<div class="mine-save">'
+				+   '<button type="button" onclick="saveMine()">＋ 지금 결재선 저장</button>'
+				+ '</div>'
+				+ '<div class="empty-line" style="margin:10px 12px;">저장된 결재선이 없습니다.</div>';
+		}
+
+		function saveMine() { alert("구현 예정입니다."); }
 
 		function drawAll() { drawTree(); drawLine(); }
 
