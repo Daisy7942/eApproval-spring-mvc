@@ -100,6 +100,39 @@ body { background:#f4f6fa; padding:30px; }
                background:#fff; color:#b4bcc9; font-size:13px; cursor:not-allowed; }
 .todo .note { font-size:11px; color:#a5aebd; }
 
+/* ===== 결재선 영역 ===== */
+.appr-head { display:flex; justify-content:space-between; align-items:center;
+             margin-bottom:10px; }
+.appr-edit { display:inline-flex; align-items:center; gap:6px;
+             padding:7px 14px; border:1px solid #dbe1ea; border-radius:8px;
+             background:#fff; color:#3d4756; font-size:12.5px; cursor:pointer; }
+.appr-edit:hover { border-color:#2f6bff; color:#2f6bff; }
+
+/* 아직 아무도 안 고른 상태. 예전 점선 상자 모습 그대로 쓰되
+   버튼은 이제 진짜 눌리니까 회색·금지 커서만 걷어낸다 */
+.todo .ghost.on { color:#3d4756; cursor:pointer; }
+.todo .ghost.on:hover { border-color:#2f6bff; color:#2f6bff; }
+
+.appr-flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.appr-flow .sep { color:#c9ced7; font-size:11px; }
+.appr-flow .none { font-size:12px; color:#a5aebd; }
+
+/* 사람 한 칸 : 동그란 이름표 + 이름 + 역할 */
+.pchip { display:inline-flex; align-items:center; gap:8px;
+         border:1px solid #dbe4f5; background:#f2f6ff; border-radius:10px;
+         padding:7px 13px 7px 8px; }
+.pchip .av { width:26px; height:26px; border-radius:50%; background:#2f6bff;
+             color:#fff; font-size:11px; display:flex;
+             align-items:center; justify-content:center; flex:none; }
+.pchip .nm { font-size:12.5px; font-weight:700; color:#2b3444; line-height:1.25; }
+.pchip .rl { font-size:10.5px; color:#8b94a3; }
+
+/* 승인 = 초록, 합의 = 주황 */
+.pchip.approval  { border-color:#bfe6cd; background:#eefaf2; }
+.pchip.approval  .av { background:#1f8a4c; }
+.pchip.agreement { border-color:#f2ddb8; background:#fdf7ec; }
+.pchip.agreement .av { background:#d08a1e; }
+
 /* 하단 버튼 */
 .foot { border-top:1px solid #e9edf3; padding:16px 24px;
         display:flex; justify-content:flex-end; gap:10px; }
@@ -129,7 +162,7 @@ body { background:#f4f6fa; padding:30px; }
                               <b>기안 작성</b>
                               <label class="urgent"
                                      title="긴급 문서로 지정하면 결재자에게 우선 표시됩니다">
-                                      <input type="checkbox" name="isUrgent" value="true">
+                                      <input type="checkbox" name="isUrgent" value="true" ${doc.isUrgent ? 'checked' : ''}>
                                       <span class="chip"><span class="dot"></span>긴급 문서</span>
                               </label>
                       </div>
@@ -144,8 +177,9 @@ body { background:#f4f6fa; padding:30px; }
                                       <dl><dt>문서번호</dt><dd>저장 후 부여</dd></dl>
                                       <dl><dt>기안일</dt><dd id="draftDate">-</dd></dl>
                                       <dl><dt>기안자</dt><dd>${loginUser.name} (${loginUser.employeeCode})</dd></dl>
-                                      <!-- TODO: 부서명은 세션에 없음. EapprovalVO + employee.xml 확장 필요 -->
-                                      <dl><dt>기안부서</dt><dd>-</dd></dl>
+                                      <%-- 부서·팀은 로그인 시 세션에 담긴다. 팀 미배정이면 부서만 나온다 --%>
+                                      <dl><dt>기안부서</dt>
+                                          <dd>${loginUser.departmentName} ${loginUser.teamName}</dd></dl>
                               </div>
 
                               <%-- 결재란.
@@ -199,12 +233,34 @@ body { background:#f4f6fa; padding:30px; }
                            모달이 '결재선 확정'을 누르면 setApprovalLine() 만 불러주면 되고,
                            그러면 위 결재란 칸이 결재자 수만큼 자동으로 늘어난다. -->
                       <div class="row">
-                              <label class="tit">결재선</label>
-                              <div class="todo">
-                                      <button type="button" class="ghost" id="btnApprovalLine"
-                                              disabled title="3.2에서 구현">＋ 결재선 지정</button>
-                                      <span class="note" id="apprLineNote">아직 지정되지 않았습니다</span>
+
+                              <%-- ① 아직 아무도 안 골랐을 때 : 예전 그대로 --%>
+                              <div id="apprEmpty">
+                                      <label class="tit">결재선</label>
+                                      <div class="todo">
+                                              <button type="button" class="ghost on" id="btnApprovalLine">＋ 결재선 지정</button>
+                                              <span class="note">아직 지정되지 않았습니다</span>
+                                      </div>
                               </div>
+
+                              <%-- ② 골랐을 때 : 기안자 ▸ 결재자… 흐름. renderApprFlow() 가 그린다 --%>
+                              <div id="apprPicked" style="display:none;">
+                                      <div class="appr-head">
+                                              <label class="tit" style="margin:0;">결재선 설정</label>
+                                              <button type="button" class="appr-edit" id="btnApprovalLineEdit">
+                                                      <span>👥</span> 결재선 편집
+                                              </button>
+                                      </div>
+                                      <div class="appr-flow" id="apprFlow"></div>
+                              </div>
+                              <p class="err" id="apprErr">상신하려면 결재선을 지정해주세요.</p>
+
+                              <%-- 결재선은 지금까지 JS 배열로만 들고 있어서 submit 해도 서버로 안 갔다.
+                                   renderApprHidden() 이 여기에 결재자 수만큼 hidden 을 다시 그려서
+                                   approvalLine[0].approverId, [1].approverId … 로 딸려 보낸다.
+                                   보내는 건 '누구를 골랐나' 뿐이다. 순서·상태·문서번호는
+                                   서버가 스스로 아는 값이라 화면 값을 믿지 않는다. --%>
+                              <div id="apprHidden"></div>
                       </div>
 
                       <%-- ===== 결재 마감일 =====
@@ -224,9 +280,12 @@ body { background:#f4f6fa; padding:30px; }
               <!-- ===== 하단 버튼 ===== -->
               <div class="foot">
                       <a class="btn" href="#" onclick="window.close(); return false;">취소</a>
-                      <button type="submit" class="btn primary">임시저장</button>
-                      <!-- TODO 3.2: 결재선 저장 + status를 PENDING으로 -->
-                      <button type="button" class="btn" disabled title="3.2에서 구현">상신</button>
+                      <button type="submit" class="btn" id="btnSaveDraft">임시저장</button>
+                      <%-- 상신은 보내는 값이 임시저장과 같고 서버가 할 일만 다르다
+                           (status 를 PENDING 으로 바꾸고 결재선을 INSERT).
+                           그래서 폼을 따로 만들지 않고 formaction 으로 이 버튼만 다른 주소로 보낸다. --%>
+                      <button type="submit" class="btn primary" id="btnSubmitDoc"
+                              formaction="${pageContext.request.contextPath}/document/submit">상신</button>
               </div>
 
       </form>
@@ -274,7 +333,6 @@ $(document).ready(function() {
               if (approvalLine.length === 0) {
                       $box.append(makeSignCell('결재', '미지정', true));
                       $('#signNote').text('결재선을 지정하면 결재자 수만큼 칸이 생깁니다.');
-                      $('#apprLineNote').text('아직 지정되지 않았습니다');
                       return;
               }
 
@@ -285,9 +343,61 @@ $(document).ready(function() {
                       $box.append(makeSignCell(label, a.name, false));
               });
 
-              var names = approvalLine.map(function(a) { return a.name; });
-              $('#signNote').text('결재자 ' + names.length + '명');
-              $('#apprLineNote').text(names.join(' → '));
+              $('#signNote').text('결재자 ' + approvalLine.length + '명');
+      }
+
+      /* 결재선 흐름 칸.
+         [기안자] ▸ [결재자1] ▸ [결재자2] … 를 사람 칸으로 늘어놓는다.
+         이름은 .text() 로 넣어 <, & 같은 글자가 그대로 글자로 나오게 한다. */
+      function makePersonChip(name, sub, kind) {
+              var $c = $('<span class="pchip"></span>').addClass(kind || '');
+              $('<span class="av"></span>').text((name || '?').substring(0, 1)).appendTo($c);
+              var $t = $('<span></span>').appendTo($c);
+              $('<div class="nm"></div>').text(name || '').appendTo($t);
+              $('<div class="rl"></div>').text(sub || '').appendTo($t);
+              return $c;
+      }
+
+      function renderApprFlow() {
+              var $flow = $('#apprFlow').empty();
+
+              // 아직 아무도 안 골랐으면 예전 점선 상자만 보여준다. 둘 중 하나만 켠다.
+              if (approvalLine.length === 0) {
+                      $('#apprEmpty').show();
+                      $('#apprPicked').hide();
+                      return;
+              }
+              $('#apprEmpty').hide();
+              $('#apprPicked').show();
+
+              $flow.append(makePersonChip(drafterName, '기안자', ''));
+
+              $.each(approvalLine, function(i, a) {
+                      // roleCode 는 팝업이 넘겨준 APPROVAL / AGREEMENT
+                      var kind = (a.roleCode === 'AGREEMENT') ? 'agreement' : 'approval';
+                      // 이름 밑에는 직책 · 부서. position 은 팝업이 직책 우선으로 채워 보낸 값이라
+                      // 위쪽 결재 도장칸과 같은 이름이 찍힌다. 승인/합의는 칩 색으로 구분한다.
+                      // 둘 다 비면 역할이라도 보여준다.
+                      var sub = [ a.position, a.dept ].filter(function(v) { return v; }).join(' · ');
+                      $flow.append('<span class="sep">›</span>');
+                      $flow.append(makePersonChip(a.name, sub || a.role, kind));
+              });
+
+      }
+
+      /* 결재선을 서버로 넘길 hidden 을 다시 그린다.
+         결재선이 바뀔 때마다 통째로 비우고 새로 만든다. 지우지 않고 덧붙이면
+         편집으로 사람을 뺐을 때 예전 input 이 남아 그 사람이 그대로 저장된다.
+         name 의 [0] [1] 은 Spring 이 List<ApprovalLineVO> 로 묶는 자리 번호다. */
+      function renderApprHidden() {
+              var $box = $('#apprHidden').empty();
+
+              $.each(approvalLine, function(i, a) {
+                      $('<input type="hidden">')
+                              .attr('name', 'approvalLine[' + i + '].approverId')
+                              .val(a.employeeId)
+                              .appendTo($box);
+              });
       }
 
       // [결재선 설정] 모달과 이어지는 유일한 지점.
@@ -297,12 +407,39 @@ $(document).ready(function() {
       window.setApprovalLine = function(list) {
               approvalLine = list || [];
               renderSignArea();
+              renderApprFlow();
+              renderApprHidden();
       };
 
-      // TODO 3.2: 아래 주석을 풀고 조직도 모달을 띄운다. (버튼의 disabled 도 함께 제거)
-      // $('#btnApprovalLine').on('click', openApprovalLineModal);
+      // 반대 방향. 팝업이 뜰 때 '지금까지 고른 결재선'을 읽어가서 편집 상태로 시작한다.
+      // 이게 없으면 [결재선 편집] 을 눌러도 팝업이 늘 빈 화면으로 열린다.
+      window.getApprovalLine = function() {
+              return approvalLine;
+      };
+
+      // [＋ 결재선 지정] → 조직도 팝업. 팝업이 setApprovalLine() 을 불러준다.
+      // 창 이름을 고정해 둬서 여러 번 눌러도 창이 하나만 뜬다.
+      $('#btnApprovalLine, #btnApprovalLineEdit').on('click', function() {
+              var url = '${pageContext.request.contextPath}/approval/line';
+              var w = 980, h = 760;
+
+              // 화면 정중앙. 기안 작성 창 자체가 팝업이라 그 창을 기준으로 잡으면
+              // 창이 놓인 자리를 따라다녀서 가운데가 안 된다. screen(모니터)을 기준으로 잡는다.
+              var sx = (screen.availLeft !== undefined) ? screen.availLeft : 0;
+              var sy = (screen.availTop  !== undefined) ? screen.availTop  : 0;
+              var left = sx + Math.max(0, Math.round((screen.availWidth  - w) / 2));
+              var top  = sy + Math.max(0, Math.round((screen.availHeight - h) / 2));
+
+              var win = window.open(url, 'approvalLine',
+                              'width=' + w + ',height=' + h
+                              + ',left=' + left + ',top=' + top
+                              + ',resizable=yes,scrollbars=yes');
+              if (win) { win.focus(); }
+      });
 
       renderSignArea();   // 첫 진입 시 한 번 그려서 HTML 기본 모습과 상태를 맞춘다
+      renderApprFlow();
+      renderApprHidden();
 
       $('#summernote').summernote({
               lang : 'ko-KR',
@@ -319,25 +456,64 @@ $(document).ready(function() {
       		  fontSizes: ['8','9','10','11','12','14','16','18','20','22','24','28','30','36','50','72']
       });
 
-      $('#docForm').on('submit', function() {
+      // 고치기 시작하면 그 칸의 빨간 글씨는 바로 지운다.
+      // 이미 고치는 중인데 경고가 남아 있으면 그게 지금 상태인지 아까 흔적인지 헷갈린다.
+      $('#title').on('input', function() { $('#titleErr').hide(); });
+      $('#dueDate').on('input change', function() { $('#dueDateErr').hide(); });
+      $('#summernote').on('summernote.change', function() { $('#contentErr').hide(); });
+
+      $('#docForm').on('submit', function(e) {
               $('.err').hide();
+
+              // 임시저장과 상신이 이 핸들러를 같이 탄다. 어느 버튼을 눌렀는지는
+              // submitter 로 알 수 있다. 결재선 검사는 상신일 때만 해야 한다 —
+              // 임시저장은 결재선을 아직 안 정한 채로 쟁여두는 기능이니까.
+              var isSubmitDoc = (e.originalEvent
+                              && e.originalEvent.submitter
+                              && e.originalEvent.submitter.id === 'btnSubmitDoc');
+
+              // 첫 문제에서 멈추지 않고 셋 다 검사한다.
+              // 그래야 잘못된 칸이 한 번에 다 빨간 글씨로 뜨고, 고친 칸만 하나씩 사라진다.
+              var msgs  = [];        // alert 에 모아 보여줄 문구
+              var first = null;      // 커서를 옮길 첫 번째 문제 칸
+              var blank = false;     // 안 채운 칸이 하나라도 있나
 
               if ($('#title').val().trim() === '') {
                       $('#titleErr').show();
-                      return false;
+                      blank = true;
+                      first = first || function() { $('#title').focus(); };
               }
 
               // 달력의 min 은 브라우저 UI만 막을 뿐, 직접 입력하면 통과된다.
               var due = $('#dueDate').val();
               if (due !== '' && due < todayStr) {   // 'YYYY-MM-DD' 는 문자열끼리 비교해도 날짜순이 맞다
                       $('#dueDateErr').show();
-                      return false;
+                      msgs.push('결재 마감일은 오늘 이후로 지정해 주세요.');
+                      first = first || function() { $('#dueDate').focus(); };
               }
 
               // 내용을 안 쓰면 <p><br></p> 가 들어옴
               var content = $('#summernote').summernote('code');
               if (content === '' || content === '<p><br></p>') {
                       $('#contentErr').show();
+                      blank = true;
+                      first = first || function() { $('#summernote').summernote('focus'); };
+              }
+
+              // 결재선 없이 상신하면 status 만 PENDING 이 되고 아무 결재함에도 안 뜨는
+              // 유령 문서가 된다. 서버에서도 한 번 더 막지만 여기서 먼저 걸러준다.
+              if (isSubmitDoc && approvalLine.length === 0) {
+                      $('#apprErr').show();
+                      msgs.push('상신하려면 결재선을 먼저 지정해 주세요.');
+                      first = first || function() { $('#btnApprovalLine').focus(); };
+              }
+
+              // 빈칸은 몇 개든 한 줄로 묶는다. 어느 칸인지는 빨간 글씨가 알려주니까
+              if (blank) { msgs.unshift('빈칸을 입력해 주세요.'); }
+
+              if (msgs.length > 0) {
+                      alert(msgs.join('\n'));
+                      if (first) { first(); }
                       return false;
               }
 

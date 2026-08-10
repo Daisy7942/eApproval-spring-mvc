@@ -1,6 +1,7 @@
 package com.eapproval.approval.vo;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class DocumentVO {
 
@@ -16,7 +17,14 @@ public class DocumentVO {
     private LocalDateTime signedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<ApprovalLineVO> approvalLine; 
     
+	public List<ApprovalLineVO> getApprovalLine() {
+		return approvalLine;
+	}
+	public void setApprovalLine(List<ApprovalLineVO> approvalLine) {
+		this.approvalLine = approvalLine;
+	}
 	public Long getDocId() {
 		return docId;
 	}

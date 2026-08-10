@@ -5,15 +5,62 @@
 <mapper namespace="com.eapproval.employee.dao.EmployeeMapper">
 
 
-   <select id="selectUserById" parameterType="string" resultType="employee">
-      SELECT 
-         employee_id,
-         employee_code,
-         name,
-         email,
-         role
-      FROM employee
-      WHERE employee_code = #{employee_code}
-   </select>
+	<select id="selectUserById" parameterType="string"
+		resultType="employee">
+		SELECT
+		e.employee_id,
+		e.employee_code,
+		e.name,
+		e.email,
+		e.role,
+		t.team_name,
+		d.department_name,
+		e.position,
+		e.title
+		FROM employee e
+		LEFT JOIN team t ON e.team_id = t.team_id
+		LEFT JOIN department d ON t.department_id = d.department_id
+		WHERE e.employee_code = #{employee_code}
+	</select>
+
+	<!-- 이름검색 -->
+	<select id="selectEmployeesByName" parameterType="string"
+		resultType="employee">
+		SELECT
+		employee_id,
+		employee_code,
+		name,
+		email,
+		role
+		FROM
+		employee
+		WHERE name LIKE CONCAT('%', #{name}, '%')
+	</select>
+
+	<!-- 조직도 : 부서 -> 팀 -> 사원 -->
+	<select id="selectOrgTree"
+		resultType="com.eapproval.employee.vo.OrgVO">
+		SELECT
+		d.department_id, d.department_name,
+		t.team_id,
+		t.team_name,
+		e.employee_id, e.employee_code, e.name,
+		e.position,
+		e.position_level,
+		e.title,
+		e.manager_id
+		FROM employee e
+		LEFT JOIN team t
+		ON e.team_id =
+		t.team_id
+		LEFT JOIN department d ON t.department_id =
+		d.department_id
+		ORDER BY d.department_id, t.team_id,
+		(e.title != '팀장'),
+		e.position_level DESC,
+		e.name
+	</select>
+
+
 
 </mapper>

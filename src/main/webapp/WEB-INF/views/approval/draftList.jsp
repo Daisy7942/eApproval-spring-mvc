@@ -229,6 +229,13 @@ td.title a:hover {
 	text-decoration: underline;
 }
 
+/* 긴급 칸 : 머리글과 ⚠ 를 가운데로.
+   앞에 .doc-table 을 붙인 건 위의 thead th / tbody td 규칙보다 세게 만들기 위해서다 */
+.doc-table .col-urgent {
+	width: 80px;
+	text-align: center;
+}
+
 /* 긴급 표시 */
 .urgent-mark {
 	color: #e5484d;
@@ -267,7 +274,7 @@ td.attach {
 
 	<%@ include file="/WEB-INF/views/common/header.jsp"%>
 
-	<%-- 임시저장함 메뉴는 사이드바에 아직 없다. 나중에 추가 --%>
+	<%-- 사이드바 '내 문서 > 임시저장함' 이 이 값으로 활성 표시된다 --%>
 	<c:set var="menu" value="draft" />
 	<%@ include file="/WEB-INF/views/common/sidebar.jsp"%>
 
@@ -306,59 +313,62 @@ td.attach {
 					</select>
 				</div>
 			</div>
-
-			<table class="doc-table">
-				<thead>
-					<tr>
-						<th class="col-check"><input type="checkbox" id="checkAll"
-							onclick="toggleAll(this)"></th>
-						<%-- 정렬 표시는 뺐다. 지금은 SQL의 ORDER BY doc_id DESC 로 최신순 고정 --%>
-						<th style="width: 130px;">생성일</th>
-						<th style="width: 150px;">결재양식</th>
-						<th style="width: 80px;">긴급</th>
-						<th>제목</th>
-						<th style="width: 80px;">첨부</th>
-						<th style="width: 110px;">결재상태</th>
-					</tr>
-				</thead>
-				<tbody>
-
-					<c:forEach var="doc" items="${draftList}">
+			<form id="deleteForm"
+				action="${pageContext.request.contextPath}/document/delete"
+				method="post">
+				<table class="doc-table">
+					<thead>
 						<tr>
-							<td class="col-check"><input type="checkbox" class="rowCheck"
-								value="${doc.docId}"></td>
-
-							<%-- LocalDateTime 은 2026-08-06T14:22:31 모양으로 찍힌다. 앞 10글자가 날짜 --%>
-							<td class="date">${fn:substring(doc.createdAt, 0, 10)}</td>
-
-							<td class="form-name"><c:choose>
-									<c:when test="${doc.documentType eq 'VACATION'}">휴가신청서</c:when>
-									<c:when test="${doc.documentType eq 'FREE'}">기본기안</c:when>
-									<c:otherwise>${doc.documentType}</c:otherwise>
-								</c:choose></td>
-
-							<td><c:if test="${doc.isUrgent}">
-									<span class="urgent-mark" title="긴급">!</span>
-								</c:if></td>
-
-							<td class="title"><a href="#"
-								onclick="editDraft(${doc.docId}); return false;">${doc.title}</a></td>
-
-							<%-- 첨부파일(attachment) 테이블은 아직 없다 --%>
-							<td class="attach"></td>
-
-							<td><span class="chip-draft">임시저장</span></td>
+							<th class="col-check"><input type="checkbox" id="checkAll"
+								onclick="toggleAll(this)"></th>
+							<%-- 정렬 표시는 뺐다. 지금은 SQL의 ORDER BY doc_id DESC 로 최신순 고정 --%>
+							<th style="width: 130px;">생성일</th>
+							<th style="width: 150px;">결재양식</th>
+							<th class="col-urgent">긴급</th>
+							<th>제목</th>
+							<th style="width: 80px;">첨부</th>
+							<th style="width: 110px;">결재상태</th>
 						</tr>
-					</c:forEach>
+					</thead>
+					<tbody>
 
-					<c:if test="${empty draftList}">
-						<tr>
-							<td colspan="7" class="empty">임시저장한 문서가 없습니다.</td>
-						</tr>
-					</c:if>
+						<c:forEach var="doc" items="${draftList}">
+							<tr>
+								<td class="col-check"><input type="checkbox" name="docIds"
+									class="rowCheck" value="${doc.docId}"></td>
 
-				</tbody>
-			</table>
+								<%-- LocalDateTime 은 2026-08-06T14:22:31 모양으로 찍힌다. 앞 10글자가 날짜 --%>
+								<td class="date">${fn:substring(doc.createdAt, 0, 10)}</td>
+
+								<td class="form-name"><c:choose>
+										<c:when test="${doc.documentType eq 'VACATION'}">휴가신청서</c:when>
+										<c:when test="${doc.documentType eq 'FREE'}">기본기안</c:when>
+										<c:otherwise>${doc.documentType}</c:otherwise>
+									</c:choose></td>
+
+								<td class="col-urgent"><c:if test="${doc.isUrgent}">
+										<span class="urgent-mark" title="긴급">⚠</span>
+									</c:if></td>
+
+								<td class="title"><a href="#"
+									onclick="editDraft(${doc.docId}); return false;">${doc.title}</a></td>
+
+								<%-- 첨부파일(attachment) 테이블은 아직 없다 --%>
+								<td class="attach"></td>
+
+								<td><span class="chip-draft">임시저장</span></td>
+							</tr>
+						</c:forEach>
+
+						<c:if test="${empty draftList}">
+							<tr>
+								<td colspan="7" class="empty">임시저장한 문서가 없습니다.</td>
+							</tr>
+						</c:if>
+
+					</tbody>
+				</table>
+			</form>
 
 			<%-- 페이지네이션 자리. 아직 안 만들었다 (SQL LIMIT / OFFSET 필요) --%>
 
@@ -401,8 +411,6 @@ td.attach {
 			return ids;
 		}
 
-		// ===== 아래는 아직 서버에 만들지 않은 기능이다 =====
-
 		function deleteChecked() {
 			var ids = getCheckedIds();
 			if (ids.length === 0) {
@@ -412,13 +420,27 @@ td.attach {
 			if (!confirm(ids.length + "건을 삭제하시겠습니까?")) {
 				return;
 			}
-			alert("삭제 기능은 아직 준비 중입니다.\n선택한 문서번호: " + ids.join(", "));
+			document.getElementById("deleteForm").submit();
 		}
 
 		function editDraft(docId) {
-			alert("편집 기능은 아직 준비 중입니다.\n문서번호: " + docId);
-		}
+			var url = "${pageContext.request.contextPath}/document/write?docId="+docId;
 
+			// 화면 정중앙. screen 은 이 창이 놓인 모니터를 가리키므로 모니터가 여러 대여도 맞다
+			var w = 1000, h = 800;
+			var sx = (screen.availLeft !== undefined) ? screen.availLeft : 0;
+			var sy = (screen.availTop  !== undefined) ? screen.availTop  : 0;
+			var left = sx + Math.max(0, Math.round((screen.availWidth  - w) / 2));
+			var top  = sy + Math.max(0, Math.round((screen.availHeight - h) / 2));
+
+			window.open(url, "docWrite_" + docId,
+					"width=" + w + ",height=" + h
+					+ ",left=" + left + ",top=" + top
+					+ ",resizable=yes,scrollbars=yes");
+
+		}
+		
+		// ===== 아래는 아직 서버에 만들지 않은 기능이다 =====
 		function downloadList() {
 			alert("목록 다운로드는 아직 준비 중입니다.");
 		}
