@@ -363,8 +363,12 @@ $(document).ready(function() {
               $.each(approvalLine, function(i, a) {
                       // roleCode 는 팝업이 넘겨준 APPROVAL / AGREEMENT
                       var kind = (a.roleCode === 'AGREEMENT') ? 'agreement' : 'approval';
+                      // 이름 밑에는 직책 · 부서. position 은 팝업이 직책 우선으로 채워 보낸 값이라
+                      // 위쪽 결재 도장칸과 같은 이름이 찍힌다. 승인/합의는 칩 색으로 구분한다.
+                      // 둘 다 비면 역할이라도 보여준다.
+                      var sub = [ a.position, a.dept ].filter(function(v) { return v; }).join(' · ');
                       $flow.append('<span class="sep">›</span>');
-                      $flow.append(makePersonChip(a.name, a.role, kind));
+                      $flow.append(makePersonChip(a.name, sub || a.role, kind));
               });
 
       }
@@ -379,12 +383,29 @@ $(document).ready(function() {
               renderApprFlow();
       };
 
+      // 반대 방향. 팝업이 뜰 때 '지금까지 고른 결재선'을 읽어가서 편집 상태로 시작한다.
+      // 이게 없으면 [결재선 편집] 을 눌러도 팝업이 늘 빈 화면으로 열린다.
+      window.getApprovalLine = function() {
+              return approvalLine;
+      };
+
       // [＋ 결재선 지정] → 조직도 팝업. 팝업이 setApprovalLine() 을 불러준다.
       // 창 이름을 고정해 둬서 여러 번 눌러도 창이 하나만 뜬다.
       $('#btnApprovalLine, #btnApprovalLineEdit').on('click', function() {
               var url = '${pageContext.request.contextPath}/approval/line';
+              var w = 980, h = 760;
+
+              // 화면 정중앙. 기안 작성 창 자체가 팝업이라 그 창을 기준으로 잡으면
+              // 창이 놓인 자리를 따라다녀서 가운데가 안 된다. screen(모니터)을 기준으로 잡는다.
+              var sx = (screen.availLeft !== undefined) ? screen.availLeft : 0;
+              var sy = (screen.availTop  !== undefined) ? screen.availTop  : 0;
+              var left = sx + Math.max(0, Math.round((screen.availWidth  - w) / 2));
+              var top  = sy + Math.max(0, Math.round((screen.availHeight - h) / 2));
+
               var win = window.open(url, 'approvalLine',
-                              'width=980,height=760,resizable=yes,scrollbars=yes');
+                              'width=' + w + ',height=' + h
+                              + ',left=' + left + ',top=' + top
+                              + ',resizable=yes,scrollbars=yes');
               if (win) { win.focus(); }
       });
 
@@ -406,25 +427,49 @@ $(document).ready(function() {
       		  fontSizes: ['8','9','10','11','12','14','16','18','20','22','24','28','30','36','50','72']
       });
 
+      // 고치기 시작하면 그 칸의 빨간 글씨는 바로 지운다.
+      // 이미 고치는 중인데 경고가 남아 있으면 그게 지금 상태인지 아까 흔적인지 헷갈린다.
+      $('#title').on('input', function() { $('#titleErr').hide(); });
+      $('#dueDate').on('input change', function() { $('#dueDateErr').hide(); });
+      $('#summernote').on('summernote.change', function() { $('#contentErr').hide(); });
+
       $('#docForm').on('submit', function() {
               $('.err').hide();
 
+              // 첫 문제에서 멈추지 않고 셋 다 검사한다.
+              // 그래야 잘못된 칸이 한 번에 다 빨간 글씨로 뜨고, 고친 칸만 하나씩 사라진다.
+              var msgs  = [];        // alert 에 모아 보여줄 문구
+              var first = null;      // 커서를 옮길 첫 번째 문제 칸
+              var blank = false;     // 안 채운 칸이 하나라도 있나
+
               if ($('#title').val().trim() === '') {
                       $('#titleErr').show();
-                      return false;
+                      blank = true;
+                      first = first || function() { $('#title').focus(); };
               }
 
               // 달력의 min 은 브라우저 UI만 막을 뿐, 직접 입력하면 통과된다.
               var due = $('#dueDate').val();
               if (due !== '' && due < todayStr) {   // 'YYYY-MM-DD' 는 문자열끼리 비교해도 날짜순이 맞다
                       $('#dueDateErr').show();
-                      return false;
+                      msgs.push('결재 마감일은 오늘 이후로 지정해 주세요.');
+                      first = first || function() { $('#dueDate').focus(); };
               }
 
               // 내용을 안 쓰면 <p><br></p> 가 들어옴
               var content = $('#summernote').summernote('code');
               if (content === '' || content === '<p><br></p>') {
                       $('#contentErr').show();
+                      blank = true;
+                      first = first || function() { $('#summernote').summernote('focus'); };
+              }
+
+              // 빈칸은 몇 개든 한 줄로 묶는다. 어느 칸인지는 빨간 글씨가 알려주니까
+              if (blank) { msgs.unshift('빈칸을 입력해 주세요.'); }
+
+              if (msgs.length > 0) {
+                      alert(msgs.join('\n'));
+                      if (first) { first(); }
                       return false;
               }
 

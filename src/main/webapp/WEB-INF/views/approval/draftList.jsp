@@ -425,8 +425,18 @@ td.attach {
 
 		function editDraft(docId) {
 			var url = "${pageContext.request.contextPath}/document/write?docId="+docId;
+
+			// 화면 정중앙. screen 은 이 창이 놓인 모니터를 가리키므로 모니터가 여러 대여도 맞다
+			var w = 1000, h = 800;
+			var sx = (screen.availLeft !== undefined) ? screen.availLeft : 0;
+			var sy = (screen.availTop  !== undefined) ? screen.availTop  : 0;
+			var left = sx + Math.max(0, Math.round((screen.availWidth  - w) / 2));
+			var top  = sy + Math.max(0, Math.round((screen.availHeight - h) / 2));
+
 			window.open(url, "docWrite_" + docId,
-		"width=1000,height=800,resizable=yes,scrollbars=yes");
+					"width=" + w + ",height=" + h
+					+ ",left=" + left + ",top=" + top
+					+ ",resizable=yes,scrollbars=yes");
 
 		}
 		
