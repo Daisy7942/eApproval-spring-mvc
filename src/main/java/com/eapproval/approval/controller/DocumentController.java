@@ -55,6 +55,23 @@ public class DocumentController {
 
 		return "approval/saveResult";
 	}
+	// 상신 -------------------------------------------------------------
+	@PostMapping("/document/submit")
+	public String submitDocument(DocumentVO documentVO, HttpServletRequest request) {
+
+		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+
+		long empId = loginUser.getEmployeeId();
+		documentVO.setEmployeeId(empId);
+
+
+		documentService.submitDocument(documentVO);
+
+
+
+		return "approval/saveResult";
+	}
+	
 
 	// 임시저장목록 조회 ---------------------------------------------
 	@GetMapping("/document/drafts")

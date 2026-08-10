@@ -49,6 +49,8 @@
 		status = 'DRAFT'
 		and doc_id = #{docId}
 	</select>
+	
+	<!-- 수정 -->
 	<update id="updateDraft" parameterType="document">
 		UPDATE document
 		SET title
@@ -61,6 +63,7 @@
 		AND status =
 		'DRAFT'
 	</update>
+		<!-- 삭제 -->
 	<delete id="deleteDrafts">
 		delete from document
 		WHERE doc_id IN
@@ -71,5 +74,26 @@
 		AND employee_id = #{employeeId}
 		AND status = 'DRAFT'
 	</delete>
+
+	<!-- 결재자 수만큼 insert (여러건의 경우) -->
+	<insert id="insertApprovalLines">
+		INSERT INTO approval_line
+		(doc_id, approver_id, approval_order,
+		approval_type, approval_status)
+		VALUES
+		<foreach collection="lines" item="line" separator=",">
+			(#{line.docId}, #{line.approverId}, #{line.approvalOrder},
+			#{line.approvalType}, #{line.approvalStatus})
+		</foreach>
+	</insert>
+	
+	<!-- 상신 -->
+	<update id="submitDocument" parameterType="document">
+		UPDATE document
+		SET status = 'PENDING', updated_at = NOW()
+		WHERE doc_id = #{docId} AND employee_id = #{employeeId} AND status =
+		'DRAFT'
+	</update>
+
 
 </mapper>

@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.eapproval.approval.vo.ApprovalLineVO;
 import com.eapproval.approval.vo.DocumentVO;
 
 @Mapper
@@ -23,4 +24,10 @@ public interface DocumentMapper {
 	
 	// 삭제
 	int deleteDrafts(@Param("docIds") List<Long> docIds, @Param("employeeId") Long employeeId);
+	
+	// 결재선 여러건 저장
+	void insertApprovalLines(@Param("lines") List<ApprovalLineVO> lines);
+	
+	// 상신 : status DRAFT → PENDING 
+	int submitDocument(DocumentVO documentVO);
 }

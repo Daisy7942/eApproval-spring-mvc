@@ -252,6 +252,14 @@ body { background:#f4f6fa; padding:30px; }
                                       </div>
                                       <div class="appr-flow" id="apprFlow"></div>
                               </div>
+                              <p class="err" id="apprErr">상신하려면 결재선을 지정해주세요.</p>
+
+                              <%-- 결재선은 지금까지 JS 배열로만 들고 있어서 submit 해도 서버로 안 갔다.
+                                   renderApprHidden() 이 여기에 결재자 수만큼 hidden 을 다시 그려서
+                                   approvalLine[0].approverId, [1].approverId … 로 딸려 보낸다.
+                                   보내는 건 '누구를 골랐나' 뿐이다. 순서·상태·문서번호는
+                                   서버가 스스로 아는 값이라 화면 값을 믿지 않는다. --%>
+                              <div id="apprHidden"></div>
                       </div>
 
                       <%-- ===== 결재 마감일 =====
@@ -271,9 +279,12 @@ body { background:#f4f6fa; padding:30px; }
               <!-- ===== 하단 버튼 ===== -->
               <div class="foot">
                       <a class="btn" href="#" onclick="window.close(); return false;">취소</a>
-                      <button type="submit" class="btn primary">임시저장</button>
-                      <!-- TODO 3.2: 결재선 저장 + status를 PENDING으로 -->
-                      <button type="button" class="btn" disabled title="3.2에서 구현">상신</button>
+                      <button type="submit" class="btn" id="btnSaveDraft">임시저장</button>
+                      <%-- 상신은 보내는 값이 임시저장과 같고 서버가 할 일만 다르다
+                           (status 를 PENDING 으로 바꾸고 결재선을 INSERT).
+                           그래서 폼을 따로 만들지 않고 formaction 으로 이 버튼만 다른 주소로 보낸다. --%>
+                      <button type="submit" class="btn primary" id="btnSubmitDoc"
+                              formaction="${pageContext.request.contextPath}/document/submit">상신</button>
               </div>
 
       </form>
@@ -373,6 +384,21 @@ $(document).ready(function() {
 
       }
 
+      /* 결재선을 서버로 넘길 hidden 을 다시 그린다.
+         결재선이 바뀔 때마다 통째로 비우고 새로 만든다. 지우지 않고 덧붙이면
+         편집으로 사람을 뺐을 때 예전 input 이 남아 그 사람이 그대로 저장된다.
+         name 의 [0] [1] 은 Spring 이 List<ApprovalLineVO> 로 묶는 자리 번호다. */
+      function renderApprHidden() {
+              var $box = $('#apprHidden').empty();
+
+              $.each(approvalLine, function(i, a) {
+                      $('<input type="hidden">')
+                              .attr('name', 'approvalLine[' + i + '].approverId')
+                              .val(a.employeeId)
+                              .appendTo($box);
+              });
+      }
+
       // [결재선 설정] 모달과 이어지는 유일한 지점.
       // 모달에서 '결재선 확정'을 누를 때 결재자 배열을 넘겨 이 함수를 부르면 된다.
       //   setApprovalLine([{ name:'최준혁', position:'이사', department:'경영진', role:'승인' }, ...]);
@@ -381,6 +407,7 @@ $(document).ready(function() {
               approvalLine = list || [];
               renderSignArea();
               renderApprFlow();
+              renderApprHidden();
       };
 
       // 반대 방향. 팝업이 뜰 때 '지금까지 고른 결재선'을 읽어가서 편집 상태로 시작한다.
@@ -411,6 +438,7 @@ $(document).ready(function() {
 
       renderSignArea();   // 첫 진입 시 한 번 그려서 HTML 기본 모습과 상태를 맞춘다
       renderApprFlow();
+      renderApprHidden();
 
       $('#summernote').summernote({
               lang : 'ko-KR',
@@ -433,8 +461,15 @@ $(document).ready(function() {
       $('#dueDate').on('input change', function() { $('#dueDateErr').hide(); });
       $('#summernote').on('summernote.change', function() { $('#contentErr').hide(); });
 
-      $('#docForm').on('submit', function() {
+      $('#docForm').on('submit', function(e) {
               $('.err').hide();
+
+              // 임시저장과 상신이 이 핸들러를 같이 탄다. 어느 버튼을 눌렀는지는
+              // submitter 로 알 수 있다. 결재선 검사는 상신일 때만 해야 한다 —
+              // 임시저장은 결재선을 아직 안 정한 채로 쟁여두는 기능이니까.
+              var isSubmitDoc = (e.originalEvent
+                              && e.originalEvent.submitter
+                              && e.originalEvent.submitter.id === 'btnSubmitDoc');
 
               // 첫 문제에서 멈추지 않고 셋 다 검사한다.
               // 그래야 잘못된 칸이 한 번에 다 빨간 글씨로 뜨고, 고친 칸만 하나씩 사라진다.
@@ -462,6 +497,14 @@ $(document).ready(function() {
                       $('#contentErr').show();
                       blank = true;
                       first = first || function() { $('#summernote').summernote('focus'); };
+              }
+
+              // 결재선 없이 상신하면 status 만 PENDING 이 되고 아무 결재함에도 안 뜨는
+              // 유령 문서가 된다. 서버에서도 한 번 더 막지만 여기서 먼저 걸러준다.
+              if (isSubmitDoc && approvalLine.length === 0) {
+                      $('#apprErr').show();
+                      msgs.push('상신하려면 결재선을 먼저 지정해 주세요.');
+                      first = first || function() { $('#btnApprovalLine').focus(); };
               }
 
               // 빈칸은 몇 개든 한 줄로 묶는다. 어느 칸인지는 빨간 글씨가 알려주니까
