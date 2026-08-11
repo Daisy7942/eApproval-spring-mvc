@@ -11,166 +11,127 @@
 <link rel="stylesheet"
 	href="${pageContext.request.contextPath}/resources/css/common.css">
 <style>
-/* ===== 이 화면에서만 쓰는 스타일 =====
-   결재 대기 문서(pendingList.jsp)와 짝이 되는 화면이다.
-   대기함 = 내 결재 차례인 문서 / 완료함 = 내가 이미 처리한 문서. */
+/* ===== 결재함 3종(상신·대기·완료) 공통 모양 =====
+   대기함(pendingList.jsp)과 같은 스타일이다. 여기 담기는 건
+   '내가 결재한 문서'라 일괄결재가 없다. */
 
-/* 표 위 한 줄 : 오른쪽 도구 */
-.list-bar {
+/* 제목 줄 : 왼쪽 제목, 오른쪽 건수 */
+.title-row {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 28px;
+}
+
+.total-count {
+	font-size: 12.5px;
+	color: #8a93a3;
+}
+
+.list-card {
+	background: #fff;
+}
+
+/* 표 위 도구 줄. 바깥 본문 배경(--bg)과 같은 색이라 흰 표만 도드라진다 */
+.card-head {
 	display: flex;
 	align-items: center;
 	gap: 16px;
-	padding: 2px 0 12px;
+	padding: 15px 0 5px;
+	background: var(--bg);
 }
 
-/* 목록 아래 가운데 검색창 */
-.search-bottom {
-	display: flex;
-	justify-content: center;
-	padding: 22px 0 8px;
-}
-
-.search {
-	display: flex;
-	align-items: stretch;
-	gap: 8px;
-	height: 32px;
-}
-
-.search select {
-	border: 1px solid #dbe1ea;
-	border-radius: 8px;
-	background: #fff;
-	font-size: 12.5px;
-	color: #3d4756;
-	padding: 0 8px;
-	cursor: pointer;
-}
-
-.search select:focus {
-	outline: none;
-	border-color: #2f6bff;
-}
-
-.search .field {
+.card-head .right {
+	margin-left: auto;
 	display: flex;
 	align-items: center;
-	border: 1px solid #dbe1ea;
+	gap: 14px;
+}
+
+/* 검색 - 도구 줄 왼쪽 */
+.search-box {
+	flex: 1;
+	min-width: 0;
+	max-width: 620px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	border: 1px solid #e2e6ee;
 	border-radius: 8px;
 	background: #fff;
-	padding-right: 3px;
-	transition: border-color .15s;
+	padding: 7px 12px;
+	transition: border-color .15s, background .15s;
 }
 
-.search .field:focus-within {
-	border-color: #2f6bff;
+.search-box:focus-within {
+	border-color: #b9d0ff;
+	background: #fff;
 }
 
-.search input {
-	width: 170px;
+.search-box .ico {
+	color: #a5aebd;
+	font-size: 19px;
+	line-height: 1;
+	padding: 0px 0px 5px;
+}
+
+.search-box input {
+	flex: 1;
+	min-width: 0;
 	border: none;
 	background: none;
-	padding: 0 10px;
-	font-size: 12.5px;
+	font-size: 13px;
 	color: #2b3444;
 }
 
-.search input::placeholder {
+.search-box input::placeholder {
 	color: #aab2be;
 }
 
-.search input:focus {
+.search-box input:focus {
 	outline: none;
-}
-
-.search .go {
-	width: 26px;
-	height: 26px;
-	border: none;
-	border-radius: 6px;
-	background: #2f6bff;
-	color: #fff;
-	font-size: 12px;
-	line-height: 1;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.search .go:hover {
-	background: #1f57e0;
-}
-
-/* 오른쪽 도구 */
-.tool-bar {
-	display: flex;
-	justify-content: flex-end;
-	align-items: center;
-	gap: 18px;
-	margin-left: auto;
-}
-
-.tool-bar .divider {
-	width: 1px;
-	height: 14px;
-	background: #dbe1ea;
 }
 
 .act {
 	display: inline-flex;
 	align-items: center;
-	gap: 7px;
+	gap: 6px;
 	background: none;
 	border: none;
 	padding: 0;
-	font-size: 13.5px;
+	font-size: 13px;
 	color: #3d4756;
 	cursor: pointer;
 }
 
-.act:hover {
+.act:hover, .act:hover .ico {
 	color: #2f6bff;
 }
 
 .act .ico {
-	font-size: 15px;
+	font-size: 14px;
 	color: #8a93a3;
 }
 
-.act:hover .ico {
-	color: #2f6bff;
-}
-
-.opt {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	background: none;
-	border: none;
-	font-size: 13px;
-	color: #3d4756;
-	cursor: pointer;
-}
-
-.opt:hover {
-	color: #2f6bff;
-}
-
-.tool-bar select {
+.card-head select {
 	border: 1px solid #dbe1ea;
 	border-radius: 6px;
-	padding: 5px 8px;
-	font-size: 13px;
+	padding: 3px 4px;
+	font-size: 12px;
 	color: #3d4756;
 	background: #fff;
 }
 
-/* 표 */
+.divider {
+	width: 1px;
+	height: 13px;
+	background: #dfe4ec;
+}
+
+/* ===== 표 ===== */
 .doc-table {
 	width: 100%;
 	border-collapse: collapse;
-	background: #fff;
 }
 
 .doc-table thead th {
@@ -179,26 +140,37 @@
 	color: #5b6576;
 	font-weight: 500;
 	padding: 12px 14px;
+	background: #fff;
 	border-top: 1px solid #d9dee7;
 	border-bottom: 1px solid #d9dee7;
 	white-space: nowrap;
 }
 
 .doc-table tbody td {
-	padding: 13px 14px;
-	border-bottom: 1px solid #eef1f5;
+	padding: 14px;
+	border-bottom: 1px solid #f2f4f8;
 	font-size: 13.5px;
 	color: #2b3444;
 	vertical-align: middle;
+}
+
+.doc-table tbody tr:last-child td {
+	border-bottom: none;
 }
 
 .doc-table tbody tr:hover {
 	background: #f8fafd;
 }
 
-td.date {
-	color: #3d4756;
-	white-space: nowrap;
+.col-check {
+	width: 42px;
+	text-align: center;
+}
+
+/* 머리글·본문 둘 다 가운데 정렬해야 ⚠ 가 칸 한가운데 온다 */
+.doc-table th.col-urgent, .doc-table td.col-urgent {
+	width: 80px;
+	text-align: center;
 }
 
 td.form-name {
@@ -209,6 +181,7 @@ td.form-name {
 td.title a {
 	color: #2b3444;
 	text-decoration: none;
+	font-weight: 500;
 }
 
 td.title a:hover {
@@ -216,8 +189,15 @@ td.title a:hover {
 	text-decoration: underline;
 }
 
-.doc-table .col-urgent {
-	width: 80px;
+td.date {
+	color: #5b6576;
+	white-space: nowrap;
+	font-size: 13px;
+}
+
+td.attach {
+	color: #8a93a3;
+	font-size: 12px;
 	text-align: center;
 }
 
@@ -226,7 +206,21 @@ td.title a:hover {
 	font-weight: bold;
 }
 
-/* 결재상태 칩 */
+/* 기안자 - 이름 아래 팀 이름을 작게 */
+td.drafter {
+	font-size: 13px;
+	color: #2b3444;
+	white-space: nowrap;
+}
+
+td.drafter span {
+	display: block;
+	font-size: 11.5px;
+	color: #98a3b5;
+	margin-top: 2px;
+}
+
+/* 상태 칩 - 문서 전체 상태(document.status) */
 .chip {
 	display: inline-block;
 	border: 1px solid;
@@ -237,27 +231,21 @@ td.title a:hover {
 }
 
 .chip-pending {
-	border-color: #ffd9a8;
-	background: #fff8ef;
-	color: #c26a12;
+	border-color: #ffd8a8;
+	background: #fff5e5;
+	color: #b26a00;
 }
 
 .chip-approved {
-	border-color: #b6e3c6;
-	background: #f2fbf5;
-	color: #1e8e4a;
+	border-color: #b7e4cd;
+	background: #eef9f4;
+	color: #1a7f55;
 }
 
 .chip-rejected {
-	border-color: #f7c2c4;
-	background: #fef4f4;
-	color: #d1383d;
-}
-
-td.attach {
-	color: #8a93a3;
-	font-size: 12px;
-	white-space: nowrap;
+	border-color: #f7c2c2;
+	background: #fdf0f0;
+	color: #c53c3c;
 }
 
 .empty {
@@ -265,6 +253,89 @@ td.attach {
 	color: #98a3b5;
 	padding: 56px 0;
 	font-size: 13px;
+}
+
+.empty .big {
+	display: block;
+	font-size: 28px;
+	color: #d5dbe4;
+	margin-bottom: 10px;
+}
+
+/* ===== 결재선 동그라미 =====
+   결재자 이름 첫 글자를 상태 색으로 보여준다. 마우스를 올리면
+   아래에 흰 말풍선으로 "이름 직급 (상태)" 가 뜬다 */
+td.appr {
+	white-space: nowrap;
+}
+
+.appr-line {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 1px;
+	align-items: center;
+}
+
+.appr-dot {
+	position: relative;
+	flex: 0 0 auto;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 10.5px;
+	font-weight: 600;
+	color: #fff;
+	background: #c8cdd6; /* 기본 = 대기(회색) */
+	cursor: default;
+}
+
+.appr-dot.done {
+	background: #22a06b;
+} /* 승인 */
+.appr-dot.now {
+	background: #f0932b;
+} /* 검토중 = 지금 이 사람 차례 */
+.appr-dot.reject {
+	background: #e05252;
+} /* 반려 */
+
+/* 전달(연보라) 은 아직 기능이 없다. 색만 잡아뒀고 걸리는 데이터가 없다 */
+.appr-dot.pass {
+	background: #9b8cf5;
+}
+
+/* 5번째부터 접었을 때 보이는 … */
+.appr-more {
+	position: relative;
+	margin-left: 3px;
+	font-size: 14px;
+	color: #98a3b5;
+	cursor: default;
+}
+
+.appr-dot .tip, .appr-more .tip {
+	display: none;
+	position: absolute;
+	top: 125%;
+	left: 50%;
+	transform: translateX(-50%);
+	background: #fff;
+	border: 1px solid #dfe4ec;
+	box-shadow: 0 4px 12px rgba(16, 24, 40, .14);
+	color: #2b3444;
+	font-size: 11.5px;
+	font-weight: 400;
+	padding: 5px 9px;
+	border-radius: 6px;
+	white-space: nowrap;
+	z-index: 20;
+}
+
+.appr-dot:hover .tip, .appr-more:hover .tip {
+	display: block;
 }
 </style>
 </head>
@@ -283,108 +354,166 @@ td.attach {
 				결재 &gt; <b>완료 문서</b>
 			</div>
 
-			<div class="page-title">
+			<div class="page-title title-row">
 				<h2>완료 문서</h2>
+				<span class="total-count">${fn:length(completedList)}건</span>
 			</div>
 
-			<div class="list-bar">
-				<div class="tool-bar">
-					<button type="button" class="act" onclick="downloadList()">
-						<span class="ico">⭳</span> 목록 다운로드
-					</button>
+			<div class="list-card">
 
-					<span class="divider"></span>
+				<%-- 왼쪽 검색, 오른쪽 도구.
+				     검색은 버튼 없이 글자를 칠 때마다 걸러낸다 (oninput).
+				     목록 다운로드용 체크박스만 있고 일괄결재는 없다 --%>
+				<div class="card-head">
+					<div class="search-box">
+						<span class="ico">⌕</span> <input type="text" id="q"
+							placeholder="제목 · 기안자 검색" oninput="applyFilter()">
+					</div>
 
-					<button type="button" class="opt"
-						onclick="alert('필드 설정은 아직 준비 중입니다.');">
-						<span>⚙</span> 필드 설정
-					</button>
-					<select onchange="alert('페이지 나누기는 아직 준비 중입니다.');">
-						<option>20</option>
-						<option>50</option>
-						<option>100</option>
-					</select>
-				</div>
-			</div>
-
-			<table class="doc-table">
-				<thead>
-					<tr>
-						<th style="width: 130px;">상신일</th>
-						<th style="width: 150px;">결재양식</th>
-						<th class="col-urgent">긴급</th>
-						<th>제목</th>
-						<th style="width: 80px;">첨부</th>
-						<th style="width: 110px;">문서 상태</th>
-					</tr>
-				</thead>
-				<tbody>
-
-					<c:forEach var="doc" items="${completedList}">
-						<tr>
-							<%-- LocalDateTime 은 2026-08-06T14:22:31 모양으로 찍힌다. 앞 10글자가 날짜 --%>
-							<td class="date">${fn:substring(doc.createdAt, 0, 10)}</td>
-
-							<td class="form-name"><c:choose>
-									<c:when test="${doc.documentType eq 'VACATION'}">휴가신청서</c:when>
-									<c:when test="${doc.documentType eq 'FREE'}">기본기안</c:when>
-									<c:otherwise>${doc.documentType}</c:otherwise>
-								</c:choose></td>
-
-							<td class="col-urgent"><c:if test="${doc.isUrgent}">
-									<span class="urgent-mark" title="긴급">⚠</span>
-								</c:if></td>
-
-							<td class="title"><a href="#"
-								onclick="openDoc(${doc.docId}); return false;">${doc.title}</a></td>
-
-							<td class="attach"></td>
-
-							<%-- 주의 : 이건 내 결재 결과가 아니라 '문서 전체' 상태다.
-							     쿼리가 SELECT d.* 라 document.status 만 가져오기 때문이다.
-							     내가 승인했어도 뒷 결재자가 남아 있으면 문서는 아직 PENDING 이다. --%>
-							<td><c:choose>
-									<c:when test="${doc.status eq 'PENDING'}">
-										<span class="chip chip-pending">결재 진행중</span>
-									</c:when>
-									<c:when test="${doc.status eq 'APPROVED'}">
-										<span class="chip chip-approved">승인</span>
-									</c:when>
-									<c:when test="${doc.status eq 'REJECTED'}">
-										<span class="chip chip-rejected">반려</span>
-									</c:when>
-									<c:otherwise>
-										<span class="chip chip-pending">${doc.status}</span>
-									</c:otherwise>
-								</c:choose></td>
-						</tr>
-					</c:forEach>
-
-					<c:if test="${empty completedList}">
-						<tr>
-							<td colspan="6" class="empty">완료한 문서가 없습니다.</td>
-						</tr>
-					</c:if>
-
-				</tbody>
-			</table>
-
-			<%-- 페이지네이션 자리. 아직 안 만들었다 (SQL LIMIT / OFFSET 필요) --%>
-
-			<div class="search-bottom">
-				<div class="search">
-					<select>
-						<option>제목</option>
-						<option>내용</option>
-					</select>
-					<div class="field">
-						<input type="text" placeholder="검색어를 입력하세요"
-							onkeydown="if(event.key==='Enter'){doSearch();}">
-						<button type="button" class="go" onclick="doSearch()">🔍</button>
+					<div class="right">
+						<button type="button" class="act" onclick="downloadList()">
+							<span class="ico">⭳</span> 목록 다운로드
+						</button>
+						<span class="divider"></span>
+						<button type="button" class="act"
+							onclick="alert('필드 설정은 아직 준비 중입니다.');">
+							<span class="ico">⚙</span> 필드 설정
+						</button>
+						<select onchange="alert('페이지 나누기는 아직 준비 중입니다.');">
+							<option>20</option>
+							<option>50</option>
+							<option>100</option>
+						</select>
 					</div>
 				</div>
-			</div>
 
+				<table class="doc-table">
+					<thead>
+						<tr>
+							<th class="col-check"><input type="checkbox"
+								onclick="toggleAll(this)"></th>
+							<th style="width: 150px;">결재양식</th>
+							<th class="col-urgent">긴급</th>
+							<th>제목</th>
+							<th style="width: 80px;">첨부</th>
+							<th style="width: 110px;">기안자</th>
+							<th style="width: 130px;">기안일</th>
+							<th style="width: 110px;">상태</th>
+							<th class="appr" style="width: 160px;">결재선</th>
+						</tr>
+					</thead>
+					<tbody>
+
+						<%-- data-text 는 화면에서 걸러낼 때 쓰는 값이다 --%>
+						<c:forEach var="doc" items="${completedList}">
+							<tr class="doc-row"
+								data-text="${fn:toLowerCase(doc.title)} ${fn:toLowerCase(doc.drafterName)}">
+								<td class="col-check"><input type="checkbox"
+									class="row-check" value="${doc.docId}"></td>
+
+								<td class="form-name"><c:choose>
+										<c:when test="${doc.documentType eq 'VACATION'}">휴가신청서</c:when>
+										<c:when test="${doc.documentType eq 'FREE'}">기본기안</c:when>
+										<c:otherwise>${doc.documentType}</c:otherwise>
+									</c:choose></td>
+
+								<td class="col-urgent"><c:if test="${doc.isUrgent}">
+										<span class="urgent-mark" title="긴급">⚠</span>
+									</c:if></td>
+
+								<%-- 주의 : 상태 칸은 내 결재 결과가 아니라 '문서 전체' 상태다.
+								     내가 승인했어도 뒷 결재자가 남아 있으면 문서는 아직 PENDING 이다 --%>
+								<td class="title"><a href="#"
+									onclick="openDoc(${doc.docId}); return false;">${doc.title}</a></td>
+
+								<%-- 첨부파일 업로드 기능이 아직 없다 --%>
+								<td class="attach"></td>
+
+								<td class="drafter">${doc.drafterName}<span>${doc.drafterTeam}</span></td>
+
+								<%-- LocalDateTime 은 2026-08-06T14:22:31 모양으로 찍힌다. 앞 10글자가 날짜 --%>
+								<td class="date">${fn:substring(doc.createdAt, 0, 10)}</td>
+
+								<td><c:choose>
+										<c:when test="${doc.status eq 'PENDING'}">
+											<span class="chip chip-pending">결재중</span>
+										</c:when>
+										<c:when test="${doc.status eq 'APPROVED'}">
+											<span class="chip chip-approved">승인</span>
+										</c:when>
+										<c:when test="${doc.status eq 'REJECTED'}">
+											<span class="chip chip-rejected">반려</span>
+										</c:when>
+										<c:otherwise>
+											<span class="chip chip-pending">${doc.status}</span>
+										</c:otherwise>
+									</c:choose></td>
+
+								<%-- 결재선. 순서대로 훑다가 처음 만나는 PENDING 이 '검토중'(주황),
+								     그 뒤에 남은 PENDING 은 전부 '대기'(회색)다 --%>
+								<td class="appr">
+									<div class="appr-line">
+										<%-- 맨 왼쪽은 기안자. 결재선 테이블엔 없는 사람이라 따로 그린다 --%>
+										<span class="appr-dot done">${fn:substring(doc.drafterName, 0, 1)}<span
+												class="tip">${doc.drafterName} ${doc.drafterPosition} (기안)</span></span>
+
+										<%-- 기안자까지 넣어 동그라미는 4개까지. 5번째부터는 … 로 접는다.
+										     상태 판정(metPending)은 접힌 사람도 계속 돌아야 하므로
+										     c:choose 는 항상 실행하고 그리는 것만 c:if 로 막는다 --%>
+										<c:set var="metPending" value="false" />
+										<c:forEach var="a" items="${doc.approvalLine}"
+											varStatus="st">
+											<c:set var="cls" value="" />
+											<c:set var="lbl" value="대기" />
+											<c:choose>
+												<c:when test="${a.approvalStatus eq 'APPROVED'}">
+													<c:set var="cls" value="done" />
+													<c:set var="lbl" value="승인" />
+												</c:when>
+												<c:when test="${a.approvalStatus eq 'REJECTED'}">
+													<c:set var="cls" value="reject" />
+													<c:set var="lbl" value="반려" />
+												</c:when>
+												<c:when test="${not metPending}">
+													<c:set var="cls" value="now" />
+													<c:set var="lbl" value="검토중" />
+													<c:set var="metPending" value="true" />
+												</c:when>
+											</c:choose>
+											<c:if test="${st.index lt 3}">
+												<span class="appr-dot ${cls}">${fn:substring(a.name, 0, 1)}<span
+														class="tip">${a.name} ${a.position} (${lbl})</span></span>
+											</c:if>
+										</c:forEach>
+
+										<c:if test="${fn:length(doc.approvalLine) gt 3}">
+											<span class="appr-more">…<span class="tip">외
+													${fn:length(doc.approvalLine) - 3}명</span></span>
+										</c:if>
+									</div>
+								</td>
+							</tr>
+						</c:forEach>
+
+						<c:if test="${empty completedList}">
+							<tr>
+								<td colspan="9" class="empty"><span class="big">🗎</span>완료한
+									문서가 없습니다.</td>
+							</tr>
+						</c:if>
+
+						<%-- 검색으로 다 걸러졌을 때만 JS 가 이 줄을 보여준다 --%>
+						<tr id="noResult" style="display: none;">
+							<td colspan="9" class="empty"><span class="big">🗎</span>검색
+								결과가 없습니다.</td>
+						</tr>
+
+					</tbody>
+				</table>
+
+				<%-- 페이지네이션 자리. 아직 안 만들었다 (SQL LIMIT / OFFSET 필요) --%>
+
+			</div>
 		</div>
 	</div>
 
@@ -398,8 +527,32 @@ td.attach {
 			alert("목록 다운로드는 아직 준비 중입니다.");
 		}
 
-		function doSearch() {
-			alert("검색은 아직 준비 중입니다.");
+		// 머리글 체크박스로 전체 선택/해제. 목록 다운로드가 생기면 여기서 골라 넘긴다
+		function toggleAll(head) {
+			document.querySelectorAll(".row-check").forEach(function(c) {
+				c.checked = head.checked;
+			});
+		}
+
+		// ===== 검색 =====
+		// 서버에 다시 묻지 않고, 이미 화면에 그려진 줄만 보였다 숨겼다 한다.
+		// 한계: 화면에 올라온 것만 걸러진다.
+		function applyFilter() {
+			var q = document.getElementById("q").value.trim().toLowerCase();
+			var rows = document.querySelectorAll(".doc-row");
+			var shown = 0;
+
+			rows.forEach(function(tr) {
+				if (q === "" || tr.dataset.text.indexOf(q) > -1) {
+					tr.style.display = "";
+					shown++;
+				} else {
+					tr.style.display = "none";
+				}
+			});
+
+			document.getElementById("noResult").style.display = (shown === 0 && rows.length > 0)
+					? "" : "none";
 		}
 	</script>
 

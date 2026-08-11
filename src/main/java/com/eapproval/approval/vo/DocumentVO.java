@@ -17,8 +17,29 @@ public class DocumentVO {
     private LocalDateTime signedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private List<ApprovalLineVO> approvalLine; 
+    private List<ApprovalLineVO> approvalLine;
+    private String drafterName;
+    private String drafterPosition;
+    private String drafterTeam;
     
+	public String getDrafterName() {
+		return drafterName;
+	}
+	public String getDrafterPosition() {
+		return drafterPosition;
+	}
+	public String getDrafterTeam() {
+		return drafterTeam;
+	}
+	public void setDrafterName(String drafterName) {
+		this.drafterName = drafterName;
+	}
+	public void setDrafterPosition(String drafterPosition) {
+		this.drafterPosition = drafterPosition;
+	}
+	public void setDrafterTeam(String drafterTeam) {
+		this.drafterTeam = drafterTeam;
+	}
 	public List<ApprovalLineVO> getApprovalLine() {
 		return approvalLine;
 	}
