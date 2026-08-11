@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
       pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -440,6 +441,27 @@ $(document).ready(function() {
       renderSignArea();   // 첫 진입 시 한 번 그려서 HTML 기본 모습과 상태를 맞춘다
       renderApprFlow();
       renderApprHidden();
+
+      /* 문서 종류별 추천 결재선.
+         Controller 가 model 에 담아준 recLine(EapprovalVO 목록)을 그대로
+         setApprovalLine() 에 넣는다. 팝업이 부르는 함수와 같은 것이라
+         화면 그리는 코드를 새로 만들 필요가 없다.
+         FREE 면 서버가 빈 목록을 주므로 아래 if 가 걸러서 '미지정' 상태로 남는다.
+         사용자가 [결재선 편집] 으로 얼마든지 바꿀 수 있다 - 추천일 뿐 고정이 아니다. */
+      var recLine = [
+        <c:forEach items="${recLine}" var="m" varStatus="st">
+          {
+            employeeId : ${m.employeeId},
+            name       : '${m.name}',
+            position   : '${empty m.title ? m.position : m.title}',
+            dept       : '${m.teamName}',
+            roleCode   : 'APPROVAL'
+          }<c:if test="${!st.last}">,</c:if>
+        </c:forEach>
+      ];
+      if (recLine.length > 0) {
+              setApprovalLine(recLine);
+      }
 
       $('#summernote').summernote({
               lang : 'ko-KR',

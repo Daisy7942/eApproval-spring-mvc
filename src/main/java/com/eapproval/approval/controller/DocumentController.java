@@ -21,14 +21,18 @@ public class DocumentController {
 	@Autowired
 	private DocumentService documentService;
 
-	// 결재 페이지 조회(새결재, 재조회)-----------------------------------------
+	// 결재 페이지 조회(새결재, 임시저장 재조회)-----------------------------------------
 	@GetMapping("/document/write")
-	public String writeForm(HttpServletRequest request, Model model, @RequestParam(required = false) Long docId) {
+	public String writeForm(HttpServletRequest request, Model model, @RequestParam(required = false) Long docId, String documentType) {
+		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+		long empId = loginUser.getEmployeeId();
+		
 		if (docId == null) {
-			return "approval/documentForm";
+			List<EapprovalVO> recLine = documentService.recommendApprovalLine(empId, documentType);
+			model.addAttribute("recLine", recLine);
+
+			return "approval/documentForm"; // ← 새 문서
 		} else {
-			EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
-			long empId = loginUser.getEmployeeId();
 
 			DocumentVO doc = documentService.getDraft(docId, empId);
 			model.addAttribute("doc", doc);
@@ -36,6 +40,7 @@ public class DocumentController {
 
 		}
 	}
+	
 
 	// 새결재 페이지 작성------------------------------------------
 	@PostMapping("/document/write")
@@ -55,6 +60,11 @@ public class DocumentController {
 
 		return "approval/saveResult";
 	}
+	
+	
+
+	
+	
 	// 상신 -------------------------------------------------------------
 	@PostMapping("/document/submit")
 	public String submitDocument(DocumentVO documentVO, HttpServletRequest request) {
@@ -136,4 +146,6 @@ public class DocumentController {
 	    model.addAttribute("completedList", completedList );
 	    return "approval/completedList";
 	}
+	
+	
 }

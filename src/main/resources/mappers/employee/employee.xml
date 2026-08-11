@@ -18,9 +18,12 @@
 		e.position,
 		e.title
 		FROM employee e
-		LEFT JOIN team t ON e.team_id = t.team_id
-		LEFT JOIN department d ON t.department_id = d.department_id
-		WHERE e.employee_code = #{employee_code}
+		LEFT
+		JOIN team t ON e.team_id = t.team_id
+		LEFT JOIN department d ON
+		t.department_id = d.department_id
+		WHERE e.employee_code =
+		#{employee_code}
 	</select>
 
 	<!-- 이름검색 -->
@@ -61,6 +64,21 @@
 		e.name
 	</select>
 
+	<!-- 직속상사 조회하기 -->
+	<select id="selectManager" parameterType="long"
+		resultType="employee">
+		SELECT e.employee_id, e.employee_code, e.name, e.email,
+		e.role,
+		t.team_name, d.department_name, e.position, e.title
+		FROM
+		employee e
+		LEFT JOIN team t ON e.team_id = t.team_id
+		LEFT JOIN
+		department d ON t.department_id = d.department_id
+		WHERE e.employee_id =
+		(SELECT manager_id FROM employee WHERE employee_id =
+		#{empId})
+	</select>
 
 
 </mapper>

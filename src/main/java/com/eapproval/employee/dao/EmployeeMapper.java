@@ -15,4 +15,8 @@ public interface EmployeeMapper {
 	List<EapprovalVO> selectEmployeesByName(String name);
 	
 	List<OrgVO> selectOrgTree();
+	
+	// 결재 라인 추천
+	EapprovalVO selectManager(long employeeId);
+	
 }

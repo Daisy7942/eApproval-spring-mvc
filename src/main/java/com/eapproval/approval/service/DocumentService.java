@@ -1,5 +1,6 @@
 package com.eapproval.approval.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,12 +10,17 @@ import org.springframework.transaction.annotation.Transactional;
 import com.eapproval.approval.dao.DocumentMapper;
 import com.eapproval.approval.vo.ApprovalLineVO;
 import com.eapproval.approval.vo.DocumentVO;
+import com.eapproval.employee.dao.EmployeeMapper;
+import com.eapproval.employee.vo.EapprovalVO;
 
 @Service
 public class DocumentService {
 
 	@Autowired
 	private DocumentMapper documentMapper;
+	
+	@Autowired
+	private EmployeeMapper employeeMapper;
 
 	// 임시저장
 	@Transactional
@@ -92,5 +98,21 @@ public class DocumentService {
 	public List<DocumentVO> getCompletedList(Long employeeId) {
 
 		return documentMapper.selectCompletedList(employeeId);
+	}
+	
+	// 추천 상사 결재 라인
+	public List<EapprovalVO> recommendApprovalLine(long employeeId, String documentType) {
+		
+	    int depth = "VACATION".equals(documentType) ? 2 : 0;
+
+	    List<EapprovalVO> line = new ArrayList<>();
+	    long cur = employeeId;
+	    for (int i = 0; i < depth; i++) {
+	        EapprovalVO m = employeeMapper.selectManager(cur);
+	        if (m == null) break;          // 최고 책임자까지 올라갔으면 멈춤
+	        line.add(m);
+	        cur = m.getEmployeeId();       // 다음은 이 사람의 상사
+	    }
+	    return line;
 	}
 }

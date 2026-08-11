@@ -466,6 +466,11 @@ body {
 				i.classList.remove("selected");
 			});
 			el.classList.add("selected");
+
+			// 고른 양식을 기억해둔다. 이 값을 openDraft() 가 읽어서
+			// documentType=FREE / VACATION 을 정한다.
+			currentKey = key;
+
 			var f = FORMS[key];
 			document.getElementById("dTitle").textContent = f.title;
 			document.getElementById("dDesc").textContent = f.desc;
