@@ -337,6 +337,68 @@ td.appr {
 .appr-dot:hover .tip, .appr-more:hover .tip {
 	display: block;
 }
+
+/* ===== 아직 못 만든 버튼 (.soon) =====
+   눌러 놓고 "준비 중입니다" 를 띄우면 사용자는 이미 한 번 속은 뒤다.
+   그래서 아예 안 눌리게 하고(핸들러를 안 단다) 커서로 먼저 알려준 뒤,
+   왜 안 되는지는 말풍선으로 설명한다. 모양·hover 는 원래 버튼 그대로 둔다.
+   이 블럭이 <style> 맨 끝에 있어야 위쪽 버튼의 cursor:pointer 를 이긴다 */
+.soon {
+	cursor: not-allowed;
+	position: relative;
+}
+
+/* <select> 는 브라우저가 직접 그리는 물건이라 ::after 가 안 붙는다.
+   그래서 span 으로 감싸고 말풍선은 span 에 붙인다 */
+span.soon {
+	display: inline-flex;
+	align-items: center;
+}
+
+/* 말풍선. inline-flex 버튼 안의 가상요소는 그냥 두면 flex 아이템이 돼서
+   버튼 안에 글자로 끼어든다. absolute 를 줘야 흐름에서 빠져나온다.
+   버튼이 화면 위쪽에 있어서 위가 아니라 아래로 띄운다 */
+.soon::after {
+	content: attr(data-tip);
+	position: absolute;
+	top: calc(100% + 8px);
+	left: 50%;
+	transform: translateX(-50%);
+	background: #2b3444;
+	color: #fff;
+	font-size: 11.5px;
+	font-weight: 400;
+	letter-spacing: 0;
+	padding: 5px 10px;
+	border-radius: 5px;
+	white-space: nowrap;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .12s;
+	pointer-events: none;
+	z-index: 30;
+}
+
+/* 말풍선 꼬리 */
+.soon::before {
+	content: "";
+	position: absolute;
+	top: calc(100% + 3px);
+	left: 50%;
+	transform: translateX(-50%);
+	border: 5px solid transparent;
+	border-bottom-color: #2b3444;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .12s;
+	pointer-events: none;
+	z-index: 30;
+}
+
+.soon:hover::after, .soon:hover::before {
+	opacity: 1;
+	visibility: visible;
+}
 </style>
 </head>
 <body>
@@ -371,19 +433,22 @@ td.appr {
 					</div>
 
 					<div class="right">
-						<button type="button" class="act" onclick="downloadList()">
+						<button type="button" class="act soon" aria-disabled="true"
+							data-tip="추후 구현 예정">
 							<span class="ico">⭳</span> 목록 다운로드
 						</button>
 						<span class="divider"></span>
-						<button type="button" class="act"
-							onclick="alert('필드 설정은 아직 준비 중입니다.');">
+						<button type="button" class="act soon" aria-disabled="true"
+							data-tip="추후 구현 예정">
 							<span class="ico">⚙</span> 필드 설정
 						</button>
-						<select onchange="alert('페이지 나누기는 아직 준비 중입니다.');">
+						<span class="soon" data-tip="추후 구현 예정">
+							<select disabled>
 							<option>20</option>
 							<option>50</option>
 							<option>100</option>
 						</select>
+						</span>
 					</div>
 				</div>
 
@@ -517,14 +582,15 @@ td.appr {
 	</div>
 
 	<script>
-		// ===== 아래는 아직 서버에 만들지 않은 기능이다 =====
+		// 문서 상세 화면으로. 내가 쓴 문서라 읽기만 된다
+		// from : 상세 화면이 '어느 결재함에서 왔는지' 알아야 목록으로 되돌아갈 수 있다
 		function openDoc(docId) {
-			alert("문서 상세 보기는 아직 준비 중입니다.");
+			location.href = "${pageContext.request.contextPath}/document/detail?docId="
+					+ docId + "&from=sent";
 		}
 
-		function downloadList() {
-			alert("목록 다운로드는 아직 준비 중입니다.");
-		}
+		// ===== 아래는 아직 서버에 만들지 않은 기능이다 =====
+
 
 		// 머리글 체크박스로 전체 선택/해제. 목록 다운로드가 생기면 여기서 골라 넘긴다
 		function toggleAll(head) {
