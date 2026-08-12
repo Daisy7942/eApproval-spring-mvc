@@ -167,27 +167,38 @@
 	<!--결재 대기함 조회 -->
 	<select id="selectPendingList" parameterType="long"
 		resultMap="documentWithLineMap">
-		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
+		SELECT d.doc_id, d.title, d.document_type, d.status,
+		d.is_urgent,
 		d.employee_id, d.created_at, d.updated_at,
-		de.name AS drafter_name, de.position AS drafter_position,
-		dt.team_name AS drafter_team,
+		de.name AS
+		drafter_name, de.position AS drafter_position,
+		dt.team_name AS
+		drafter_team,
 		al.approval_line_id, al.approver_id, al.approval_order,
 		al.approval_status,
 		e.name, e.position, t.team_name
 		FROM document d
-		JOIN employee de ON d.employee_id = de.employee_id
-		LEFT JOIN team dt ON de.team_id = dt.team_id
+		JOIN
+		employee de ON d.employee_id = de.employee_id
+		LEFT JOIN team dt ON
+		de.team_id = dt.team_id
 		JOIN approval_line al ON d.doc_id = al.doc_id
 		JOIN employee e ON al.approver_id = e.employee_id
-		LEFT JOIN team t ON e.team_id = t.team_id
+		LEFT JOIN team t ON
+		e.team_id = t.team_id
 		WHERE d.doc_id IN (SELECT al2.doc_id
-		FROM approval_line al2
+		FROM
+		approval_line al2
 		WHERE al2.approver_id = #{employeeId}
-		AND al2.approval_status = 'PENDING'
-		AND NOT EXISTS (SELECT 1 FROM approval_line prev
+		AND
+		al2.approval_status = 'PENDING'
+		AND NOT EXISTS (SELECT 1 FROM
+		approval_line prev
 		WHERE prev.doc_id = al2.doc_id
-		AND prev.approval_order &lt; al2.approval_order
-		AND prev.approval_status != 'APPROVED'))
+		AND
+		prev.approval_order &lt; al2.approval_order
+		AND prev.approval_status !=
+		'APPROVED'))
 		ORDER BY d.doc_id DESC, al.approval_order
 	</select>
 
@@ -259,5 +270,35 @@
 		ORDER BY
 		al.approval_order
 	</select>
+
+	<!-- 내 결재선 줄 상태 바꾸기(승인·반려 공용) -->
+	<update id="updateApprovalStatus">
+		UPDATE approval_line
+		SET approval_status =
+		#{approvalStatus},
+		comment = #{comment},
+		approved_at = NOW()
+		WHERE doc_id
+		= #{docId}
+		AND approver_id = #{approverId}
+		AND approval_status =
+		'PENDING'
+	</update>
+	<!-- PENDING 개수 세기 - 이 숫자로 최종상태 반영을 위함 0일때 승인으로 처리 -->
+	<select id="countPendingLines" resultType="int">
+		SELECT COUNT(*)
+		FROM
+		approval_line
+		WHERE doc_id = #{docId}
+		AND approval_status = 'PENDING'
+	</select>
+
+	<!-- 문서 전체 상태 바꾸기(승인·반려 공용) -->
+	<update id="updateDocumentStatus">
+		UPDATE document
+		SET status = #{status},
+		updated_at = NOW()
+		WHERE doc_id = #{docId}
+	</update>
 
 </mapper>

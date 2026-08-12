@@ -23,10 +23,11 @@ public class DocumentController {
 
 	// 결재 페이지 조회(새결재, 임시저장 재조회)-----------------------------------------
 	@GetMapping("/document/write")
-	public String writeForm(HttpServletRequest request, Model model, @RequestParam(required = false) Long docId, String documentType) {
+	public String writeForm(HttpServletRequest request, Model model, @RequestParam(required = false) Long docId,
+			String documentType) {
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
-		
+
 		if (docId == null) {
 			List<EapprovalVO> recLine = documentService.recommendApprovalLine(empId, documentType);
 			model.addAttribute("recLine", recLine);
@@ -40,7 +41,6 @@ public class DocumentController {
 
 		}
 	}
-	
 
 	// 새결재 페이지 작성------------------------------------------
 	@PostMapping("/document/write")
@@ -60,11 +60,7 @@ public class DocumentController {
 
 		return "approval/saveResult";
 	}
-	
-	
 
-	
-	
 	// 상신 -------------------------------------------------------------
 	@PostMapping("/document/submit")
 	public String submitDocument(DocumentVO documentVO, HttpServletRequest request) {
@@ -74,14 +70,10 @@ public class DocumentController {
 		long empId = loginUser.getEmployeeId();
 		documentVO.setEmployeeId(empId);
 
-
 		documentService.submitDocument(documentVO);
-
-
 
 		return "approval/saveResult";
 	}
-	
 
 	// 임시저장목록 조회 ---------------------------------------------
 	@GetMapping("/document/drafts")
@@ -107,52 +99,67 @@ public class DocumentController {
 
 		return "redirect:/document/drafts";
 	}
-	
-	
-	
+
 	// 상신 목록 조회 ---------------------------------------------
 	@GetMapping("/document/submitted")
 	public String submittedList(HttpServletRequest request, Model model) {
-	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
-	    long empId = loginUser.getEmployeeId();
+		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+		long empId = loginUser.getEmployeeId();
 
-	    List<DocumentVO> submittedList = documentService.getSubmittedList(empId);
-	    model.addAttribute("submittedList", submittedList);
-	    return "approval/submittedList";
+		List<DocumentVO> submittedList = documentService.getSubmittedList(empId);
+		model.addAttribute("submittedList", submittedList);
+		return "approval/submittedList";
 	}
-	
-	
+
 	// 결재 대기 목록 조회 ---------------------------------------------
 	@GetMapping("/document/pending")
 	public String pendingList(HttpServletRequest request, Model model) {
-	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
-	    long empId = loginUser.getEmployeeId();
+		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+		long empId = loginUser.getEmployeeId();
 
-	    List<DocumentVO> pendingList  = documentService.getPendingList(empId);
-	    model.addAttribute("pendingList", pendingList );
-	    return "approval/pendingList";
+		List<DocumentVO> pendingList = documentService.getPendingList(empId);
+		model.addAttribute("pendingList", pendingList);
+		return "approval/pendingList";
 	}
-	
-	
+
 	// 결재 완료 목록 조회 ---------------------------------------------
 	@GetMapping("/document/completed")
 	public String completedList(HttpServletRequest request, Model model) {
-	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
-	    long empId = loginUser.getEmployeeId();
+		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+		long empId = loginUser.getEmployeeId();
 
-	    List<DocumentVO> completedList  = documentService.getCompletedList(empId);
-	    model.addAttribute("completedList", completedList );
-	    return "approval/completedList";
+		List<DocumentVO> completedList = documentService.getCompletedList(empId);
+		model.addAttribute("completedList", completedList);
+		return "approval/completedList";
 	}
-	
+
 	// 문서 상세 조회 ---------------------------------------------
 	@GetMapping("/document/detail")
 	public String detail(@RequestParam Long docId, HttpServletRequest request, Model model) {
-	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
-	    long empId = loginUser.getEmployeeId();
+		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+		long empId = loginUser.getEmployeeId();
 
-	    DocumentVO doc = documentService.getDocumentDetail(docId, empId);
-	    model.addAttribute("doc", doc);
-	    return "approval/documentDetail";
+		DocumentVO doc = documentService.getDocumentDetail(docId, empId);
+		model.addAttribute("doc", doc);
+		return "approval/documentDetail";
 	}
+
+	// 문서 승인 --------------------------------------------------
+	@PostMapping("/document/approve")
+	public String approve(@RequestParam Long docId, @RequestParam String comment, HttpServletRequest request) {
+		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+		long empId = loginUser.getEmployeeId();
+		documentService.approve(docId, empId, comment);
+		return "redirect:/document/detail?docId=" + docId;
+	}
+	
+	// 문서 반려 --------------------------------------------------
+	@PostMapping("/document/reject")
+	public String reject(@RequestParam Long docId, @RequestParam String comment, HttpServletRequest request) {
+		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+		long empId = loginUser.getEmployeeId();
+		documentService.reject(docId, empId, comment);
+		return "redirect:/document/detail?docId=" + docId;
+	}
+
 }

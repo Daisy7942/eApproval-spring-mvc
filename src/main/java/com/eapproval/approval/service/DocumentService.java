@@ -134,4 +134,35 @@ public class DocumentService {
 	    }
 	    return doc;
 	}
+	
+	// 문서 승인
+	@Transactional
+	public void approve(Long docId, Long empId, String comment) {
+	    int updated = documentMapper.updateApprovalStatus(docId, empId,"APPROVED",comment);
+		if (updated == 0) {
+			throw new IllegalStateException("결재 권한이 없거나 이미 처리된 문서입니다.");
+		}
+		
+		int countPending = documentMapper.countPendingLines(docId);
+		
+		if (countPending ==0) { 
+			documentMapper.updateDocumentStatus(docId, "APPROVED");
+			
+		}
+	}
+	
+	// 문서 반려
+	@Transactional
+	public void reject(Long docId, Long empId, String comment) {
+	    int updated = documentMapper.updateApprovalStatus(docId, empId,"REJECTED",comment);
+		if (updated == 0) {
+			throw new IllegalStateException("결재 권한이 없거나 이미 처리된 문서입니다.");
+		}
+			documentMapper.updateDocumentStatus(docId, "REJECTED");
+
+	}
+	
+	
+	
+	
 }
