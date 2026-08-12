@@ -31,8 +31,10 @@ public class DocumentController {
 		if (docId == null) {
 			List<EapprovalVO> recLine = documentService.recommendApprovalLine(empId, documentType);
 			model.addAttribute("recLine", recLine);
-
-			return "approval/documentForm"; // ← 새 문서
+			if ("VACATION".equals(documentType)) {
+				return "approval/vacationForm";
+			}else {
+			return "approval/documentForm"; }// ← 새 문서
 		} else {
 
 			DocumentVO doc = documentService.getDraft(docId, empId);
