@@ -13,10 +13,10 @@ public interface DocumentMapper {
 	// 저장
 	int insertDocument(DocumentVO documentVO);
 	
-	// 조회
+	// 임시저장 리스트 조회
 	List<DocumentVO> selectDraftList(Long employeeId);
 	
-	// 수정조회
+	// 임시저장 조회
 	DocumentVO selectDraft(@Param("docId") Long docId,  @Param("employeeId") Long employeeId);
 	
 	// 수정저장
@@ -39,4 +39,9 @@ public interface DocumentMapper {
 	
 	// 완료함 조회
 	List<DocumentVO> selectCompletedList(Long employeeId);
+	
+	// 문서 상세 조회
+	DocumentVO selectDocumentDetail(@Param("docId") Long docId);
+	
+	
 }

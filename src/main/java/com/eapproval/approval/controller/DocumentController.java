@@ -86,12 +86,10 @@ public class DocumentController {
 	// 임시저장목록 조회 ---------------------------------------------
 	@GetMapping("/document/drafts")
 	public String draftList(HttpServletRequest request, Model model) {
-		System.out.println("임시저장조회");
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 
 		List<DocumentVO> draftList = documentService.getDraftList(empId);
-		System.out.println(draftList);
 
 		model.addAttribute("draftList", draftList);
 		return "approval/draftList";
@@ -147,5 +145,14 @@ public class DocumentController {
 	    return "approval/completedList";
 	}
 	
-	
+	// 문서 상세 조회 ---------------------------------------------
+	@GetMapping("/document/detail")
+	public String detail(@RequestParam Long docId, HttpServletRequest request, Model model) {
+	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+	    long empId = loginUser.getEmployeeId();
+
+	    DocumentVO doc = documentService.getDocumentDetail(docId, empId);
+	    model.addAttribute("doc", doc);
+	    return "approval/documentDetail";
+	}
 }

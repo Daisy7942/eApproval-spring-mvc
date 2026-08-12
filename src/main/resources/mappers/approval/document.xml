@@ -18,6 +18,7 @@
 		<result property="drafterName" column="drafter_name" />
 		<result property="drafterPosition" column="drafter_position" />
 		<result property="drafterTeam" column="drafter_team" />
+		<result property="content" column="content" />
 		<!-- 이 문서에 딸린 결재자들. doc_id 가 같은 줄들이 여기 List 로 쌓인다 -->
 		<collection property="approvalLine"
 			ofType="com.eapproval.approval.vo.ApprovalLineVO">
@@ -28,6 +29,8 @@
 			<result property="name" column="name" />
 			<result property="position" column="position" />
 			<result property="teamName" column="team_name" />
+			<result property="comment" column="comment" />
+			<result property="approvedAt" column="approved_at" />
 
 		</collection>
 	</resultMap>
@@ -129,33 +132,8 @@
 
 
 
-	<!--상신함 조회 : 내가 쓴 문서 중 임시저장이 아닌 것-->
+	<!--상신함 조회 : 내가 쓴 문서 중 임시저장이 아닌 것 -->
 	<select id="selectSubmittedList" parameterType="long"
-		resultMap="documentWithLineMap">
-		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
-		d.employee_id, d.created_at, d.updated_at,
-		de.name AS drafter_name, de.position AS drafter_position,
-		dt.team_name AS drafter_team,
-		al.approval_line_id, al.approver_id, al.approval_order,
-		al.approval_status,
-		e.name, e.position, t.team_name
-		FROM document d
-		JOIN employee de ON d.employee_id = de.employee_id
-		LEFT JOIN team dt ON de.team_id = dt.team_id
-		JOIN approval_line al ON d.doc_id = al.doc_id
-		JOIN employee e ON al.approver_id = e.employee_id
-		LEFT JOIN team t ON e.team_id = t.team_id
-		WHERE d.employee_id = #{employeeId}
-		AND d.status != 'DRAFT'
-		ORDER BY d.doc_id DESC, al.approval_order
-	</select>
-
-
-
-
-
-	<!--결재 대기함 조회 -->
-	<select id="selectPendingList" parameterType="long"
 		resultMap="documentWithLineMap">
 		SELECT d.doc_id, d.title, d.document_type, d.status,
 		d.is_urgent,
@@ -176,19 +154,18 @@
 		JOIN employee e ON al.approver_id = e.employee_id
 		LEFT JOIN team t ON
 		e.team_id = t.team_id
-		WHERE d.doc_id IN (SELECT doc_id
-		FROM
-		approval_line
-		WHERE approver_id = #{employeeId}
-		AND approval_status
-		=
-		'PENDING')
+		WHERE d.employee_id = #{employeeId}
+		AND d.status
+		!= 'DRAFT'
 		ORDER BY d.doc_id DESC, al.approval_order
 	</select>
 
 
-	<!--완료함 조회  -->
-	<select id="selectCompletedList" parameterType="long"
+
+
+
+	<!--결재 대기함 조회 -->
+	<select id="selectPendingList" parameterType="long"
 		resultMap="documentWithLineMap">
 		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
 		d.employee_id, d.created_at, d.updated_at,
@@ -203,9 +180,84 @@
 		JOIN approval_line al ON d.doc_id = al.doc_id
 		JOIN employee e ON al.approver_id = e.employee_id
 		LEFT JOIN team t ON e.team_id = t.team_id
-		WHERE d.doc_id IN (SELECT doc_id FROM approval_line
-		WHERE approver_id = #{employeeId}
-		AND approval_status != 'PENDING')
+		WHERE d.doc_id IN (SELECT al2.doc_id
+		FROM approval_line al2
+		WHERE al2.approver_id = #{employeeId}
+		AND al2.approval_status = 'PENDING'
+		AND NOT EXISTS (SELECT 1 FROM approval_line prev
+		WHERE prev.doc_id = al2.doc_id
+		AND prev.approval_order &lt; al2.approval_order
+		AND prev.approval_status != 'APPROVED'))
 		ORDER BY d.doc_id DESC, al.approval_order
 	</select>
+
+
+	<!--완료함 조회 -->
+	<select id="selectCompletedList" parameterType="long"
+		resultMap="documentWithLineMap">
+		SELECT d.doc_id, d.title, d.document_type, d.status,
+		d.is_urgent,
+		d.employee_id, d.created_at, d.updated_at,
+		de.name AS
+		drafter_name, de.position AS drafter_position,
+		dt.team_name AS
+		drafter_team,
+		al.approval_line_id, al.approver_id, al.approval_order,
+		al.approval_status,
+		e.name, e.position, t.team_name
+		FROM document d
+		JOIN
+		employee de ON d.employee_id = de.employee_id
+		LEFT JOIN team dt ON
+		de.team_id = dt.team_id
+		JOIN approval_line al ON d.doc_id = al.doc_id
+		JOIN employee e ON al.approver_id = e.employee_id
+		LEFT JOIN team t ON
+		e.team_id = t.team_id
+		WHERE d.doc_id IN (SELECT doc_id FROM
+		approval_line
+		WHERE approver_id = #{employeeId}
+		AND approval_status !=
+		'PENDING')
+		ORDER BY d.doc_id DESC, al.approval_order
+	</select>
+
+
+	<!-- 문서 상세 1건 조회 -->
+	<select id="selectDocumentDetail"
+		resultMap="documentWithLineMap">
+		SELECT d.doc_id, d.title, d.document_type, d.status,
+		d.is_urgent,
+		d.employee_id, d.created_at, d.updated_at,
+		de.name AS
+		drafter_name, de.position AS drafter_position,
+		dt.team_name AS
+		drafter_team,
+		al.approval_line_id, al.approver_id, al.approval_order,
+		al.approval_status,
+		e.name, e.position,
+		t.team_name,d.content,al.comment, al.approved_at
+		FROM
+		document d
+		JOIN
+		employee de ON d.employee_id =
+		de.employee_id
+		LEFT JOIN
+		team dt ON
+		de.team_id = dt.team_id
+		JOIN
+		approval_line al ON d.doc_id =
+		al.doc_id
+		JOIN employee e ON
+		al.approver_id = e.employee_id
+		LEFT JOIN
+		team t ON
+		e.team_id =
+		t.team_id
+		WHERE
+		d.doc_id = #{docId}
+		ORDER BY
+		al.approval_order
+	</select>
+
 </mapper>

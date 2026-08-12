@@ -115,4 +115,23 @@ public class DocumentService {
 	    }
 	    return line;
 	}
+	
+	// 문서 상세 1건 조회
+	public DocumentVO getDocumentDetail(Long docId, long empId) {
+
+	    DocumentVO doc = documentMapper.selectDocumentDetail(docId);
+	    if (doc == null) {
+	        throw new IllegalStateException("없는 문서입니다.");
+	    }
+
+	    // 기안자 본인이거나, 결재선에 이름이 올라 있어야 볼 수 있다
+	    boolean canRead = (doc.getEmployeeId() == empId);
+	    for (ApprovalLineVO line : doc.getApprovalLine()) {
+	        if (line.getApproverId() == empId) { canRead = true; break; }
+	    }
+	    if (!canRead) {
+	        throw new IllegalStateException("이 문서를 볼 권한이 없습니다.");
+	    }
+	    return doc;
+	}
 }
