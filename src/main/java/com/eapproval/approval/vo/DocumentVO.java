@@ -21,7 +21,14 @@ public class DocumentVO {
     private String drafterName;
     private String drafterPosition;
     private String drafterTeam;
+    private VacationRequestVO vacation;
     
+	public VacationRequestVO getVacation() {
+		return vacation;
+	}
+	public void setVacation(VacationRequestVO vacation) {
+		this.vacation = vacation;
+	}
 	public String getDrafterName() {
 		return drafterName;
 	}

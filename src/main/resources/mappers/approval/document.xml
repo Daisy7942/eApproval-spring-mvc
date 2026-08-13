@@ -297,8 +297,37 @@
 	<update id="updateDocumentStatus">
 		UPDATE document
 		SET status = #{status},
-		updated_at = NOW()
+		updated_at =
+		NOW()
 		WHERE doc_id = #{docId}
 	</update>
+
+	<!-- vacation 종류 칩 조회 -->
+	<select id="selectVacationTypes"
+		resultType="com.eapproval.approval.vo.VacationTypeVO">
+		SELECT *
+		FROM
+		vacation_type
+	</select>
+	<!-- 휴가정보 저장 -->
+	<insert id="insertVacationRequest" parameterType="com.eapproval.approval.vo.VacationRequestVO">
+		INSERT INTO
+		vacation_request (
+		doc_id, employee_id, vacation_type_id,start_date
+		,end_date,start_half
+		,end_half, days,reason
+		) VALUES (
+		#{docId},
+		#{employeeId},
+		#{vacationTypeId},
+		#{startDate},
+		#{endDate},
+		#{startHalf},
+		#{endHalf},
+		#{days},
+		#{reason}
+		)
+	</insert>
+
 
 </mapper>

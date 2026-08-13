@@ -1,5 +1,7 @@
 package com.eapproval.approval.vo;
 
+import java.math.BigDecimal;
+
 public class VacationTypeVO {
 
 	private String vacationTypeId;
@@ -7,6 +9,28 @@ public class VacationTypeVO {
 	private boolean deductBalance;
 	private boolean isPaid;
 	private boolean allowHalfDay;
+	private String description;
+	private BigDecimal defaultDays; 
+
+	public String getDescription() {
+		return description;
+	}
+
+	public BigDecimal getDefaultDays() {
+		return defaultDays;
+	}
+
+	public void setPaid(boolean isPaid) {
+		this.isPaid = isPaid;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public void setDefaultDays(BigDecimal defaultDays) {
+		this.defaultDays = defaultDays;
+	}
 
 	public String getVacationTypeId() {
 		return vacationTypeId;

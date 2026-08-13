@@ -7,6 +7,8 @@ import org.apache.ibatis.annotations.Param;
 
 import com.eapproval.approval.vo.ApprovalLineVO;
 import com.eapproval.approval.vo.DocumentVO;
+import com.eapproval.approval.vo.VacationRequestVO;
+import com.eapproval.approval.vo.VacationTypeVO;
 
 @Mapper
 public interface DocumentMapper {
@@ -52,5 +54,10 @@ public interface DocumentMapper {
 
 	// 문서 전체 상태 바꾸기(승인·반려 공용)
 	int updateDocumentStatus(@Param("docId") Long docId, @Param("status") String status);
+	
+	// vacation 종류 칩 조회
+	List<VacationTypeVO> selectVacationTypes();
 
+	//휴가정보 저장
+	void insertVacationRequest(VacationRequestVO vacation);
 }

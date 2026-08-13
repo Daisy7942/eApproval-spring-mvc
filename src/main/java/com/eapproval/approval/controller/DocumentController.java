@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.eapproval.approval.service.DocumentService;
 import com.eapproval.approval.vo.DocumentVO;
+import com.eapproval.approval.vo.VacationTypeVO;
 import com.eapproval.employee.vo.EapprovalVO;
 
 @Controller
@@ -25,13 +26,17 @@ public class DocumentController {
 	@GetMapping("/document/write")
 	public String writeForm(HttpServletRequest request, Model model, @RequestParam(required = false) Long docId,
 			String documentType) {
+		
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 
 		if (docId == null) {
 			List<EapprovalVO> recLine = documentService.recommendApprovalLine(empId, documentType);
 			model.addAttribute("recLine", recLine);
+			
 			if ("VACATION".equals(documentType)) {
+				List<VacationTypeVO> vacationTypes = documentService.getVacationTypeList();
+				model.addAttribute("vacationTypes", vacationTypes);
 				return "approval/vacationForm";
 			}else {
 			return "approval/documentForm"; }// ← 새 문서
@@ -163,5 +168,6 @@ public class DocumentController {
 		documentService.reject(docId, empId, comment);
 		return "redirect:/document/detail?docId=" + docId;
 	}
+	
 
 }
