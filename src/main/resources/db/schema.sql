@@ -12,9 +12,11 @@ CREATE TABLE `department` (
 CREATE TABLE `vacation_type` (
   `vacation_type_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `type_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `deduct_balance` tinyint(1) NOT NULL,
   `is_paid` tinyint(1) NOT NULL,
   `allow_half_day` tinyint(1) NOT NULL,
+  `default_days` decimal(4,1) DEFAULT NULL,
   PRIMARY KEY (`vacation_type_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -132,9 +134,10 @@ CREATE TABLE `vacation_request` (
   `vacation_type_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
+  `start_half` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `end_half` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `days` decimal(4,1) NOT NULL,
   `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `time_unit` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`vacation_id`),
   KEY `doc_id` (`doc_id`),
