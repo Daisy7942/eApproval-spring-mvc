@@ -19,6 +19,23 @@
 		<result property="drafterPosition" column="drafter_position" />
 		<result property="drafterTeam" column="drafter_team" />
 		<result property="content" column="content" />
+
+		<!-- 휴가신청서일 때만 딸리는 값 한 줄. 문서 1건에 1개라 association -->
+		<association property="vacation"
+			javaType="com.eapproval.approval.vo.VacationRequestVO">
+			<id property="vacationId" column="vacation_id" />
+			<result property="startDate" column="start_date" />
+			<result property="endDate" column="end_date" />
+			<result property="days" column="days" />
+			<result property="reason" column="reason" />
+			<result property="startHalf" column="start_half" />
+			<result property="endHalf" column="end_half" />
+			<result property="vacationTypeId" column="vacation_type_id" />
+			<result property="typeName" column="type_name" />
+			<result property="deductBalance" column="deduct_balance" />
+		</association>
+
+
 		<!-- 이 문서에 딸린 결재자들. doc_id 가 같은 줄들이 여기 List 로 쌓인다 -->
 		<collection property="approvalLine"
 			ofType="com.eapproval.approval.vo.ApprovalLineVO">
@@ -33,6 +50,8 @@
 			<result property="approvedAt" column="approved_at" />
 
 		</collection>
+
+
 	</resultMap>
 
 	<insert id="insertDocument" parameterType="document"
@@ -247,24 +266,37 @@
 		al.approval_line_id, al.approver_id, al.approval_order,
 		al.approval_status,
 		e.name, e.position,
-		t.team_name,d.content,al.comment, al.approved_at
-		FROM
-		document d
+		t.team_name,d.content,
+		al.comment,
+		al.approved_at,
+		vr.vacation_id, vr.vacation_type_id,
+		vr.start_date, vr.end_date,
+		vr.days, vr.reason, vr.start_half,
+		vr.end_half, vt.type_name,vt.deduct_balance
+		FROM document d
 		JOIN
-		employee de ON d.employee_id =
+		employee de ON
+		d.employee_id =
 		de.employee_id
 		LEFT JOIN
 		team dt ON
-		de.team_id = dt.team_id
-		JOIN
-		approval_line al ON d.doc_id =
+		de.team_id =
+		dt.team_id
+		JOIN approval_line al ON d.doc_id =
 		al.doc_id
-		JOIN employee e ON
-		al.approver_id = e.employee_id
+		JOIN employee e
+		ON al.approver_id = e.employee_id
 		LEFT JOIN
 		team t ON
 		e.team_id =
 		t.team_id
+		LEFT JOIN vacation_request vr ON
+		d.doc_id =
+		vr.doc_id
+		LEFT JOIN
+		vacation_type vt ON vr.vacation_type_id
+		=
+		vt.vacation_type_id
 		WHERE
 		d.doc_id = #{docId}
 		ORDER BY
@@ -310,10 +342,12 @@
 		vacation_type
 	</select>
 	<!-- 휴가정보 저장 -->
-	<insert id="insertVacationRequest" parameterType="com.eapproval.approval.vo.VacationRequestVO">
+	<insert id="insertVacationRequest"
+		parameterType="com.eapproval.approval.vo.VacationRequestVO">
 		INSERT INTO
 		vacation_request (
-		doc_id, employee_id, vacation_type_id,start_date
+		doc_id, employee_id,
+		vacation_type_id,start_date
 		,end_date,start_half
 		,end_half, days,reason
 		) VALUES (
@@ -328,6 +362,15 @@
 		#{reason}
 		)
 	</insert>
+
+
+	<!-- 잔여 연차 차감 -->
+	<update id="deductLeave">
+		UPDATE employee
+		SET remain_leave = remain_leave -
+		#{days}
+		WHERE employee_id = #{employeeId}
+	</update>
 
 
 </mapper>

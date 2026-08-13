@@ -198,6 +198,13 @@ public class DocumentService {
 
 		if (countPending == 0) {
 			documentMapper.updateDocumentStatus(docId, "APPROVED");
+			
+			 // 휴가 문서이고, 연차에서 깎는 종류일 때만 기안자의 잔여 연차 차감
+		    DocumentVO doc = documentMapper.selectDocumentDetail(docId);
+		    VacationRequestVO v = doc.getVacation();
+		    if (v != null && v.isDeductBalance()) {
+		        documentMapper.deductLeave(doc.getEmployeeId(), v.getDays());
+		    }
 
 		}
 	}

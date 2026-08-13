@@ -1,5 +1,6 @@
 package com.eapproval.approval.dao;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -60,4 +61,7 @@ public interface DocumentMapper {
 
 	//휴가정보 저장
 	void insertVacationRequest(VacationRequestVO vacation);
+	
+	// 잔여 연차 차감
+	int deductLeave(@Param("employeeId") Long employeeId, @Param("days") BigDecimal days);
 }

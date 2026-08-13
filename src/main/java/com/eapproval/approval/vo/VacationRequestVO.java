@@ -18,7 +18,21 @@ public class VacationRequestVO {
 	private String reason;
 	private String startHalf;
 	private String endHalf;
+	private String typeName;
+	private boolean deductBalance;
 	
+	public boolean isDeductBalance() {
+		return deductBalance;
+	}
+	public void setDeductBalance(boolean deductBalance) {
+		this.deductBalance = deductBalance;
+	}
+	public String getTypeName() {
+		return typeName;
+	}
+	public void setTypeName(String typename) {
+		this.typeName = typename;
+	}
 	public Long getVacationId() {
 		return vacationId;
 	}
