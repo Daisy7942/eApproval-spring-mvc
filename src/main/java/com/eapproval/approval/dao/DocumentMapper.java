@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.eapproval.approval.vo.ApprovalLineVO;
 import com.eapproval.approval.vo.DocumentVO;
+import com.eapproval.approval.vo.LeaveSummaryVO;
 import com.eapproval.approval.vo.VacationRequestVO;
 import com.eapproval.approval.vo.VacationTypeVO;
 
@@ -64,4 +65,8 @@ public interface DocumentMapper {
 	
 	// 잔여 연차 차감
 	int deductLeave(@Param("employeeId") Long employeeId, @Param("days") BigDecimal days);
+	
+	// 연차 요약 (사용·대기 일수 집계)
+	LeaveSummaryVO selectLeaveSummary(Long employeeId);
+	
 }

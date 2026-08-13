@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.eapproval.approval.dao.DocumentMapper;
 import com.eapproval.approval.vo.ApprovalLineVO;
 import com.eapproval.approval.vo.DocumentVO;
+import com.eapproval.approval.vo.LeaveSummaryVO;
 import com.eapproval.approval.vo.VacationRequestVO;
 import com.eapproval.approval.vo.VacationTypeVO;
 import com.eapproval.employee.dao.EmployeeMapper;
@@ -224,6 +225,26 @@ public class DocumentService {
 	public List<VacationTypeVO> getVacationTypeList() {
 
 		return documentMapper.selectVacationTypes();
+	}
+	
+	
+	
+	// 연차 요약 (총부여·사용·대기·잔여)
+	public LeaveSummaryVO getLeaveSummary(Long employeeId) {
+
+		LeaveSummaryVO s = documentMapper.selectLeaveSummary(employeeId);
+
+		// 휴가를 한 번도 안 냈으면 행 자체가 안 나와서 null 이 온다
+		if (s == null) s = new LeaveSummaryVO();
+		if (s.getUsedDays() == null)    s.setUsedDays(BigDecimal.ZERO);
+		if (s.getPendingDays() == null) s.setPendingDays(BigDecimal.ZERO);
+
+		BigDecimal remain = employeeMapper.selectRemainLeave(employeeId);
+		if (remain == null) remain = BigDecimal.ZERO;
+
+		s.setRemainDays(remain);
+		s.setTotalDays(remain.add(s.getUsedDays()));   // BigDecimal 은 + 가 아니라 .add()
+		return s;
 	}
 
 }

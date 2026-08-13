@@ -20,9 +20,18 @@
 <c:set var="cp" value="${pageContext.request.contextPath}" />
 
 <%-- 지금 주소에서 컨텍스트 경로(/eapproval)를 떼어낸 나머지.
-     예) /eapproval/leave/my  ->  /leave/my --%>
-<c:set var="path"
-	value="${fn:substringAfter(pageContext.request.requestURI, cp)}" />
+     예) /eapproval/leave/my  ->  /leave/my
+
+     ★ 함정 : 이 JSP 는 컨트롤러가 forward 로 띄운다. 그래서 이 시점의
+       requestURI 는 브라우저 주소가 아니라 /WEB-INF/views/... 다.
+       사람이 친 원래 주소는 javax.servlet.forward.request_uri 에 따로 담겨 있고,
+       forward 없이 직접 열린 경우엔 그 값이 비어 있으므로 requestURI 로 되돌린다. --%>
+<c:set var="uri"
+	value="${empty requestScope['javax.servlet.forward.request_uri']
+	          ? pageContext.request.requestURI
+	          : requestScope['javax.servlet.forward.request_uri']}" />
+
+<c:set var="path" value="${fn:substringAfter(uri, cp)}" />
 
 <%-- /leave 로 시작하면 휴가, 아니면 결재.
      ★ 그러므로 휴가 화면의 주소는 반드시 /leave 로 시작해야 한다. --%>
@@ -37,8 +46,8 @@
 		<span class="ico-box">▤</span> <span>결재</span>
 	</a>
 
-	<%-- TODO WBS 4.x : 휴가 화면 만들면 href 를 실제 주소로 --%>
-	<a href="#" class="rail-item ${module eq 'leave' ? 'active' : ''}">
+	<a href="${cp}/leave/my"
+		class="rail-item ${module eq 'leave' ? 'active' : ''}">
 		<span class="ico-box">✈ <c:if test="${myLeaveCount > 0}">
 				<span class="dot">${myLeaveCount}</span>
 			</c:if>
@@ -108,18 +117,23 @@
 				<b>휴가</b><span>연차 · 반차</span>
 			</div>
 
-			<button class="btn-new" onclick="alert('휴가 신청은 준비 중입니다.')">＋ 휴가
+			<%-- 휴가신청서도 결재 문서 한 장이라 /document/write 로 간다.
+			     documentType=VACATION 이면 컨트롤러가 vacationForm 을 띄운다 --%>
+			<button class="btn-new" onclick="openVacationWrite()">＋ 휴가
 				신청</button>
 
 			<nav class="menu">
 				<div class="section">내 휴가</div>
-				<a href="#" class="${menu eq 'leaveMy' ? 'active' : ''}">▤ 내 휴가 현황</a>
-				<a href="#" class="${menu eq 'leaveNew' ? 'active' : ''}">▤ 휴가 신청 내역</a>
+				<a href="${cp}/leave/my"
+					class="${menu eq 'leaveMy' ? 'active' : ''}">▤ 휴가 현황</a>
+				<%-- 연차 발생·소멸 이력은 표가 없어 아직 못 만든다 --%>
+				<a class="soon" data-tip="추후 구현 예정">▤ 연차 내역</a>
 
 				<%-- 관리자에게만 보이는 영역 --%>
 				<c:if test="${sessionScope.loginUser.role eq 'ADMIN'}">
-					<div class="section">전사 관리</div>
-					<a href="#" class="${menu eq 'adminLeave' ? 'active' : ''}">◔ 전사 휴가관리</a>
+					<div class="section">전사 휴가관리</div>
+					<a class="soon" data-tip="추후 구현 예정">◔ 전사 휴가 현황</a>
+					<a class="soon" data-tip="추후 구현 예정">◔ 전사 휴가 리포트</a>
 				</c:if>
 			</nav>
 		</c:otherwise>
@@ -143,5 +157,22 @@
 	function closeFormModal() {
 		document.getElementById("formModal").style.display = "none";
 		document.getElementById("formFrame").src = ""; // 닫을 때 비워서 초기화
+	}
+
+	// 휴가 신청 : 양식이 하나로 정해져 있으니 양식 선택 팝업을 건너뛰고
+	// 곧장 작성 창을 연다. 창 크기·위치는 formSelect.jsp 의 openDraft() 와 같다
+	function openVacationWrite() {
+		var url = "${cp}/document/write?documentType=VACATION";
+
+		var w = 1000, h = 800;
+		var sx = (screen.availLeft !== undefined) ? screen.availLeft : 0;
+		var sy = (screen.availTop !== undefined) ? screen.availTop : 0;
+		var left = sx + Math.max(0, Math.round((screen.availWidth - w) / 2));
+		var top = sy + Math.max(0, Math.round((screen.availHeight - h) / 2));
+
+		window.open(url, "docWrite_" + Date.now(),
+				"width=" + w + ",height=" + h
+				+ ",left=" + left + ",top=" + top
+				+ ",resizable=yes,scrollbars=yes");
 	}
 </script>

@@ -373,4 +373,24 @@
 	</update>
 
 
+	<!-- 연차 요약 : 승인=사용, 대기=예정. 연차 종류만(deduct_balance=1) -->
+	<select id="selectLeaveSummary" parameterType="long"
+		resultType="com.eapproval.approval.vo.LeaveSummaryVO">
+		SELECT
+		SUM(CASE WHEN d.status = 'APPROVED' THEN vr.days ELSE
+		0 END) AS usedDays,
+		SUM(CASE WHEN d.status = 'PENDING' THEN vr.days
+		ELSE 0 END) AS
+		pendingDays
+		FROM vacation_request vr
+		JOIN document d ON
+		d.doc_id = vr.doc_id
+		JOIN vacation_type vt ON vt.vacation_type_id =
+		vr.vacation_type_id
+		WHERE vr.employee_id = #{employeeId} AND
+		vt.deduct_balance = 1
+
+	</select>
+
+
 </mapper>

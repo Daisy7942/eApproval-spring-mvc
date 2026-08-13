@@ -79,6 +79,12 @@
 		(SELECT manager_id FROM employee WHERE employee_id =
 		#{empId})
 	</select>
-
+	
+	<!-- 잔여 연차만 조회 -->
+	<select id="selectRemainLeave" parameterType="long"
+		resultType="java.math.BigDecimal">
+		SELECT remain_leave FROM employee WHERE employee_id =
+		#{employeeId}
+	</select>
 
 </mapper>
