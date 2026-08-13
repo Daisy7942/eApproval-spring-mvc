@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
       pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -76,13 +77,30 @@ body { background:#f4f6fa; padding:26px; }
 /* ===== 휴가 종류 칩 =====
    칩 하나가 "휴가 종류 + 시간 단위" 한 쌍이다.
    연차는 종일·오전반차·오후반차 세 칩으로 갈라진다. */
-.chips { display:flex; flex-wrap:wrap; gap:9px; }
-.vchip { padding:9px 15px; border:1px solid #dbe1ea; border-radius:8px;
-         background:#fff; color:#3d4756; font-size:13px; cursor:pointer;
+/* 칩 크기를 글자 길이에 맡기지 않는다. 격자 한 칸 = 칩 하나라
+   "연차"든 "연차 반차(오전)"든 폭·높이가 같다.
+   종류 11개가 두 줄에 떨어지도록 한 줄에 6칸씩 놓는다. */
+.chips { display:grid; grid-template-columns:repeat(6, 1fr); gap:7px; }
+.vchip { display:flex; align-items:center; justify-content:center;
+         min-height:34px; padding:6px 8px; width:100%;
+         border:1px solid #dbe1ea; border-radius:7px;
+         background:#fff; color:#3d4756; font-size:11.5px; cursor:pointer;
+         white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
          transition:background .12s, border-color .12s, color .12s; }
 .vchip:hover { border-color:#b9c8e8; color:#2f6bff; }
 .vchip.on { background:#2f6bff; border-color:#2f6bff; color:#fff;
             font-weight:700; }
+/* 선택한 휴가 종류 설명.
+   문구 길이에 따라 카드가 커지면 옆 카드와 높이가 어긋난다.
+   그래서 두 줄 높이로 고정하고 넘치면 … 로 자른다. */
+.type-desc { margin:10px 0 0; font-size:11px; line-height:1.5; color:#6b7686;
+             height:33px; overflow:hidden; display:-webkit-box;
+             -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+
+/* 지난 날짜를 고른 칸. 막는 게 아니라 눈에 띄게만 한다.
+   달력 안의 날짜 하나하나는 브라우저가 그려서 색을 못 바꾼다 — 칸 전체를 회색으로. */
+.row input[type=date].past { background:#f2f4f8; color:#8b94a3;
+                             border-color:#d7dde7; }
 
 /* ===== 계산된 일수 ===== */
 .days-box { display:flex; align-items:center; gap:9px; margin-top:11px;
@@ -104,34 +122,52 @@ body { background:#f4f6fa; padding:26px; }
         pointer-events:none; }
 .soon:hover::after { opacity:1; }
 
-/* ===== 결재선 ===== */
-.appr-card { border:1px solid #e9edf3; border-radius:10px; padding:15px 18px;
-             background:#fbfcfe; }
+/* ===== 첨부파일 (껍데기) ===== */
+.file-box { display:flex; align-items:center; gap:10px; padding:9px 12px;
+            border:1px dashed #d7dde7; border-radius:8px; background:#f7f8fa; }
+.file-btn { border:1px solid #d7dde7; border-radius:6px; background:#fff;
+            color:#b4bcc9; font-size:12px; padding:5px 12px; }
+.file-none { color:#b4bcc9; font-size:12px; }
+.file-help { color:#9aa3b2; font-size:11px; margin:6px 0 0; }
+
+/* ===== 결재선 =====
+   documentForm.jsp 와 같은 모양으로 맞춘다. 두 화면의 결재선은
+   같은 배열·같은 팝업을 쓰므로 생김새도 같아야 헷갈리지 않는다. */
+.todo { border:1px dashed #d5dbe5; border-radius:8px; padding:14px;
+        background:#fafbfd; display:flex; align-items:center; gap:10px; }
+.todo .ghost { padding:7px 14px; border:1px solid #dbe1ea; border-radius:6px;
+               background:#fff; color:#3d4756; font-size:13px; cursor:pointer; }
+.todo .ghost:hover { border-color:#2f6bff; color:#2f6bff; }
+.todo .note { font-size:11px; color:#a5aebd; }
+
 .appr-head { display:flex; justify-content:space-between; align-items:center;
-             margin-bottom:12px; }
-.appr-head .cap { font-size:12px; color:#98a3b5; }
+             margin-bottom:10px; }
 .appr-edit { display:inline-flex; align-items:center; gap:6px;
-             padding:6px 12px; border:1px solid #dbe1ea; border-radius:7px;
-             background:#fff; color:#3d4756; font-size:12px; cursor:pointer; }
+             padding:7px 14px; border:1px solid #dbe1ea; border-radius:8px;
+             background:#fff; color:#3d4756; font-size:12.5px; cursor:pointer; }
 .appr-edit:hover { border-color:#2f6bff; color:#2f6bff; }
 
-.appr-flow { display:flex; flex-wrap:wrap; align-items:flex-start; gap:12px; }
-.appr-flow .sep { color:#c9ced7; font-size:12px; align-self:center;
-                  margin-top:-14px; }
-/* 사람 한 칸 : 동그란 이름표 아래 이름 · 소속 */
-.pchip { display:flex; flex-direction:column; align-items:center; gap:5px;
-         width:74px; text-align:center; }
-.pchip .av { width:38px; height:38px; border-radius:50%; background:#2f6bff;
-             color:#fff; font-size:14px; font-weight:700; display:flex;
-             align-items:center; justify-content:center; }
-.pchip .nm { font-size:12px; font-weight:700; color:#2b3444; }
-.pchip .rl { font-size:10.5px; color:#8b94a3; line-height:1.35;
-             word-break:keep-all; }
+.appr-flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.appr-flow .sep { color:#c9ced7; font-size:11px; }
+.appr-flow .none { font-size:12px; color:#a5aebd; }
+
+/* 사람 한 칸 : 동그란 이름표 + 이름 + 역할 */
+.pchip { display:inline-flex; align-items:center; gap:8px;
+         border:1px solid #dbe4f5; background:#f2f6ff; border-radius:10px;
+         padding:7px 13px 7px 8px; }
+.pchip .av { width:26px; height:26px; border-radius:50%; background:#2f6bff;
+             color:#fff; font-size:11px; display:flex;
+             align-items:center; justify-content:center; flex:none; }
+.pchip .nm { font-size:12.5px; font-weight:700; color:#2b3444; line-height:1.25; }
+.pchip .rl { font-size:10.5px; color:#8b94a3; }
+.pchip.approval  { border-color:#bfe6cd; background:#eefaf2; }
 .pchip.approval  .av { background:#1f8a4c; }
+.pchip.agreement { border-color:#f2ddb8; background:#fdf7ec; }
 .pchip.agreement .av { background:#d08a1e; }
-.appr-none { font-size:12.5px; color:#9aa3b2; }
 
 .err { color:#d94848; font-size:12px; margin-top:7px; display:none; }
+/* 오류가 아니라 안내다. 붉은색 대신 회색으로 조용히 알린다. */
+.half-info { color:#8b94a3; font-size:11.5px; margin-top:7px; display:none; }
 
 /* ===== 바닥 버튼 ===== */
 .foot { border-top:1px solid #e9edf3; padding:15px 24px;
@@ -156,14 +192,20 @@ body { background:#f4f6fa; padding:26px; }
               <input type="hidden" name="documentType" value="VACATION">
               <input type="hidden" name="docId" value="${doc.docId}">
 
-              <%-- 칩으로 고른 값이 여기 담겨서 서버로 간다.
-                   칩은 눈에 보이는 버튼일 뿐이고, 실제로 전송되는 건 이 둘이다. --%>
+              <%-- 칩은 눈에 보이는 버튼일 뿐이고, 실제로 전송되는 건 이 셋이다.
+                   반차 칩을 고르면 startHalf 에 AM/PM 이 담긴다. 하루짜리라 endHalf 는 비운다.
+                   (DB 는 양끝 반차를 담을 수 있게 돼 있으니 화면만 나중에 늘리면 된다) --%>
               <input type="hidden" id="vacationTypeId" name="vacation.vacationTypeId" value="">
-              <input type="hidden" id="timeUnit"       name="vacation.timeUnit"       value="DAY">
+              <input type="hidden" id="startHalf"      name="vacation.startHalf"      value="">
+              <input type="hidden" id="endHalf"        name="vacation.endHalf"        value="">
 
               <%-- 제목은 고른 종류·기간으로 조립해서 넣는다.
                    휴가는 제목이 뻔해서 따로 입력받지 않는다. --%>
               <input type="hidden" id="title" name="title" value="${doc.title}">
+
+              <%-- 본문도 입력칸이 없다. 고른 값으로 조립해서 넣는다.
+                   상세보기의 본문 칸에 그대로 찍히는 글이다. --%>
+              <input type="hidden" id="content" name="content" value="${doc.content}">
 
               <div class="head">
                       <b>휴가 신청서</b>
@@ -193,21 +235,25 @@ body { background:#f4f6fa; padding:26px; }
                                    총 부여는 (잔여 + 사용) 으로 거꾸로 구한다.
                                    Controller 가 안 담아주면 '-' 로 나온다. --%>
                               <div class="card leave">
-                                      <div class="cap">연차 현황</div>
+                                      <div class="cap" id="leaveCap">연차 현황</div>
                                       <div class="stat-row">
                                               <div class="stat total">
-                                                      <div class="n">${empty grantedLeave ? '-' : grantedLeave}</div>
-                                                      <div class="l">총 부여</div>
+                                                      <div class="n" id="statGrant">${empty grantedLeave ? '-' : grantedLeave}</div>
+                                                      <div class="l">부여</div>
                                               </div>
                                               <div class="stat used">
-                                                      <div class="n">${empty usedLeave ? '-' : usedLeave}</div>
+                                                      <div class="n" id="statUsed">${empty usedLeave ? '-' : usedLeave}</div>
                                                       <div class="l">사용</div>
                                               </div>
                                               <div class="stat left">
-                                                      <div class="n" id="remainLeave">${empty remainLeave ? '-' : remainLeave}</div>
+                                                      <div class="n" id="statLeft">${empty remainLeave ? '-' : remainLeave}</div>
                                                       <div class="l">잔여</div>
                                               </div>
                                       </div>
+
+                                      <%-- 고른 종류의 vacation_type.description 이 여기 뜬다.
+                                           문구는 DB 에 있으므로 바뀌어도 JSP 를 안 고친다. --%>
+                                      <p class="type-desc" id="typeDesc">휴가 종류를 선택하면 안내와 부여일수가 표시됩니다.</p>
                               </div>
                       </div>
 
@@ -217,27 +263,33 @@ body { background:#f4f6fa; padding:26px; }
                               <div class="chips" id="vacChips">
                                       <%-- vacation_type 표를 그대로 칩으로 그린다.
                                            allow_half_day 가 1 인 종류만 오전·오후 칩이 더 생긴다.
-                                           종류를 늘리고 싶으면 표에 행을 넣으면 화면은 저절로 따라온다. --%>
+                                           data-half 가 그대로 vacation_request.start_half 로 간다. --%>
                                       <c:forEach items="${vacationTypes}" var="vt">
                                               <button type="button" class="vchip"
                                                       data-type="${vt.vacationTypeId}"
-                                                      data-unit="DAY"
-                                                      data-deduct="${vt.deductBalance}">
-                                                      ${vt.typeName} (1일)
+                                                      data-deduct="${vt.deductBalance}"
+                                                      data-half=""
+                                                      data-days="${vt.defaultDays}"
+                                                      data-desc="${fn:escapeXml(vt.description)}">
+                                                      ${vt.typeName}
                                               </button>
 
                                               <c:if test="${vt.allowHalfDay}">
                                                       <button type="button" class="vchip"
                                                               data-type="${vt.vacationTypeId}"
-                                                              data-unit="HALF_AM"
-                                                              data-deduct="${vt.deductBalance}">
-                                                              ${vt.typeName} 반차(오전) (0.5일)
+                                                              data-deduct="${vt.deductBalance}"
+                                                              data-half="AM"
+                                                              data-days="${vt.defaultDays}"
+                                                              data-desc="${fn:escapeXml(vt.description)}">
+                                                              ${vt.typeName} 반차(오전)
                                                       </button>
                                                       <button type="button" class="vchip"
                                                               data-type="${vt.vacationTypeId}"
-                                                              data-unit="HALF_PM"
-                                                              data-deduct="${vt.deductBalance}">
-                                                              ${vt.typeName} 반차(오후) (0.5일)
+                                                              data-deduct="${vt.deductBalance}"
+                                                              data-half="PM"
+                                                              data-days="${vt.defaultDays}"
+                                                              data-desc="${fn:escapeXml(vt.description)}">
+                                                              ${vt.typeName} 반차(오후)
                                                       </button>
                                               </c:if>
                                       </c:forEach>
@@ -270,14 +322,28 @@ body { background:#f4f6fa; padding:26px; }
                                       <span class="unit">일</span>
                                       <span class="calc" id="daysCalc">기간을 선택하면 계산됩니다 (주말 제외)</span>
                               </div>
+                              <p class="half-info" id="halfInfo"></p>
                               <p class="err" id="dateErr">휴가 기간을 올바르게 선택해주세요.</p>
                       </div>
 
                       <!-- ===== 사유 ===== -->
                       <div class="row">
-                              <label class="tit" for="reason">휴가 사유 <span class="opt">(선택)</span></label>
+                              <label class="tit" for="reason">휴가 사유 <span class="req">*</span></label>
                               <textarea id="reason" name="vacation.reason" maxlength="255"
                                         placeholder="예: 개인 사유, 가족 행사, 병원 진료...">${doc.vacation.reason}</textarea>
+                              <p class="err" id="reasonErr">휴가 사유를 입력해주세요.</p>
+                      </div>
+
+                      <!-- ===== 첨부파일 (추후구현) =====
+                           attachment 테이블은 있지만 업로드 처리가 없다.
+                           form 에 enctype 도 없어서 파일은 서버로 가지 않는다. -->
+                      <div class="row">
+                              <label class="tit">첨부파일 <span class="opt">(선택)</span></label>
+                              <div class="file-box soon" data-tip="추후 구현 예정">
+                                      <span class="file-btn">파일 선택</span>
+                                      <span class="file-none">선택된 파일 없음</span>
+                              </div>
+                              <p class="file-help">진단서·청첩장 등 증빙서류를 첨부할 수 있습니다. (최대 10MB)</p>
                       </div>
 
                       <!-- ===== 연락처 · 대행자 (추후구현) =====
@@ -285,11 +351,11 @@ body { background:#f4f6fa; padding:26px; }
                            입력해도 저장되지 않으므로 아예 못 쓰게 막아둔다. -->
                       <div class="row">
                               <div class="pair">
-                                      <div class="soon" data-tip="추후 구현 예정 — 저장할 컬럼이 없습니다">
+                                      <div class="soon" data-tip="추후 구현 예정">
                                               <span class="tit">휴가 중 연락처 <span class="opt">(선택)</span></span>
                                               <input type="text" placeholder="010-1234-5678" disabled>
                                       </div>
-                                      <div class="soon" data-tip="추후 구현 예정 — 저장할 컬럼이 없습니다">
+                                      <div class="soon" data-tip="추후 구현 예정">
                                               <span class="tit">업무 대행자 <span class="opt">(선택)</span></span>
                                               <input type="text" placeholder="이름 입력" disabled>
                                       </div>
@@ -300,16 +366,24 @@ body { background:#f4f6fa; padding:26px; }
                            documentForm.jsp 와 같은 배열·같은 setApprovalLine() 을 쓴다.
                            그래서 결재선 팝업은 손댈 필요가 없다. -->
                       <div class="row">
-                              <div class="appr-card">
+                              <%-- ① 아직 아무도 안 골랐을 때 : 점선 상자 --%>
+                              <div id="apprEmpty">
+                                      <label class="tit">결재선</label>
+                                      <div class="todo">
+                                              <button type="button" class="ghost" id="btnApprovalLine">＋ 결재선 지정</button>
+                                              <span class="note">아직 지정되지 않았습니다</span>
+                                      </div>
+                              </div>
+
+                              <%-- ② 골랐을 때 : 기안자 ▸ 결재자… 흐름 --%>
+                              <div id="apprPicked" style="display:none;">
                                       <div class="appr-head">
-                                              <span class="cap">결재선</span>
-                                              <button type="button" class="appr-edit" id="btnApprovalLine">
+                                              <label class="tit" style="margin:0;">결재선 설정</label>
+                                              <button type="button" class="appr-edit" id="btnApprovalLineEdit">
                                                       <span>👥</span> 결재선 편집
                                               </button>
                                       </div>
-                                      <div class="appr-flow" id="apprFlow">
-                                              <span class="appr-none">아직 지정되지 않았습니다</span>
-                                      </div>
+                                      <div class="appr-flow" id="apprFlow"></div>
                               </div>
                               <p class="err" id="apprErr">상신하려면 결재선을 지정해주세요.</p>
 
@@ -338,8 +412,27 @@ $(document).ready(function() {
       var pad = function(n) { return (n < 10 ? '0' : '') + n; };
       var todayStr = t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
 
-      // 지난 날짜로는 휴가를 낼 수 없다 (직접 입력은 통과되므로 submit 에서 또 막는다)
-      $('#startDate, #endDate').attr('min', todayStr);
+      /* 지난 날짜도 고를 수 있게 열어둔다.
+         급하게 휴가를 쓰고 신청서를 나중에 올리는 경우가 있어서다.
+         대신 고르는 순간 알려주고 칸을 회색으로 표시한다. */
+      if ($('#startDate').val() === '') { $('#startDate').val(todayStr); }
+      if ($('#endDate').val()   === '') { $('#endDate').val(todayStr); }
+
+      function markPast($el) {
+              var past = $el.val() !== '' && $el.val() < todayStr;
+              $el.toggleClass('past', past);
+              return past;
+      }
+
+      function warnPast($el) {
+              if (markPast($el)) {
+                      alert('지난 날짜를 선택했습니다.\n이미 사용한 휴가를 뒤늦게 신청하는 경우에만 사용하세요.');
+              }
+      }
+
+      /* 연차 잔여는 employee.remain_leave 하나뿐이다. 다른 종류는 담을 칸이 없다.
+         세션의 로그인 사용자에게 실려 온다 — EapprovalVO.remainLeave 가 있어야 값이 찍힌다. */
+      var annualRemain = '${empty loginUser.remainLeave ? "" : loginUser.remainLeave}';
 
       /* ═══════════════ 결재선 ═══════════════
          approvalLine 배열이 유일한 기준이고 화면은 항상 이 배열을 따라 다시 그린다.
@@ -358,20 +451,23 @@ $(document).ready(function() {
       function renderApprFlow() {
               var $flow = $('#apprFlow').empty();
 
+              // 아직 아무도 안 골랐으면 점선 상자만 보여준다. 둘 중 하나만 켠다.
               if (approvalLine.length === 0) {
-                      $flow.append('<span class="appr-none">아직 지정되지 않았습니다</span>');
+                      $('#apprEmpty').show();
+                      $('#apprPicked').hide();
                       return;
               }
+              $('#apprEmpty').hide();
+              $('#apprPicked').show();
 
-              var drafterSub = '${empty loginUser.title ? loginUser.position : loginUser.title}';
-              $flow.append(makePersonChip(drafterName, drafterSub + ' · 기안자', ''));
+              $flow.append(makePersonChip(drafterName, '기안자', ''));
 
               $.each(approvalLine, function(i, a) {
                       // roleCode 는 팝업이 넘겨준 APPROVAL / AGREEMENT
                       var kind = (a.roleCode === 'AGREEMENT') ? 'agreement' : 'approval';
-                      var role = (a.roleCode === 'AGREEMENT') ? '합의' : '승인';
+                      var sub  = [ a.position, a.dept ].filter(function(v) { return v; }).join(' · ');
                       $flow.append('<span class="sep">›</span>');
-                      $flow.append(makePersonChip(a.name, (a.position || '') + ' · ' + role, kind));
+                      $flow.append(makePersonChip(a.name, sub || a.role, kind));
               });
       }
 
@@ -401,7 +497,7 @@ $(document).ready(function() {
               return approvalLine;
       };
 
-      $('#btnApprovalLine').on('click', function() {
+      $('#btnApprovalLine, #btnApprovalLineEdit').on('click', function() {
               var url = '${pageContext.request.contextPath}/approval/line';
               var w = 980, h = 760;
 
@@ -438,26 +534,58 @@ $(document).ready(function() {
       }
 
       /* ═══════════════ 휴가 종류 칩 ═══════════════
-         칩 하나 = 휴가종류 + 시간단위 한 쌍.
-         고른 값은 hidden 두 개(vacationTypeId, timeUnit)에 담겨 서버로 간다. */
-      function isHalf() { return $('#timeUnit').val() !== 'DAY'; }
+         칩 하나 = 휴가 종류 + 반차 여부 한 쌍.
+         고른 값은 hidden 셋(vacationTypeId, startHalf, endHalf)에 담겨 서버로 간다. */
+      function isHalf() { return $('#startHalf').val() !== ''; }
 
       $('#vacChips').on('click', '.vchip', function() {
               $('.vchip').removeClass('on');
               $(this).addClass('on');
 
               $('#vacationTypeId').val($(this).data('type'));
-              $('#timeUnit').val($(this).data('unit'));
+              $('#startHalf').val($(this).data('half'));
+              $('#endHalf').val('');          // 반차는 하루짜리라 종료일 쪽은 비운다
               $('#typeErr').hide();
+              $('#halfInfo').hide();
 
               // 반차는 하루짜리다. 종료일을 시작일에 맞춰 붙여준다.
               if (isHalf() && $('#startDate').val() !== '') {
                       $('#endDate').val($('#startDate').val());
               }
 
+              applyType($(this));
               recalc();
               syncTitle();
       });
+
+      /* 고른 종류에 맞춰 오른쪽 카드를 바꾼다.
+         숫자는 vacation_type.default_days, 문구는 description 이다 — 둘 다 DB 값. */
+      function applyType($chip) {
+              // 칩 글자에서 "반차(오전)" 꼬리를 떼어 종류 이름만 남긴다
+              var name = $chip.text().trim().replace(/\s*반차\(.*?\)\s*$/, '');
+
+              $('#leaveCap').text(name + ' 현황');
+              $('#typeDesc').text($chip.data('desc') || '등록된 안내 문구가 없습니다.');
+
+              // 연차만 사람마다 다르다 → employee.remain_leave 를 쓴다.
+              // 나머지는 모두에게 같은 법정일수(default_days)다.
+              if ($chip.data('type') === 'ANNUAL') {
+                      $('#statGrant').text('-');
+                      $('#statLeft').text(dayText(annualRemain));
+              } else {
+                      $('#statGrant').text(dayText($chip.data('days')));
+                      $('#statLeft').text('-');
+              }
+              $('#statUsed').text('-');   // 사용 집계는 아직 서버가 안 준다
+      }
+
+      // 90.0 → "90일", 0.5 → "0.5일", 빈 값 → "-"
+      function dayText(v) {
+              if (v === '' || v == null) { return '-'; }
+              var n = parseFloat(v);
+              if (isNaN(n)) { return '-'; }
+              return (n % 1 === 0 ? n.toFixed(0) : n) + '일';
+      }
 
       /* ═══════════════ 일수 계산 ═══════════════
          ⚠ 미리보기다. 저장되는 숫자는 서버가 다시 계산한다 —
@@ -521,39 +649,89 @@ $(document).ready(function() {
 
               if ($on.length === 0 || s === '') { return; }
 
-              // 칩 글자에서 "(1일)" 같은 꼬리를 떼어 이름만 남긴다
-              var label = $on.text().trim().replace(/\s*\(.*?\)\s*$/, '');
+              var label = $on.text().trim();
               var range = (e === '' || s === e) ? s : (s + ' ~ ' + e);
+              var days  = recalc();
 
-              $('#title').val(label + ' 신청 (' + range + ')');
+              $('#title').val(label + ' 신청 (' + range + ', 총 ' + days + '일)');
+              syncBody($on, range, days);
+      }
+
+      /* 본문도 입력칸이 없다. 고른 값으로 글을 조립해 hidden 에 넣는다.
+         보유 휴가는 employee.remain_leave, 신청 후 잔여는 그 값에서 신청일수를 뺀 것.
+         ⚠ 연차(deduct_balance=1)만 잔여가 줄어든다. 병가·공가는 잔여를 안 깎는다. */
+      function syncBody($chip, range, days) {
+              var deduct = String($chip.data('deduct')) === 'true';
+              var lines  = [];
+
+              lines.push('휴가 종류 : ' + $chip.text().trim());
+              lines.push('휴가 기간 : ' + range);
+              lines.push('신청 일수 : ' + days + '일');
+
+              if (deduct && annualRemain !== '') {
+                      var have = parseFloat(annualRemain);
+                      lines.push('보유 휴가 : ' + have + '일');
+                      lines.push('신청 후 잔여 : ' + (have - days) + '일');
+              } else if (deduct) {
+                      lines.push('보유 휴가 : 확인 불가');
+              } else {
+                      lines.push('※ 잔여 연차에서 차감되지 않는 휴가입니다.');
+              }
+
+              var reason = $('#reason').val();
+              if (reason !== '') { lines.push('휴가 사유 : ' + reason); }
+
+              $('#content').val(lines.join('\n'));
       }
 
       $('#startDate').on('change', function() {
               var s = $(this).val();
-              $('#endDate').attr('min', s || todayStr);
+              $('#endDate').attr('min', s);
 
               // 반차이거나 종료일이 시작일보다 앞서면 종료일을 붙여준다
               if (isHalf() || $('#endDate').val() === '' || $('#endDate').val() < s) {
                       $('#endDate').val(s);
               }
+              markPast($('#endDate'));
+              warnPast($(this));
               $('#dateErr').hide();
               recalc();
               syncTitle();
       });
 
       $('#endDate').on('change', function() {
-              // 반차인데 종료일을 다른 날로 바꾸면 반차가 성립하지 않는다
+              /* 반차인데 종료일을 다른 날로 바꾸면 반차가 성립하지 않는다.
+                 종류까지 풀어버리면 다시 고르게 만드니까, 같은 종류의 '종일' 칩으로 옮겨준다. */
               if (isHalf() && $(this).val() !== $('#startDate').val()) {
-                      $('.vchip.on').removeClass('on');
-                      $('#vacationTypeId').val('');
-                      $('#timeUnit').val('DAY');
-                      alert('반차는 하루만 쓸 수 있습니다. 휴가 종류를 다시 골라주세요.');
+                      var type   = $('#vacationTypeId').val();
+                      var $whole = $('.vchip').filter(function() {
+                              return $(this).data('type') === type && $(this).data('half') === '';
+                      }).first();
+
+                      // 값이 바뀌는 건 알려주고 바꾼다. 조용히 바꾸면 사용자가 모른다.
+                      alert('반차는 하루만 쓸 수 있습니다. 종일 휴가로 변경합니다.');
+
+                      $('.vchip').removeClass('on');
+                      $whole.addClass('on');
+                      $('#startHalf').val('');
+                      $('#halfInfo').text('여러 날을 고르면 반차가 종일로 바뀝니다.').show();
+              } else {
+                      $('#halfInfo').hide();
               }
+              warnPast($(this));
               $('#dateErr').hide();
               recalc();
               syncTitle();
       });
 
+      // 사유를 고치면 본문도 따라 바뀌고, 띄워둔 안내문도 걷는다
+      $('#reason').on('input', function() {
+              if ($.trim($(this).val()) !== '') { $('#reasonErr').hide(); }
+              syncTitle();
+      });
+
+      markPast($('#startDate'));
+      markPast($('#endDate'));
       recalc();
 
       $('#docForm').on('submit', function() {
@@ -585,15 +763,17 @@ $(document).ready(function() {
                       $('#dateErr').text('종료일은 시작일보다 빠를 수 없습니다.').show();
                       msgs.push('휴가 종료일을 확인해 주세요.');
                       first = first || function() { $('#endDate').focus(); };
-              } else if (s < todayStr) {
-                      // 달력의 min 은 UI 만 막는다. 직접 입력하면 통과되므로 여기서 또 본다.
-                      $('#dateErr').text('지난 날짜로는 휴가를 신청할 수 없습니다.').show();
-                      msgs.push('휴가 시작일은 오늘 이후로 지정해 주세요.');
-                      first = first || function() { $('#startDate').focus(); };
               } else if (recalc() === 0) {
                       $('#dateErr').text('사용 일수가 0일입니다. 기간을 다시 선택해주세요.').show();
                       msgs.push('선택한 기간에 근무일이 없습니다.');
                       first = first || function() { $('#startDate').focus(); };
+              }
+
+              // 사유는 필수다. 공백만 친 것도 안 쓴 것으로 본다.
+              if ($.trim($('#reason').val()) === '') {
+                      $('#reasonErr').show();
+                      msgs.push('휴가 사유를 입력해 주세요.');
+                      first = first || function() { $('#reason').focus(); };
               }
 
               if (isSubmitDoc && approvalLine.length === 0) {
