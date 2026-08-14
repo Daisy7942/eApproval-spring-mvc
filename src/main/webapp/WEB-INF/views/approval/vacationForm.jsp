@@ -54,6 +54,8 @@ body { background:#f4f6fa; padding:26px; }
 .stat .l { font-size:11px; color:#8b94a3; margin-top:3px; }
 .stat.total { background:#f2f6ff; } .stat.total .n { color:#2f6bff; }
 .stat.used  { background:#eefaf2; } .stat.used  .n { color:#1f8a4c; }
+/* 대기 = 아직 결재가 안 끝난 것. 승인되면 잔여에서 깎인다 (leaveMy.jsp 와 같은 주황) */
+.stat.wait  { background:#fff8ec; } .stat.wait  .n { color:#b26a00; }
 .stat.left  { background:#fdf5ec; } .stat.left  .n { color:#d08a1e; }
 
 /* ===== 입력 ===== */
@@ -247,6 +249,10 @@ body { background:#f4f6fa; padding:26px; }
                                                       <div class="n" id="statUsed"><c:choose><c:when test="${empty summary}">-</c:when><c:otherwise><fmt:formatNumber value="${summary.usedDays}" maxFractionDigits="1"/></c:otherwise></c:choose></div>
                                                       <div class="l">사용</div>
                                               </div>
+                                              <div class="stat wait">
+                                                      <div class="n" id="statWait"><c:choose><c:when test="${empty summary}">-</c:when><c:otherwise><fmt:formatNumber value="${summary.pendingDays}" maxFractionDigits="1"/></c:otherwise></c:choose></div>
+                                                      <div class="l">대기</div>
+                                              </div>
                                               <div class="stat left">
                                                       <div class="n" id="statLeft"><c:choose><c:when test="${empty summary}">-</c:when><c:otherwise><fmt:formatNumber value="${summary.remainDays}" maxFractionDigits="1"/></c:otherwise></c:choose></div>
                                                       <div class="l">잔여</div>
@@ -437,6 +443,15 @@ $(document).ready(function() {
          세션 값은 로그인한 순간의 사진이라 휴가가 승인돼 깎여도 그대로이기 때문이다. */
       var annualRemain = '${empty summary ? "" : summary.remainDays}';
 
+      /* 아직 결재가 안 끝난 신청 일수. remain_leave 는 승인될 때만 깎이므로
+         대기 중인 것까지 빼야 실제로 쓸 수 있는 연차가 나온다.
+         서버(DocumentService)도 같은 식으로 검사한다 — 여기는 미리 알려주는 용도다. */
+      var annualPending = '${empty summary ? "" : summary.pendingDays}';
+
+      // 연차 3칸(총부여·사용·잔여)은 전부 summary 값이다. 칩을 눌러도 이 값으로 되돌린다.
+      var annualTotal = '${empty summary ? "" : summary.totalDays}';
+      var annualUsed  = '${empty summary ? "" : summary.usedDays}';
+
       /* ═══════════════ 결재선 ═══════════════
          approvalLine 배열이 유일한 기준이고 화면은 항상 이 배열을 따라 다시 그린다.
          documentForm.jsp 와 같은 함수 이름을 쓴다 — 결재선 팝업이 이 이름으로 부른다. */
@@ -561,6 +576,13 @@ $(document).ready(function() {
               syncTitle();
       });
 
+      /* 기본값은 연차(종일)다. 대부분의 신청이 연차라서 미리 골라둔다.
+         값을 직접 넣지 않고 위 클릭 핸들러를 그대로 태운다 —
+         그래야 hidden 셋·오른쪽 카드·일수 계산·제목까지 한꺼번에 맞춰진다. */
+      $('.vchip').filter(function() {
+              return $(this).data('type') === 'ANNUAL' && $(this).data('half') === '';
+      }).first().trigger('click');
+
       /* 고른 종류에 맞춰 오른쪽 카드를 바꾼다.
          숫자는 vacation_type.default_days, 문구는 description 이다 — 둘 다 DB 값. */
       function applyType($chip) {
@@ -573,13 +595,18 @@ $(document).ready(function() {
               // 연차만 사람마다 다르다 → employee.remain_leave 를 쓴다.
               // 나머지는 모두에게 같은 법정일수(default_days)다.
               if ($chip.data('type') === 'ANNUAL') {
-                      $('#statGrant').text('-');
+                      // 서버가 담아준 summary 그대로. 화면 처음 모습과 같아야 한다.
+                      $('#statGrant').text(dayText(annualTotal));
+                      $('#statUsed').text(dayText(annualUsed));
+                      $('#statWait').text(dayText(annualPending));
                       $('#statLeft').text(dayText(annualRemain));
               } else {
+                      // 나머지는 사람마다 다른 값이 없어 법정일수만 보여준다
                       $('#statGrant').text(dayText($chip.data('days')));
+                      $('#statUsed').text('-');
+                      $('#statWait').text('-');
                       $('#statLeft').text('-');
               }
-              $('#statUsed').text('-');   // 사용 집계는 아직 서버가 안 준다
       }
 
       // 90.0 → "90일", 0.5 → "0.5일", 빈 값 → "-"
@@ -770,6 +797,21 @@ $(document).ready(function() {
                       $('#dateErr').text('사용 일수가 0일입니다. 기간을 다시 선택해주세요.').show();
                       msgs.push('선택한 기간에 근무일이 없습니다.');
                       first = first || function() { $('#startDate').focus(); };
+              }
+
+              /* 연차를 깎는 종류일 때만 잔여를 미리 본다.
+                 서버(DocumentService)가 하는 것과 같은 계산이다 — 여기서 막는 건 안내용이고
+                 진짜 방어는 서버다. 화면 JS 는 개발자도구로 지울 수 있기 때문이다. */
+              var $onChip = $('.vchip.on');
+              if ($onChip.length > 0 && String($onChip.data('deduct')) === 'true'
+                              && annualRemain !== '' && s !== '' && en !== '' && en >= s) {
+                      var need   = recalc();
+                      var usable = parseFloat(annualRemain) - parseFloat(annualPending === '' ? 0 : annualPending);
+                      if (need > 0 && need > usable) {
+                              $('#dateErr').text('남은 연차보다 신청 일수가 많습니다.').show();
+                              msgs.push('남은 연차보다 신청 일수가 많습니다.');
+                              first = first || function() { $('#startDate').focus(); };
+                      }
               }
 
               // 사유는 필수다. 공백만 친 것도 안 쓴 것으로 본다.
