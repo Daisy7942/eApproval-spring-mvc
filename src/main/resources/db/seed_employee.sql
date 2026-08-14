@@ -52,3 +52,9 @@
   JOIN team t ON e.team_id = t.team_id
   SET e.role = 'ADMIN'
   WHERE t.team_name = '인사팀';
+
+  -- 5-1. 사장·본부장도 관리자 권한 (전사 휴가 현황을 봐야 한다)
+  --      '사장' 은 직급(position), '본부장' 은 직책(title) 칸에 들어 있다.
+  UPDATE employee
+  SET role = 'ADMIN'
+  WHERE position = '사장' OR title = '본부장';
