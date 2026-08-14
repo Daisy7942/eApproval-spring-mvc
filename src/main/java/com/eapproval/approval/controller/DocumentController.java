@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,25 +28,38 @@ public class DocumentController {
 	public String writeForm(HttpServletRequest request, Model model, @RequestParam(required = false) Long docId,
 			String documentType) {
 		
+		// 현재 로그인한 사용자의 세션 정보에서 사번(empId) 추출
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 
-		if (docId == null) {
+		if (docId == null) { //docId가 없으면
+			
+			// 추천 결재선(상사 라인)을 조회해서 화면(Model)에 전달
 			List<EapprovalVO> recLine = documentService.recommendApprovalLine(empId, documentType);
 			model.addAttribute("recLine", recLine);
 			
+			// 작성하려는 문서가 '휴가 신청서'인 경우
 			if ("VACATION".equals(documentType)) {
+				
+				// 휴가 종류 목록(연차, 병가, 반차 등) 조회
 				List<VacationTypeVO> vacationTypes = documentService.getVacationTypeList();
 				model.addAttribute("vacationTypes", vacationTypes);
+				
+				// 로그인한 사용자의 잔여 연차 요약 정보 조회
 				model.addAttribute("summary", documentService.getLeaveSummary(empId));
-				return "approval/vacationForm";
+				
+				return "approval/vacationForm"; // 휴가 신청 전용 페이지(JSP)로 이동
 			}else {
-			return "approval/documentForm"; }// ← 새 문서
+			return "approval/documentForm"; } //  새 문서 창으로 이동
+			
+		// docId가 이미 있으면 -> [임시저장 문서 재조회 화면]	
 		} else {
-
+			
+			// DB에서 기존에 임시저장해둔 문서 정보를 불러와서 화면(Model)에 전달
 			DocumentVO doc = documentService.getDraft(docId, empId);
 			model.addAttribute("doc", doc);
-			return "approval/documentForm";
+			
+			return "approval/documentForm"; // 작성 중이던 기존 내용이 채워진 채로 작성 페이지 이동
 
 		}
 	}
@@ -170,5 +184,11 @@ public class DocumentController {
 		return "redirect:/document/detail?docId=" + docId;
 	}
 	
+	// IllegalStateException 예외 발생 시 처리해주는 전담 메서드
+	@ExceptionHandler(IllegalStateException.class)
+	public String handleIllegalState(IllegalStateException e, Model model) {
+		model.addAttribute("message", e.getMessage()); // 에러 메시지를 화면에 전달
+		return "approval/error"; // 에러 전용 페이지(approval/error.jsp)로 이동
+	}
 
 }
