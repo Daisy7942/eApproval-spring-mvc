@@ -391,6 +391,8 @@
 		vt.deduct_balance = 1
 
 	</select>
+
+
 	<!-- 내 휴가 신청 내역 -->
 	<select id="selectMyLeaveList" parameterType="long"
 		resultType="com.eapproval.approval.vo.VacationRequestVO">
@@ -399,11 +401,19 @@
 		vt.type_name,
 		d.status,
 		DATE_FORMAT(vr.created_at, '%Y-%m-%d') AS created_at
-		FROM vacation_request vr
+		FROM
+		vacation_request vr
 		JOIN document d ON d.doc_id = vr.doc_id
-		JOIN vacation_type vt ON vt.vacation_type_id = vr.vacation_type_id
-		WHERE vr.employee_id = #{employeeId}
+		JOIN
+		vacation_type vt ON vt.vacation_type_id = vr.vacation_type_id
+		WHERE
+		vr.employee_id = #{employeeId}
 		ORDER BY vr.vacation_id DESC
+	</select>
+
+	<select id="selectVacationType" parameterType="string"
+		resultType="com.eapproval.approval.vo.VacationTypeVO">
+		SELECT * FROM vacation_type WHERE vacation_type_id = #{vacationTypeId}
 	</select>
 
 </mapper>

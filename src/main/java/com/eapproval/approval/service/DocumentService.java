@@ -66,12 +66,34 @@ public class DocumentService {
 		}
 		documentMapper.insertApprovalLines(lines);
 
+		// 휴가 관련정보를 request테이블에 저장
 		// 휴가 문서일 때만 vacation_request 에 한 줄 더 넣는다
 		if (documentVO.getVacation() != null) {
 			VacationRequestVO v = documentVO.getVacation();
 			v.setDocId(documentVO.getDocId());
 			v.setEmployeeId(documentVO.getEmployeeId());
+			if (v.getReason() == null || v.getReason().trim().isEmpty()) {
+				throw new IllegalStateException("휴가 사유를 입력해주세요.");
+			}
+			if (v.getStartDate() == null || v.getEndDate() == null || v.getStartDate().isAfter(v.getEndDate())) {
+				throw new IllegalStateException("휴가 시작일이 종료일보다 늦습니다.");
+			}
 			v.setDays(calcDays(v));
+			VacationTypeVO type = documentMapper.selectVacationType(v.getVacationTypeId());
+			if (type != null && type.isDeductBalance()) {
+
+			    // remain_leave 는 승인될 때만 깎이므로 잔여만 보면 대기 중인 신청이 빠진다.
+			    // 실제로 쓸 수 있는 건 (잔여 - 대기) 다.
+			    LeaveSummaryVO s = getLeaveSummary(documentVO.getEmployeeId());
+			    BigDecimal available = s.getRemainDays().subtract(s.getPendingDays());
+
+			    // BigDecimal 은 > 로 못 견준다. compareTo 가 0보다 크면 왼쪽이 더 크다
+			    if (v.getDays().compareTo(available) > 0) {
+			        throw new IllegalStateException(
+			            "신청 가능한 연차를 넘었습니다. (잔여 " + s.getRemainDays()
+			            + "일 / 대기 " + s.getPendingDays() + "일 / 신청 " + v.getDays() + "일)");
+			    }
+			}
 			v.setStartHalf(nullIfEmpty(v.getStartHalf()));
 			v.setEndHalf(nullIfEmpty(v.getEndHalf()));
 			documentMapper.insertVacationRequest(v);
@@ -201,13 +223,13 @@ public class DocumentService {
 
 		if (countPending == 0) {
 			documentMapper.updateDocumentStatus(docId, "APPROVED");
-			
-			 // 휴가 문서이고, 연차에서 깎는 종류일 때만 기안자의 잔여 연차 차감
-		    DocumentVO doc = documentMapper.selectDocumentDetail(docId);
-		    VacationRequestVO v = doc.getVacation();
-		    if (v != null && v.isDeductBalance()) {
-		        documentMapper.deductLeave(doc.getEmployeeId(), v.getDays());
-		    }
+
+			// 휴가 문서이고, 연차에서 깎는 종류일 때만 기안자의 잔여 연차 차감
+			DocumentVO doc = documentMapper.selectDocumentDetail(docId);
+			VacationRequestVO v = doc.getVacation();
+			if (v != null && v.isDeductBalance()) {
+				documentMapper.deductLeave(doc.getEmployeeId(), v.getDays());
+			}
 
 		}
 	}
@@ -228,50 +250,52 @@ public class DocumentService {
 
 		return documentMapper.selectVacationTypes();
 	}
-	
-	
-	
+
 	// 연차 요약 (총부여·사용·대기·잔여)
 	public LeaveSummaryVO getLeaveSummary(Long employeeId) {
 
 		LeaveSummaryVO s = documentMapper.selectLeaveSummary(employeeId);
 
 		// 휴가를 한 번도 안 냈으면 행 자체가 안 나와서 null 이 온다
-		if (s == null) s = new LeaveSummaryVO();
-		if (s.getUsedDays() == null)    s.setUsedDays(BigDecimal.ZERO);
-		if (s.getPendingDays() == null) s.setPendingDays(BigDecimal.ZERO);
+		if (s == null)
+			s = new LeaveSummaryVO();
+		if (s.getUsedDays() == null)
+			s.setUsedDays(BigDecimal.ZERO);
+		if (s.getPendingDays() == null)
+			s.setPendingDays(BigDecimal.ZERO);
 
 		BigDecimal remain = employeeMapper.selectRemainLeave(employeeId);
-		if (remain == null) remain = BigDecimal.ZERO;
+		if (remain == null)
+			remain = BigDecimal.ZERO;
 
 		s.setRemainDays(remain);
-		s.setTotalDays(remain.add(s.getUsedDays()));   // BigDecimal 은 + 가 아니라 .add()
+		s.setTotalDays(remain.add(s.getUsedDays())); // BigDecimal 은 + 가 아니라 .add()
 		return s;
 	}
-	
-	
-	// 내 휴가 신청 내역.  예정/지난
+
+	// 내 휴가 신청 내역. 예정/지난
 	public Map<String, List<VacationRequestVO>> getMyLeaveList(Long employeeId) {
 
-	    List<VacationRequestVO> all = documentMapper.selectMyLeaveList(employeeId);
+		List<VacationRequestVO> all = documentMapper.selectMyLeaveList(employeeId);
 
-	    List<VacationRequestVO> upcoming = new ArrayList<>();
-	    List<VacationRequestVO> past     = new ArrayList<>();
+		List<VacationRequestVO> upcoming = new ArrayList<>();
+		List<VacationRequestVO> past = new ArrayList<>();
 
-	    LocalDate today = LocalDate.now();
-	    for (VacationRequestVO v : all) {
-	        // 종료일이 어제까지면 지난 휴가, 오늘 이후면 예정
-	        if (v.getEndDate() != null && v.getEndDate().isBefore(today)) {
-	            past.add(v);
-	        } else {
-	            upcoming.add(v);
-	        }
-	    }
+		LocalDate today = LocalDate.now(); // 오늘날짜구하기
 
-	    Map<String, List<VacationRequestVO>> result = new HashMap<>();
-	    result.put("upcoming", upcoming);
-	    result.put("past", past);
-	    return result;
+		for (VacationRequestVO v : all) {
+			// 종료일이 어제까지면 지난 휴가, 오늘 이후면 예정
+			if (v.getEndDate() != null && v.getEndDate().isBefore(today)) {
+				past.add(v);
+			} else {
+				upcoming.add(v);
+			}
+		}
+
+		Map<String, List<VacationRequestVO>> result = new HashMap<>();
+		result.put("upcoming", upcoming);
+		result.put("past", past);
+		return result;
 	}
 
 }

@@ -72,4 +72,7 @@ public interface DocumentMapper {
 	// 휴가신청 내역 목록
 	List<VacationRequestVO> selectMyLeaveList(Long employeeId);
 	
+	// 휴가신청 종류 조회
+	VacationTypeVO selectVacationType(String vacationTypeId);
+	
 }
