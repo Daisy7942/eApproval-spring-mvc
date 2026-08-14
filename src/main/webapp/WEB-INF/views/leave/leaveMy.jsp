@@ -190,7 +190,8 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 16px;
-	align-items: start;
+	/* align-items 를 안 주면 기본값 stretch 라 두 칸이 긴 쪽에 맞춰 같이 늘어난다.
+	   건수가 달라도 카드 아래끝이 어긋나지 않는다 */
 }
 
 @media ( max-width : 1100px) {
