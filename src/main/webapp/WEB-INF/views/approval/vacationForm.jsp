@@ -25,6 +25,26 @@ body { background:#f4f6fa; padding:26px; }
 .head .x { cursor:pointer; color:#9aa3b2; font-size:19px; text-decoration:none;
            line-height:1; }
 .head .x:hover { color:#5b6779; }
+/* 긴급 문서 토글. documentForm.jsp 와 같은 모양으로 맞췄다.
+   기본 체크박스는 숨기고 옆 chip 을 대신 보여준다 — 기본 회색, 체크했을 때만 빨강. */
+.head-left { display:flex; align-items:center; gap:14px; }
+.head-left .urgent { position:relative; cursor:pointer;
+                     -webkit-user-select:none; user-select:none; }
+.head-left .urgent input { position:absolute; opacity:0;
+                           width:0; height:0; pointer-events:none; }
+.head-left .urgent .chip { display:inline-flex; align-items:center; gap:6px;
+                     font-size:12px; padding:5px 12px; border-radius:20px;
+                     border:1px solid #e0e5ec; background:#f7f8fa; color:#8b94a3;
+                     transition:background .12s, border-color .12s, color .12s; }
+.head-left .urgent .chip .dot { width:6px; height:6px; border-radius:50%;
+                     background:#c4cbd6; transition:background .12s, box-shadow .12s; }
+.head-left .urgent:hover .chip { border-color:#cfd6e0; color:#6b7686; }
+.head-left .urgent input:checked + .chip { background:#fdf0f0; border-color:#f2c9c9;
+                     color:#d94848; font-weight:700; }
+.head-left .urgent input:checked + .chip .dot { background:#e5484d;
+                     box-shadow:0 0 0 3px rgba(229,72,77,.18); }
+.head-left .urgent input:focus-visible + .chip { border-color:#2f6bff;
+                     box-shadow:0 0 0 3px rgba(47,107,255,.15); }
 
 .body { padding:26px 28px 8px; }
 
@@ -211,7 +231,16 @@ body { background:#f4f6fa; padding:26px; }
               <input type="hidden" id="content" name="content" value="${doc.content}">
 
               <div class="head">
-                      <b>휴가 신청서</b>
+                      <%-- 긴급 여부는 document 표의 is_urgent 다. 휴가 고유값이 아니라
+                           모든 문서가 공통으로 갖는 값이라 documentForm.jsp 와 이름·모양을 맞춘다. --%>
+                      <div class="head-left">
+                              <b>휴가 신청서</b>
+                              <label class="urgent"
+                                     title="긴급 문서로 지정하면 결재자에게 우선 표시됩니다">
+                                      <input type="checkbox" name="isUrgent" value="true" ${doc.isUrgent ? 'checked' : ''}>
+                                      <span class="chip"><span class="dot"></span>긴급</span>
+                              </label>
+                      </div>
                       <a class="x" href="#" onclick="window.close(); return false;">✕</a>
               </div>
 
