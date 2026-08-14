@@ -37,6 +37,7 @@ public class DocumentController {
 			if ("VACATION".equals(documentType)) {
 				List<VacationTypeVO> vacationTypes = documentService.getVacationTypeList();
 				model.addAttribute("vacationTypes", vacationTypes);
+				model.addAttribute("summary", documentService.getLeaveSummary(empId));
 				return "approval/vacationForm";
 			}else {
 			return "approval/documentForm"; }// ← 새 문서

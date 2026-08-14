@@ -2,6 +2,7 @@
       pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -230,23 +231,24 @@ body { background:#f4f6fa; padding:26px; }
                               </div>
 
                               <%-- 연차 현황.
-                                   employee 테이블엔 remain_leave(잔여) 하나뿐이다.
-                                   사용일수는 vacation_request 에서 세야 나오고,
-                                   총 부여는 (잔여 + 사용) 으로 거꾸로 구한다.
-                                   Controller 가 안 담아주면 '-' 로 나온다. --%>
+                                   Controller 가 getLeaveSummary(empId) 를 summary 로 담아준다.
+                                   실컬럼은 remain_leave(잔여) 하나뿐이고
+                                   사용은 vacation_request 를 세서, 총부여는 (잔여+사용) 으로 나온다.
+                                   휴가 현황 화면(leaveMy.jsp)과 똑같은 숫자다.
+                                   세션이 아니라 요청마다 DB 를 읽으므로 승인 직후에도 값이 맞다. --%>
                               <div class="card leave">
                                       <div class="cap" id="leaveCap">연차 현황</div>
                                       <div class="stat-row">
                                               <div class="stat total">
-                                                      <div class="n" id="statGrant">${empty grantedLeave ? '-' : grantedLeave}</div>
+                                                      <div class="n" id="statGrant"><c:choose><c:when test="${empty summary}">-</c:when><c:otherwise><fmt:formatNumber value="${summary.totalDays}" maxFractionDigits="1"/></c:otherwise></c:choose></div>
                                                       <div class="l">부여</div>
                                               </div>
                                               <div class="stat used">
-                                                      <div class="n" id="statUsed">${empty usedLeave ? '-' : usedLeave}</div>
+                                                      <div class="n" id="statUsed"><c:choose><c:when test="${empty summary}">-</c:when><c:otherwise><fmt:formatNumber value="${summary.usedDays}" maxFractionDigits="1"/></c:otherwise></c:choose></div>
                                                       <div class="l">사용</div>
                                               </div>
                                               <div class="stat left">
-                                                      <div class="n" id="statLeft">${empty remainLeave ? '-' : remainLeave}</div>
+                                                      <div class="n" id="statLeft"><c:choose><c:when test="${empty summary}">-</c:when><c:otherwise><fmt:formatNumber value="${summary.remainDays}" maxFractionDigits="1"/></c:otherwise></c:choose></div>
                                                       <div class="l">잔여</div>
                                               </div>
                                       </div>
@@ -431,8 +433,9 @@ $(document).ready(function() {
       }
 
       /* 연차 잔여는 employee.remain_leave 하나뿐이다. 다른 종류는 담을 칸이 없다.
-         세션의 로그인 사용자에게 실려 온다 — EapprovalVO.remainLeave 가 있어야 값이 찍힌다. */
-      var annualRemain = '${empty loginUser.remainLeave ? "" : loginUser.remainLeave}';
+         세션(loginUser)이 아니라 Controller 가 담아준 summary 를 쓴다 —
+         세션 값은 로그인한 순간의 사진이라 휴가가 승인돼 깎여도 그대로이기 때문이다. */
+      var annualRemain = '${empty summary ? "" : summary.remainDays}';
 
       /* ═══════════════ 결재선 ═══════════════
          approvalLine 배열이 유일한 기준이고 화면은 항상 이 배열을 따라 다시 그린다.
