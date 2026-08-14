@@ -374,6 +374,88 @@
 	opacity: 1;
 	visibility: visible;
 }
+
+/* ===== 계절 배너 =====
+   아래 HTML 에서 월을 보고 spring/summer/autumn/winter 중
+   클래스 이름 하나만 붙인다. 색과 그림은 전부 여기가 맡는다.
+   나중에 진짜 사진을 구하면 각 계절의 background 한 줄만
+   url(...) 로 갈아끼우면 되고, HTML 은 안 고쳐도 된다 */
+.banner {
+	position: relative;
+	overflow: hidden;
+	border-radius: 12px;
+	padding: 22px 26px;
+	margin-bottom: 16px;
+	min-height: 118px;
+	display: flex;
+	align-items: center;
+	color: #fff;
+}
+
+/* 글자와 그림 중 글자가 위로. 그림은 오른쪽에 깔린다 */
+.banner .b-text {
+	position: relative;
+	z-index: 2;
+}
+
+.banner .b-season {
+	font-size: 11.5px;
+	letter-spacing: 2px;
+	opacity: .85;
+	font-weight: 600;
+}
+
+.banner .b-text h3 {
+	font-size: 19px;
+	font-weight: 700;
+	margin: 7px 0 6px;
+	color: #fff;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+}
+
+.banner .b-text p {
+	font-size: 12.5px;
+	opacity: .95;
+}
+
+.banner .b-text p b {
+	font-weight: 700;
+}
+
+.banner .b-art {
+	position: absolute;
+	right: 0;
+	top: 0;
+	height: 100%;
+	width: 380px;
+	z-index: 1;
+	pointer-events: none;
+}
+
+/* 왼쪽을 살짝 어둡게 깔아 글자가 그림 위에서도 읽히게 한다 */
+.banner::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	background: linear-gradient(90deg, rgba(0, 0, 0, .16), rgba(0, 0, 0, 0) 55%);
+}
+
+.banner.spring {
+	background: linear-gradient(105deg, #e86f9c, #f292b4 45%, #f9c0d4);
+}
+
+.banner.summer {
+	background: linear-gradient(105deg, #1b8fc4, #35a9d6 45%, #7fd3e6);
+}
+
+.banner.autumn {
+	background: linear-gradient(105deg, #cf6f24, #e08a3c 45%, #f0b46a);
+}
+
+.banner.winter {
+	background: linear-gradient(105deg, #43648f, #5b7fb5 45%, #9db9d8);
+}
 </style>
 </head>
 <body>
@@ -396,6 +478,204 @@
 				<h2>휴가 현황</h2>
 			</div>
 
+			<%-- ═══════ 0. 계절 배너 ═══════
+			     서버는 아무것도 안 보낸다. 지금 날짜에서 '월' 하나만 뽑아
+			     spring / summer / autumn / winter 중 클래스 이름을 정하고,
+			     색·그림은 위 CSS 와 아래 SVG 가 맡는다.
+			     new Date() 를 스크립틀릿 없이 얻으려고 jsp:useBean 을 쓴다 --%>
+			<jsp:useBean id="todayDate" class="java.util.Date" />
+			<fmt:formatDate value="${todayDate}" pattern="M" var="mm" />
+
+			<c:choose>
+				<c:when test="${mm ge 3 and mm le 5}">
+					<c:set var="season" value="spring" />
+					<c:set var="seasonEn" value="SPRING" />
+					<c:set var="seasonMsg" value="봄 기운 가득한 계절이에요" />
+					<c:set var="seasonSub" value="미리 신청하면 업무 차질 없이 다녀올 수 있어요." />
+				</c:when>
+				<c:when test="${mm ge 6 and mm le 8}">
+					<c:set var="season" value="summer" />
+					<c:set var="seasonEn" value="SUMMER" />
+					<c:set var="seasonMsg" value="휴가, 계획하셨나요?" />
+					<c:set var="seasonSub" value="미리 신청하면 업무 차질 없이 다녀올 수 있어요." />
+				</c:when>
+				<c:when test="${mm ge 9 and mm le 11}">
+					<c:set var="season" value="autumn" />
+					<c:set var="seasonEn" value="AUTUMN" />
+					<c:set var="seasonMsg" value="선선한 가을, 어디로 떠날까요" />
+					<c:set var="seasonSub" value="미리 신청하면 업무 차질 없이 다녀올 수 있어요." />
+				</c:when>
+				<c:otherwise>
+					<%-- 12 · 1 · 2 월 --%>
+					<c:set var="season" value="winter" />
+					<c:set var="seasonEn" value="WINTER" />
+					<c:set var="seasonMsg" value="올해 연차, 다 쓰셨나요?" />
+					<c:set var="seasonSub" value="남은 연차는 연말까지 쓰는 게 좋아요" />
+				</c:otherwise>
+			</c:choose>
+
+			<div class="banner ${season}">
+				<div class="b-text">
+					<div class="b-season">${seasonEn}</div>
+					<h3>${seasonMsg}</h3>
+					<p>
+						남은 연차 <b><fmt:formatNumber value="${summary.remainDays}"
+								maxFractionDigits="1" />일</b> · ${seasonSub}
+					</p>
+				</div>
+
+				<%-- 그림도 계절마다 하나씩. 이미지 파일이 아니라 SVG 라 파일이 안 늘고
+				     확대해도 안 깨진다. slice = 배너 비율에 맞춰 잘라 채우기 --%>
+				<c:choose>
+					<c:when test="${season eq 'spring'}">
+						<svg class="b-art" viewBox="0 0 380 130"
+							preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+							<%-- 벚꽃 세 송이 : 꽃잎(타원) 다섯 장을 72도씩 돌린 것 --%>
+							<g fill="#fff" opacity=".92">
+								<g transform="translate(292,40)">
+									<ellipse cy="-11" rx="6.5" ry="10" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(72)" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(144)" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(216)" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(288)" />
+									<circle r="4" fill="#ffe9a8" />
+								</g>
+								<g transform="translate(340,82) scale(.8)">
+									<ellipse cy="-11" rx="6.5" ry="10" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(72)" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(144)" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(216)" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(288)" />
+									<circle r="4" fill="#ffe9a8" />
+								</g>
+								<g transform="translate(232,88) scale(.62)" opacity=".8">
+									<ellipse cy="-11" rx="6.5" ry="10" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(72)" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(144)" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(216)" />
+									<ellipse cy="-11" rx="6.5" ry="10" transform="rotate(288)" />
+									<circle r="4" fill="#ffe9a8" />
+								</g>
+							</g>
+							<%-- 흩날리는 꽃잎 --%>
+							<g fill="#fff" opacity=".55">
+								<ellipse cx="196" cy="34" rx="5" ry="3" transform="rotate(-25 196 34)" />
+								<ellipse cx="258" cy="62" rx="4" ry="2.6"
+									transform="rotate(35 258 62)" />
+								<ellipse cx="318" cy="112" rx="5" ry="3"
+									transform="rotate(-15 318 112)" />
+								<ellipse cx="368" cy="26" rx="4" ry="2.6"
+									transform="rotate(20 368 26)" />
+							</g>
+						</svg>
+					</c:when>
+
+					<c:when test="${season eq 'summer'}">
+						<svg class="b-art" viewBox="0 0 380 130"
+							preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+							<%-- 해와 구름, 그 아래 파도 두 겹 --%>
+							<circle cx="300" cy="40" r="23" fill="#ffe9a0" opacity=".95" />
+							<g stroke="#ffe9a0" stroke-width="2.6" stroke-linecap="round"
+								opacity=".8">
+								<line x1="300" y1="6" x2="300" y2="12" />
+								<line x1="300" y1="68" x2="300" y2="74" />
+								<line x1="266" y1="40" x2="272" y2="40" />
+								<line x1="328" y1="40" x2="334" y2="40" />
+								<line x1="276" y1="16" x2="280" y2="20" />
+								<line x1="320" y1="60" x2="324" y2="64" />
+								<line x1="324" y1="16" x2="320" y2="20" />
+								<line x1="280" y1="60" x2="276" y2="64" />
+							</g>
+							<g fill="#fff" opacity=".45">
+								<ellipse cx="228" cy="34" rx="20" ry="11" />
+								<ellipse cx="246" cy="30" rx="14" ry="9" />
+								<ellipse cx="352" cy="70" rx="16" ry="9" />
+							</g>
+							<path d="M0,98 q26,-13 52,0 t52,0 t52,0 t52,0 t52,0 t52,0 t52,0 v40 H0 Z"
+								fill="#fff" opacity=".22" />
+							<path
+								d="M0,112 q26,-13 52,0 t52,0 t52,0 t52,0 t52,0 t52,0 t52,0 v30 H0 Z"
+								fill="#fff" opacity=".32" />
+						</svg>
+					</c:when>
+
+					<c:when test="${season eq 'autumn'}">
+						<svg class="b-art" viewBox="0 0 380 130"
+							preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+							<%-- 낙엽 : 잎 한 장은 좌우 대칭 곡선 + 가운데 잎맥 --%>
+							<g opacity=".9">
+								<g transform="translate(286,34) rotate(-20)">
+									<path d="M0,0 C10,-15 30,-15 40,0 C30,15 10,15 0,0 Z" fill="#fff"
+										opacity=".9" />
+									<line x1="2" y1="0" x2="38" y2="0" stroke="#e08a3c"
+										stroke-width="1.6" opacity=".7" />
+								</g>
+								<g transform="translate(330,78) rotate(25) scale(.85)">
+									<path d="M0,0 C10,-15 30,-15 40,0 C30,15 10,15 0,0 Z"
+										fill="#ffe0b0" opacity=".95" />
+									<line x1="2" y1="0" x2="38" y2="0" stroke="#cf6f24"
+										stroke-width="1.6" opacity=".7" />
+								</g>
+								<g transform="translate(226,86) rotate(-40) scale(.7)" opacity=".8">
+									<path d="M0,0 C10,-15 30,-15 40,0 C30,15 10,15 0,0 Z" fill="#fff" />
+									<line x1="2" y1="0" x2="38" y2="0" stroke="#e08a3c"
+										stroke-width="1.8" opacity=".7" />
+								</g>
+								<g transform="translate(352,20) rotate(15) scale(.55)" opacity=".7">
+									<path d="M0,0 C10,-15 30,-15 40,0 C30,15 10,15 0,0 Z" fill="#fff" />
+								</g>
+							</g>
+							<%-- 바람결 --%>
+							<g stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none"
+								opacity=".35">
+								<path d="M190,52 q22,-10 44,0" />
+								<path d="M262,110 q22,-10 44,0" />
+							</g>
+						</svg>
+					</c:when>
+
+					<c:otherwise>
+						<svg class="b-art" viewBox="0 0 380 130"
+							preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+							<%-- 눈언덕 두 겹 + 눈송이. 눈송이는 선 세 개를 60도씩 돌린 것 --%>
+							<path d="M0,104 q70,-24 148,-8 t128,-4 t104,10 v38 H0 Z" fill="#fff"
+								opacity=".22" />
+							<path d="M0,118 q84,-18 176,-4 t204,-6 v32 H0 Z" fill="#fff"
+								opacity=".34" />
+							<g stroke="#fff" stroke-linecap="round" fill="none" opacity=".95">
+								<g transform="translate(296,40)" stroke-width="2.4">
+									<line y1="-16" y2="16" />
+									<line y1="-16" y2="16" transform="rotate(60)" />
+									<line y1="-16" y2="16" transform="rotate(120)" />
+									<line x1="0" y1="-16" x2="-5" y2="-11" />
+									<line x1="0" y1="-16" x2="5" y2="-11" />
+									<line x1="0" y1="16" x2="-5" y2="11" />
+									<line x1="0" y1="16" x2="5" y2="11" />
+								</g>
+								<g transform="translate(345,84) scale(.7)" stroke-width="3"
+									opacity=".8">
+									<line y1="-16" y2="16" />
+									<line y1="-16" y2="16" transform="rotate(60)" />
+									<line y1="-16" y2="16" transform="rotate(120)" />
+								</g>
+								<g transform="translate(236,72) scale(.55)" stroke-width="3.4"
+									opacity=".7">
+									<line y1="-16" y2="16" />
+									<line y1="-16" y2="16" transform="rotate(60)" />
+									<line y1="-16" y2="16" transform="rotate(120)" />
+								</g>
+							</g>
+							<g fill="#fff" opacity=".7">
+								<circle cx="204" cy="34" r="2.6" />
+								<circle cx="266" cy="18" r="2" />
+								<circle cx="368" cy="46" r="2.4" />
+								<circle cx="318" cy="106" r="2" />
+							</g>
+						</svg>
+					</c:otherwise>
+				</c:choose>
+			</div>
+
 			<%-- ═══════ 1. 나의 연차 현황 ═══════
 			     숫자 넷 중 DB 컬럼은 잔여(employee.remain_leave) 하나뿐이다.
 			     사용·대기는 vacation_request 를 세서 나오고,
@@ -405,12 +685,6 @@
 					<div>
 						<h3>나의 연차 현황</h3>
 						<p>승인 시 차감 · 연차만 집계</p>
-					</div>
-					<%-- 사이드바가 들고 있는 함수를 그대로 쓴다. 새 결재와 같은
-					     1000x800 창이 뜬다 (sidebar.jsp 의 openVacationWrite) --%>
-					<div class="right">
-						<button type="button" class="btn-apply"
-							onclick="openVacationWrite()">＋ 휴가 신청</button>
 					</div>
 				</div>
 

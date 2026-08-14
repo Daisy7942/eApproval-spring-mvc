@@ -69,4 +69,7 @@ public interface DocumentMapper {
 	// 연차 요약 (사용·대기 일수 집계)
 	LeaveSummaryVO selectLeaveSummary(Long employeeId);
 	
+	// 휴가신청 내역 목록
+	List<VacationRequestVO> selectMyLeaveList(Long employeeId);
+	
 }

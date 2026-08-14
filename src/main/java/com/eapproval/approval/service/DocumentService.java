@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -245,6 +247,31 @@ public class DocumentService {
 		s.setRemainDays(remain);
 		s.setTotalDays(remain.add(s.getUsedDays()));   // BigDecimal 은 + 가 아니라 .add()
 		return s;
+	}
+	
+	
+	// 내 휴가 신청 내역.  예정/지난
+	public Map<String, List<VacationRequestVO>> getMyLeaveList(Long employeeId) {
+
+	    List<VacationRequestVO> all = documentMapper.selectMyLeaveList(employeeId);
+
+	    List<VacationRequestVO> upcoming = new ArrayList<>();
+	    List<VacationRequestVO> past     = new ArrayList<>();
+
+	    LocalDate today = LocalDate.now();
+	    for (VacationRequestVO v : all) {
+	        // 종료일이 어제까지면 지난 휴가, 오늘 이후면 예정
+	        if (v.getEndDate() != null && v.getEndDate().isBefore(today)) {
+	            past.add(v);
+	        } else {
+	            upcoming.add(v);
+	        }
+	    }
+
+	    Map<String, List<VacationRequestVO>> result = new HashMap<>();
+	    result.put("upcoming", upcoming);
+	    result.put("past", past);
+	    return result;
 	}
 
 }

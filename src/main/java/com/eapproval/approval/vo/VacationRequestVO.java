@@ -20,7 +20,21 @@ public class VacationRequestVO {
 	private String endHalf;
 	private String typeName;
 	private boolean deductBalance;
+	private String status;
+	private String createdAt;
 	
+	public String getStatus() {
+		return status;
+	}
+	public String getCreatedAt() {
+		return createdAt;
+	}
+	public void setStatus(String status) {
+		this.status = status;
+	}
+	public void setCreatedAt(String createdAt) {
+		this.createdAt = createdAt;
+	}
 	public boolean isDeductBalance() {
 		return deductBalance;
 	}
