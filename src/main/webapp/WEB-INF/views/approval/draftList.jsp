@@ -14,105 +14,86 @@
 /* ===== 이 화면에서만 쓰는 스타일 =====
    레이아웃(헤더/사이드바/메인)은 common.css 에 있다. */
 
-/* 표 위 한 줄 : 오른쪽 도구 */
-.list-bar {
+/* 결재함 3종(상신·대기·완료)과 같은 모양으로 맞췄다 */
+
+/* 제목 줄 : 왼쪽 제목, 오른쪽 건수 */
+.title-row {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 28px;
+}
+
+.total-count {
+	font-size: 12.5px;
+	color: #8a93a3;
+}
+
+.list-card {
+	background: #fff;
+}
+
+/* 표 위 도구 줄. 바깥 본문 배경(--bg)과 같은 색이라 흰 표만 도드라진다 */
+.card-head {
 	display: flex;
 	align-items: center;
 	gap: 16px;
-	padding: 2px 0 12px;
+	padding: 15px 0 5px;
+	background: var(--bg);
 }
 
-/* 목록 아래 가운데 검색창 */
-.search-bottom {
-	display: flex;
-	justify-content: center;
-	padding: 22px 0 8px;
-}
-
-/* [제목 ▾]  [입력칸 🔍]  — 앞의 선택칸은 살짝 띄운다 */
-.search {
-	display: flex;
-	align-items: stretch;
-	gap: 8px;
-	height: 32px;
-}
-
-.search select {
-	border: 1px solid #dbe1ea;
-	border-radius: 8px;
-	background: #fff;
-	font-size: 12.5px;
-	color: #3d4756;
-	padding: 0 8px;
-	cursor: pointer;
-}
-
-.search select:focus {
-	outline: none;
-	border-color: #2f6bff;
-}
-
-/* 입력칸 + 돋보기 버튼을 한 덩어리로 */
-.search .field {
+.card-head .right {
+	margin-left: auto;
 	display: flex;
 	align-items: center;
-	border: 1px solid #dbe1ea;
+	gap: 14px;
+}
+
+/* 검색 - 도구 줄 왼쪽. 상신 문서함과 같은 모양으로 맞췄다 */
+.search-box {
+	flex: 1;
+	min-width: 0;
+	max-width: 620px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	border: 1px solid #e2e6ee;
 	border-radius: 8px;
 	background: #fff;
-	padding-right: 3px;
-	transition: border-color .15s;
+	padding: 7px 12px;
+	transition: border-color .15s, background .15s;
 }
 
-.search .field:focus-within {
-	border-color: #2f6bff;
+.search-box:focus-within {
+	border-color: #b9d0ff;
+	background: #fff;
 }
 
-.search input {
-	width: 170px;
+.search-box .ico {
+	color: #a5aebd;
+	font-size: 19px;
+	line-height: 1;
+	padding: 0px 0px 5px;
+}
+
+.search-box input {
+	flex: 1;
+	min-width: 0;
 	border: none;
 	background: none;
-	padding: 0 10px;
-	font-size: 12.5px;
+	font-size: 13px;
 	color: #2b3444;
 }
 
-.search input::placeholder {
+.search-box input::placeholder {
 	color: #aab2be;
 }
 
-.search input:focus {
+.search-box input:focus {
 	outline: none;
 }
 
-.search .go {
-	width: 26px;
-	height: 26px;
-	border: none;
-	border-radius: 6px;
-	background: #2f6bff;
-	color: #fff;
-	font-size: 12px;
-	line-height: 1;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.search .go:hover {
-	background: #1f57e0;
-}
-
-/* 오른쪽 도구 : 다운로드 / 삭제 / 표시 개수 */
-.tool-bar {
-	display: flex;
-	justify-content: flex-end;
-	align-items: center;
-	gap: 18px;
-	margin-left: auto;
-}
-
-.tool-bar .divider {
+.divider {
 	width: 1px;
 	height: 14px;
 	background: #dbe1ea;
@@ -158,11 +139,11 @@
 	color: #2f6bff;
 }
 
-.tool-bar select {
+.card-head select {
 	border: 1px solid #dbe1ea;
 	border-radius: 6px;
-	padding: 5px 8px;
-	font-size: 13px;
+	padding: 3px 4px;
+	font-size: 12px;
 	color: #3d4756;
 	background: #fff;
 }
@@ -186,11 +167,15 @@
 }
 
 .doc-table tbody td {
-	padding: 13px 14px;
-	border-bottom: 1px solid #eef1f5;
+	padding: 14px;
+	border-bottom: 1px solid #f2f4f8;
 	font-size: 13.5px;
 	color: #2b3444;
 	vertical-align: middle;
+}
+
+.doc-table tbody tr:last-child td {
+	border-bottom: none;
 }
 
 .doc-table tbody tr:hover {
@@ -354,33 +339,43 @@ span.soon {
 				결재 &gt; <b>임시 저장함</b>
 			</div>
 
-			<div class="page-title">
+			<div class="page-title title-row">
 				<h2>임시 저장함</h2>
+				<span class="total-count">${fn:length(draftList)}건</span>
 			</div>
 
-			<%-- 표 위 오른쪽 도구 줄. 서버 기능은 아직 없다 --%>
-			<div class="list-bar">
-				<div class="tool-bar">
-					<button type="button" class="act soon" aria-disabled="true"
-						data-tip="추후 구현 예정">
-						<span class="ico">⭳</span> 목록 다운로드
-					</button>
-					<button type="button" class="act" onclick="deleteChecked()">
-						<span class="ico">🗑</span> 문서 삭제
-					</button>
+			<div class="list-card">
 
-					<span class="divider"></span>
+				<%-- 왼쪽 검색, 오른쪽 도구.
+				     검색은 버튼 없이 글자를 칠 때마다 걸러낸다 (oninput) --%>
+				<div class="card-head">
+					<div class="search-box">
+						<span class="ico">⌕</span> <input type="text" id="q"
+							placeholder="제목 · 양식 검색" oninput="applyFilter()">
+					</div>
 
-					<span class="soon" data-tip="추후 구현 예정">
-						<select disabled>
-						<option>20</option>
-						<option>50</option>
-						<option>100</option>
-					</select>
-					</span>
+					<div class="right">
+						<button type="button" class="act soon" aria-disabled="true"
+							data-tip="추후 구현 예정">
+							<span class="ico">⭳</span> 목록 다운로드
+						</button>
+						<button type="button" class="act" onclick="deleteChecked()">
+							<span class="ico">🗑</span> 문서 삭제
+						</button>
+
+						<span class="divider"></span>
+
+						<span class="soon" data-tip="추후 구현 예정">
+							<select disabled>
+							<option>20</option>
+							<option>50</option>
+							<option>100</option>
+						</select>
+						</span>
+					</div>
 				</div>
-			</div>
-			<form id="deleteForm"
+
+				<form id="deleteForm"
 				action="${pageContext.request.contextPath}/document/delete"
 				method="post">
 				<table class="doc-table">
@@ -400,18 +395,24 @@ span.soon {
 					<tbody>
 
 						<c:forEach var="doc" items="${draftList}">
-							<tr>
+
+							<%-- 양식 이름은 화면에도 쓰고 검색에도 써서 한 번만 만들어 둔다 --%>
+							<c:set var="formName"><c:choose>
+									<c:when test="${doc.documentType eq 'VACATION'}">휴가신청서</c:when>
+									<c:when test="${doc.documentType eq 'FREE'}">기본기안</c:when>
+									<c:otherwise>${doc.documentType}</c:otherwise>
+								</c:choose></c:set>
+
+							<%-- data-text : 검색이 뒤질 글자를 미리 소문자로 붙여 둔 것 --%>
+							<tr class="doc-row"
+								data-text="${fn:toLowerCase(doc.title)} ${fn:toLowerCase(formName)}">
 								<td class="col-check"><input type="checkbox" name="docIds"
 									class="rowCheck" value="${doc.docId}"></td>
 
 								<%-- LocalDateTime 은 2026-08-06T14:22:31 모양으로 찍힌다. 앞 10글자가 날짜 --%>
 								<td class="date">${fn:substring(doc.createdAt, 0, 10)}</td>
 
-								<td class="form-name"><c:choose>
-										<c:when test="${doc.documentType eq 'VACATION'}">휴가신청서</c:when>
-										<c:when test="${doc.documentType eq 'FREE'}">기본기안</c:when>
-										<c:otherwise>${doc.documentType}</c:otherwise>
-									</c:choose></td>
+								<td class="form-name">${formName}</td>
 
 								<td class="col-urgent"><c:if test="${doc.isUrgent}">
 										<span class="urgent-mark" title="긴급">⚠</span>
@@ -440,36 +441,30 @@ span.soon {
 							</tr>
 						</c:if>
 
+						<%-- 검색으로 다 걸러졌을 때만 JS 가 이 줄을 보여준다 --%>
+						<tr id="noResult" style="display: none;">
+							<td colspan="7" class="empty">검색 결과가 없습니다.</td>
+						</tr>
+
 					</tbody>
 				</table>
-			</form>
+				</form>
 
-			<%-- 페이지네이션 자리. 아직 안 만들었다 (SQL LIMIT / OFFSET 필요) --%>
-
-			<%-- 목록 아래 가운데 검색창 --%>
-			<div class="search-bottom">
-				<div class="search">
-					<select>
-						<option>제목</option>
-						<option>내용</option>
-					</select>
-					<div class="field">
-						<input type="text" placeholder="검색어를 입력하세요"
-							onkeydown="if(event.key==='Enter'){doSearch();}">
-						<button type="button" class="go" onclick="doSearch()">🔍</button>
-					</div>
-				</div>
+				<%-- 페이지네이션 자리. 아직 안 만들었다 (SQL LIMIT / OFFSET 필요) --%>
 			</div>
 
 		</div>
 	</div>
 
 	<script>
-		// 머리글 체크박스로 전체 선택/해제
+		// 머리글 체크박스로 전체 선택/해제.
+		// 검색으로 숨겨진 줄은 건드리지 않는다 (안 보이는 문서가 딸려 지워지므로)
 		function toggleAll(head) {
-			var rows = document.querySelectorAll(".rowCheck");
+			var rows = document.querySelectorAll(".doc-row");
 			for (var i = 0; i < rows.length; i++) {
-				rows[i].checked = head.checked;
+				if (rows[i].style.display !== "none") {
+					rows[i].querySelector(".rowCheck").checked = head.checked;
+				}
 			}
 		}
 
@@ -515,8 +510,27 @@ span.soon {
 		}
 		
 
-		function doSearch() {
-			alert("검색은 아직 준비 중입니다.");
+		// ===== 검색 =====
+		// 서버에 다시 묻지 않고, 이미 화면에 그려진 줄만 보였다 숨겼다 한다.
+		// 한계: 화면에 올라온 것만 걸러진다 (상신 문서함과 같은 방식).
+		function applyFilter() {
+			var q = document.getElementById("q").value.trim().toLowerCase();
+			var rows = document.querySelectorAll(".doc-row");
+			var shown = 0;
+
+			for (var i = 0; i < rows.length; i++) {
+				if (q === "" || rows[i].dataset.text.indexOf(q) > -1) {
+					rows[i].style.display = "";
+					shown++;
+				} else {
+					rows[i].style.display = "none";
+					// 숨긴 줄이 체크된 채로 남으면 안 보이는 문서까지 삭제된다
+					rows[i].querySelector(".rowCheck").checked = false;
+				}
+			}
+
+			document.getElementById("noResult").style.display =
+					(shown === 0 && rows.length > 0) ? "" : "none";
 		}
 
 	</script>
