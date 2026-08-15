@@ -15,7 +15,8 @@
 /* ===== 이 화면에서만 쓰는 스타일 =====
    레이아웃(헤더/사이드바/메인/패널)은 common.css 에 있다. */
 
-/* 상태 카드 4개 */
+/* 상태 카드 4개.
+   문서 한 장이 거쳐 가는 순서(대기 → 진행 → 승인 → 반려)대로 늘어놓는다 */
 .stats {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -335,6 +336,9 @@
 			<%-- 카드마다 해당 목록 화면으로 넘어간다 --%>
 			<c:set var="cp" value="${pageContext.request.contextPath}" />
 
+			<%-- 문서 한 장이 거쳐 가는 순서대로 놓았다.
+			     1번만 '내가 결재할 문서'라 결재 대기함으로 가고,
+			     2~4번은 '내가 올린 문서'의 상태라 셋 다 상신 문서함으로 간다. --%>
 			<div class="stats">
 				<a class="stat" href="${cp}/document/pending">
 					<div class="ico wait">◷</div>
@@ -343,15 +347,15 @@
 					</div>
 				</a>
 				<a class="stat" href="${cp}/document/submitted">
-					<div class="ico done">✓</div>
-					<div>
-						<b>${cntApproved}</b><span>승인 완료</span>
-					</div>
-				</a>
-				<a class="stat" href="${cp}/document/submitted">
 					<div class="ico hold">⏸</div>
 					<div>
 						<b>${cntPending}</b><span>진행 중</span>
+					</div>
+				</a>
+				<a class="stat" href="${cp}/document/submitted">
+					<div class="ico done">✓</div>
+					<div>
+						<b>${cntApproved}</b><span>승인 완료</span>
 					</div>
 				</a>
 				<a class="stat" href="${cp}/document/submitted">
