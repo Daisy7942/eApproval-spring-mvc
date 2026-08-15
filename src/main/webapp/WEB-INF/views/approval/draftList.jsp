@@ -229,6 +229,12 @@ td.title a:hover {
 	text-decoration: underline;
 }
 
+/* 제목 없이 임시저장한 문서 */
+.no-title {
+	color: #9aa3b0;
+	font-style: italic;
+}
+
 /* 긴급 칸 : 머리글과 ⚠ 를 가운데로.
    앞에 .doc-table 을 붙인 건 위의 thead th / tbody td 규칙보다 세게 만들기 위해서다 */
 .doc-table .col-urgent {
@@ -415,8 +421,15 @@ span.soon {
 										<span class="urgent-mark" title="긴급">⚠</span>
 									</c:if></td>
 
+								<%-- 임시저장은 제목 없이도 저장된다. 제목이 비면 <a> 안에 글자가
+									 하나도 없어서 클릭할 자리가 사라지므로 대신 보여줄 말을 넣는다 --%>
 								<td class="title"><a href="#"
-									onclick="editDraft(${doc.docId}); return false;">${doc.title}</a></td>
+									onclick="editDraft(${doc.docId}); return false;"><c:choose>
+											<c:when test="${empty doc.title}">
+												<span class="no-title">(제목 없음)</span>
+											</c:when>
+											<c:otherwise>${doc.title}</c:otherwise>
+										</c:choose></a></td>
 
 								<%-- 첨부파일(attachment) 테이블은 아직 없다 --%>
 								<td class="attach"></td>

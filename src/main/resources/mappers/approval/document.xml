@@ -90,14 +90,16 @@
 	</select>
 
 	<!-- 임시저장 1건 조회 -->
-	<select id="selectDraft"
-		resultType="com.eapproval.approval.vo.DocumentVO">
-		SELECT *
-		FROM document
-		WHERE employee_id = #{employeeId}
-		AND
-		status = 'DRAFT'
-		and doc_id = #{docId}
+	<select id="selectDraft" resultMap="documentWithLineMap">
+		SELECT d.*,
+		al.approval_line_id, al.approver_id, al.approval_order, al.approval_status,
+		e.name, e.position, t.team_name
+		FROM document d
+		LEFT JOIN approval_line al ON d.doc_id = al.doc_id
+		LEFT JOIN employee e ON al.approver_id = e.employee_id
+		LEFT JOIN team t ON e.team_id = t.team_id
+		WHERE d.employee_id = #{employeeId} AND d.doc_id = #{docId}
+		ORDER BY al.approval_order
 	</select>
 
 	<!-- 수정 -->
@@ -131,9 +133,11 @@
 	<delete id="deleteApprovalLines">
 		DELETE FROM approval_line
 		WHERE doc_id = #{docId}
-		AND doc_id IN (
+		AND
+		doc_id IN (
 		SELECT doc_id FROM document
-		WHERE doc_id = #{docId} AND employee_id = #{employeeId}
+		WHERE doc_id = #{docId} AND
+		employee_id = #{employeeId}
 		)
 	</delete>
 

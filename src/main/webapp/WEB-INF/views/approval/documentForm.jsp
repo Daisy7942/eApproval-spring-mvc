@@ -459,7 +459,27 @@ $(document).ready(function() {
           }<c:if test="${!st.last}">,</c:if>
         </c:forEach>
       ];
-      if (recLine.length > 0) {
+      /* 임시저장 문서를 다시 열었을 때 이미 저장돼 있던 결재선.
+         selectDraft 가 approval_line 을 JOIN 해서 doc.approvalLine 에 담아준다.
+         새 문서면 doc 자체가 없어서 아래 forEach 가 한 줄도 안 돌아 빈 배열이 된다.
+         화면이 쓰는 이름(employeeId·dept)과 VO 의 이름(approverId·teamName)이 달라
+         여기서 갈아 끼운다. */
+      var savedLine = [
+        <c:forEach items="${doc.approvalLine}" var="a" varStatus="st">
+          {
+            employeeId : ${a.approverId},
+            name       : '${a.name}',
+            position   : '${a.position}',
+            dept       : '${a.teamName}',
+            roleCode   : 'APPROVAL'
+          }<c:if test="${!st.last}">,</c:if>
+        </c:forEach>
+      ];
+
+      // 저장해 둔 결재선이 우선이다. 추천은 '아직 아무것도 고른 적 없을 때'만 쓴다.
+      if (savedLine.length > 0) {
+              setApprovalLine(savedLine);
+      } else if (recLine.length > 0) {
               setApprovalLine(recLine);
       }
 
@@ -500,7 +520,9 @@ $(document).ready(function() {
               var first = null;      // 커서를 옮길 첫 번째 문제 칸
               var blank = false;     // 안 채운 칸이 하나라도 있나
 
-              if ($('#title').val().trim() === '') {
+              // 제목·내용은 상신할 때만 필수다. 임시저장은 쓰다 만 문서를
+              // 그대로 쟁여두는 기능이라 빈칸이어도 저장돼야 한다.
+              if (isSubmitDoc && $('#title').val().trim() === '') {
                       $('#titleErr').show();
                       blank = true;
                       first = first || function() { $('#title').focus(); };
@@ -516,7 +538,7 @@ $(document).ready(function() {
 
               // 내용을 안 쓰면 <p><br></p> 가 들어옴
               var content = $('#summernote').summernote('code');
-              if (content === '' || content === '<p><br></p>') {
+              if (isSubmitDoc && (content === '' || content === '<p><br></p>')) {
                       $('#contentErr').show();
                       blank = true;
                       first = first || function() { $('#summernote').summernote('focus'); };

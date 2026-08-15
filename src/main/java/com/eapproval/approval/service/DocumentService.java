@@ -271,21 +271,26 @@ public class DocumentService {
 
 	// 연차 요약 (총부여·사용·대기·잔여)
 	public LeaveSummaryVO getLeaveSummary(Long employeeId) {
-
+		
+		// 문서 DB에서 사원의 연차 사용 및 대기 일수 조회
 		LeaveSummaryVO s = documentMapper.selectLeaveSummary(employeeId);
 
 		// 휴가를 한 번도 안 냈으면 행 자체가 안 나와서 null 이 온다
 		if (s == null)
 			s = new LeaveSummaryVO();
-		if (s.getUsedDays() == null)
-			s.setUsedDays(BigDecimal.ZERO);
-		if (s.getPendingDays() == null)
-			s.setPendingDays(BigDecimal.ZERO);
 
+		if (s.getUsedDays() == null)
+			s.setUsedDays(BigDecimal.ZERO); //사용 일수가 없으면 0으로 초기화
+		
+		if (s.getPendingDays() == null)
+			s.setPendingDays(BigDecimal.ZERO); //결재 대기 중인 일수가 없으면 0으로 초기화
+		
+		//사원 DB에서 현재 남아있는 연차 잔여 일수 조회
 		BigDecimal remain = employeeMapper.selectRemainLeave(employeeId);
 		if (remain == null)
-			remain = BigDecimal.ZERO;
-
+			remain = BigDecimal.ZERO; //잔여 연차가 null이면 0으로 초기화
+		
+		//조회 및 계산된 연차 정보를 VO에 세팅
 		s.setRemainDays(remain);
 		s.setTotalDays(remain.add(s.getUsedDays())); // BigDecimal 은 + 가 아니라 .add()
 		return s;
