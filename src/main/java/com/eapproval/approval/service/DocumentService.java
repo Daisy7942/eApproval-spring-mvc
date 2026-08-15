@@ -36,22 +36,25 @@ public class DocumentService {
 		documentVO.setStatus("DRAFT"); // 상태값 :대기, 승인 등
 		documentVO.setApprovalType("SEQUENTIAL"); // 기본값: 순차 결재
 		int result = documentMapper.insertDocument(documentVO); // 여기서 docId 가 생긴다
-		saveApprovalLines(documentVO);                          // 그래서 이 뒤에 부른다
+		saveApprovalLines(documentVO); // 그래서 이 뒤에 부른다
+		saveVacation(documentVO);
 		return result;
 	}
-	
+
 	// 임시저장은 여러 번 누를 수 있고 상신도 임시저장 위에 얹힌다.
 	// INSERT 만 하면 줄이 쌓이므로 항상 지우고 다시 넣는다.
 	private void saveApprovalLines(DocumentVO documentVO) {
-		
-		//기존에 등록되어 있던 해당 문서(docId)의 결재선 전체 삭제 (중복 방지)
-		documentMapper.deleteApprovalLines(documentVO.getDocId(),documentVO.getEmployeeId());
-		
-		//새로 저장할 결재선 목록 꺼내기
+
+		// 기존에 등록되어 있던 해당 문서(docId)의 결재선 전체 삭제 (중복 방지)
+		documentMapper.deleteApprovalLines(documentVO.getDocId(), documentVO.getEmployeeId());
+
+		// 새로 저장할 결재선 목록 꺼내기
 		List<ApprovalLineVO> lines = documentVO.getApprovalLine();
-		if (lines == null || lines.isEmpty()) { return; }   // 임시저장은 결재선이 없어도 정상
-		
-		//결재선 객체마다 필요한 정보(문서ID, 순서, 상태 등) 세팅
+		if (lines == null || lines.isEmpty()) {
+			return;
+		} // 임시저장은 결재선이 없어도 정상
+
+		// 결재선 객체마다 필요한 정보(문서ID, 순서, 상태 등) 세팅
 		for (int i = 0; i < lines.size(); i++) {
 			ApprovalLineVO line = lines.get(i);
 			line.setDocId(documentVO.getDocId());
@@ -63,6 +66,32 @@ public class DocumentService {
 		documentMapper.insertApprovalLines(lines);
 	}
 
+	// 휴가 신청 정보를 지우고 다시 저장 / 이유: 임시저장은 여러번 누를 수 있는데 INSERT 만 하면 줄이 쌓이고,
+	// UPDATE 만 하면 첫 저장 때 고칠 행이 없어 0건이 된다. 그래서 지우고 넣는다.
+	private void saveVacation(DocumentVO documentVO) {
+
+		// 기존에 작성된 휴가 신청 정보 삭제
+		documentMapper.deleteVacationRequest(documentVO.getDocId(), documentVO.getEmployeeId());
+
+		VacationRequestVO v = documentVO.getVacation();
+		if (v == null) {
+			return;
+		} // 휴가 신청서가 아닌 일반 문서면 여기서 끝
+
+		// 휴가 신청 객체에 문서 ID 및 작성자 사원 ID 매핑
+		v.setDocId(documentVO.getDocId());
+		v.setEmployeeId(documentVO.getEmployeeId());
+
+		// 시작일과 종료일이 모두 존재하는 경우에만 휴가 일수 계산
+		if (v.getStartDate() != null && v.getEndDate() != null) {
+			v.setDays(calcDays(v));
+		}
+		v.setStartHalf(nullIfEmpty(v.getStartHalf())); // DB 저장을 위해 null 처리
+		v.setEndHalf(nullIfEmpty(v.getEndHalf()));
+
+		documentMapper.insertVacationRequest(v); // 최종저장
+	}
+
 	// 상신
 	@Transactional
 	public void submitDocument(DocumentVO documentVO) {
@@ -72,14 +101,14 @@ public class DocumentService {
 		if (lines == null || lines.isEmpty()) {
 			throw new IllegalStateException("결재선이 없습니다.");
 		}
-		
-		//문서 메인 데이터 저장 (신규 vs 임시저장 구분)
+
+		// 문서 메인 데이터 저장 (신규 vs 임시저장 구분)
 		if (documentVO.getDocId() == null) {
 			documentVO.setStatus("PENDING"); // 결재'대기'상태로 셋팅
 			documentVO.setApprovalType("SEQUENTIAL");// 기본값: 순차 결재
 			documentMapper.insertDocument(documentVO); // DB에 새로 저장
 		} else {
-			documentMapper.submitDocument(documentVO);   // 기존 임시저장 문서를 '상신'으로 업데이트
+			documentMapper.submitDocument(documentVO); // 기존 임시저장 문서를 '상신'으로 업데이트
 		}
 
 		saveApprovalLines(documentVO); // 결재선 저장
@@ -98,22 +127,19 @@ public class DocumentService {
 			}
 			v.setDays(calcDays(v)); // 연차 계산해서 세팅
 			VacationTypeVO type = documentMapper.selectVacationType(v.getVacationTypeId());
-			if (type != null && type.isDeductBalance()) {  // 연차가 차감되는 휴가 유형이라면
+			if (type != null && type.isDeductBalance()) { // 연차가 차감되는 휴가 유형이라면
 
 				// 사용 가능 연차 = (잔여 연차 - 이미 신청되어 대기 중인 연차)
-			    LeaveSummaryVO s = getLeaveSummary(documentVO.getEmployeeId());
-			    BigDecimal available = s.getRemainDays().subtract(s.getPendingDays());
+				LeaveSummaryVO s = getLeaveSummary(documentVO.getEmployeeId());
+				BigDecimal available = s.getRemainDays().subtract(s.getPendingDays());
 
-			    // 신청 일수가 사용 가능 연차보다 크면 예외 발생
-			    if (v.getDays().compareTo(available) > 0) {
-			        throw new IllegalStateException(
-			            "신청 가능한 연차를 넘었습니다.");
-			    }
+				// 신청 일수가 사용 가능 연차보다 크면 예외 발생
+				if (v.getDays().compareTo(available) > 0) {
+					throw new IllegalStateException("신청 가능한 연차를 넘었습니다.");
+				}
 			}
-			v.setStartHalf(nullIfEmpty(v.getStartHalf())); // "" 빈문자열이면 null로 변경해서 db에 넣기
-			v.setEndHalf(nullIfEmpty(v.getEndHalf()));
-			documentMapper.insertVacationRequest(v); // 휴가 신청 테이블에 저장
 		}
+		saveVacation(documentVO);
 	}
 
 	// 근무일 수 세기 (토·일 제외). 공휴일은 아직...
@@ -163,6 +189,7 @@ public class DocumentService {
 	public int updateDraft(DocumentVO documentVO) {
 		int result = documentMapper.updateDraft(documentVO);
 		saveApprovalLines(documentVO);
+		saveVacation(documentVO);
 		return result;
 	}
 
@@ -190,18 +217,18 @@ public class DocumentService {
 		return documentMapper.selectCompletedList(employeeId);
 	}
 
-	// 추천 상사 결재 라인  //approval_order로 상사라인은 데이터베이스로 셋팅 해놓았음
+	// 추천 상사 결재 라인 //approval_order로 상사라인은 데이터베이스로 셋팅 해놓았음
 	public List<EapprovalVO> recommendApprovalLine(long employeeId, String documentType) {
 
 		int depth = "VACATION".equals(documentType) ? 2 : 0;
 
-		List<EapprovalVO> line = new ArrayList<>();  // 추천 결재자들을 담을 리스트
-		long cur = employeeId;    // 현재 상사를 찾을 대상 사원 ID (처음엔 '나')
+		List<EapprovalVO> line = new ArrayList<>(); // 추천 결재자들을 담을 리스트
+		long cur = employeeId; // 현재 상사를 찾을 대상 사원 ID (처음엔 '나')
 		for (int i = 0; i < depth; i++) {
-			EapprovalVO m = employeeMapper.selectManager(cur);  // cur 사원의 직속 상사 조회
+			EapprovalVO m = employeeMapper.selectManager(cur); // cur 사원의 직속 상사 조회
 			if (m == null)
 				break; // 최고 책임자까지 올라갔으면 멈춤
-			line.add(m);    // 찾은 상사를 결재선에 추가
+			line.add(m); // 찾은 상사를 결재선에 추가
 			cur = m.getEmployeeId(); // 다음은 이 사람의 상사
 		}
 		return line;
@@ -271,7 +298,7 @@ public class DocumentService {
 
 	// 연차 요약 (총부여·사용·대기·잔여)
 	public LeaveSummaryVO getLeaveSummary(Long employeeId) {
-		
+
 		// 문서 DB에서 사원의 연차 사용 및 대기 일수 조회
 		LeaveSummaryVO s = documentMapper.selectLeaveSummary(employeeId);
 
@@ -280,17 +307,17 @@ public class DocumentService {
 			s = new LeaveSummaryVO();
 
 		if (s.getUsedDays() == null)
-			s.setUsedDays(BigDecimal.ZERO); //사용 일수가 없으면 0으로 초기화
-		
+			s.setUsedDays(BigDecimal.ZERO); // 사용 일수가 없으면 0으로 초기화
+
 		if (s.getPendingDays() == null)
-			s.setPendingDays(BigDecimal.ZERO); //결재 대기 중인 일수가 없으면 0으로 초기화
-		
-		//사원 DB에서 현재 남아있는 연차 잔여 일수 조회
+			s.setPendingDays(BigDecimal.ZERO); // 결재 대기 중인 일수가 없으면 0으로 초기화
+
+		// 사원 DB에서 현재 남아있는 연차 잔여 일수 조회
 		BigDecimal remain = employeeMapper.selectRemainLeave(employeeId);
 		if (remain == null)
-			remain = BigDecimal.ZERO; //잔여 연차가 null이면 0으로 초기화
-		
-		//조회 및 계산된 연차 정보를 VO에 세팅
+			remain = BigDecimal.ZERO; // 잔여 연차가 null이면 0으로 초기화
+
+		// 조회 및 계산된 연차 정보를 VO에 세팅
 		s.setRemainDays(remain);
 		s.setTotalDays(remain.add(s.getUsedDays())); // BigDecimal 은 + 가 아니라 .add()
 		return s;
@@ -298,25 +325,25 @@ public class DocumentService {
 
 	// 내 휴가 신청 내역. 예정/지난
 	public Map<String, List<VacationRequestVO>> getMyLeaveList(Long employeeId) {
-		
+
 		// DB에서 해당 사원의 전체 휴가 신청 내역 조회
 		List<VacationRequestVO> all = documentMapper.selectMyLeaveList(employeeId);
-		
-		//휴가 목록을 담을 리스트 준비
+
+		// 휴가 목록을 담을 리스트 준비
 		List<VacationRequestVO> upcoming = new ArrayList<>(); // 예정 또는 진행 중인 휴가
 		List<VacationRequestVO> past = new ArrayList<>(); // 이미 종료된 지난 휴가
 
 		LocalDate today = LocalDate.now(); // 오늘날짜구하기
 
 		for (VacationRequestVO v : all) {
-			// 종료일(endDate)이 null이 아니고, 오늘 이전(isBefore)에 끝났다면 지난 휴가로 분류, 아니면  예정 (오늘 포함)
+			// 종료일(endDate)이 null이 아니고, 오늘 이전(isBefore)에 끝났다면 지난 휴가로 분류, 아니면 예정 (오늘 포함)
 			if (v.getEndDate() != null && v.getEndDate().isBefore(today)) {
 				past.add(v);
 			} else {
 				upcoming.add(v);
 			}
 		}
-		
+
 		// 결과를 "Key-Value" 구조인 Map에 묶어서 반환
 		Map<String, List<VacationRequestVO>> result = new HashMap<>();
 		result.put("upcoming", upcoming);

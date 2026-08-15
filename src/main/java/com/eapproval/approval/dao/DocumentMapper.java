@@ -31,6 +31,9 @@ public interface DocumentMapper {
 	
 	// 임시저장 결재선 삭제
 	int deleteApprovalLines(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
+	
+	// 임시저장 휴가정보 삭제
+	int deleteVacationRequest(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
 
 	// 결재선 여러건 저장
 	void insertApprovalLines(@Param("lines") List<ApprovalLineVO> lines);

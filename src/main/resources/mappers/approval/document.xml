@@ -92,13 +92,27 @@
 	<!-- 임시저장 1건 조회 -->
 	<select id="selectDraft" resultMap="documentWithLineMap">
 		SELECT d.*,
-		al.approval_line_id, al.approver_id, al.approval_order, al.approval_status,
-		e.name, e.position, t.team_name
-		FROM document d
+		al.approval_line_id, al.approver_id, al.approval_order,
+		al.approval_status,
+		e.name, e.position, t.team_name,
+		vr.vacation_id,
+		vr.vacation_type_id, vr.start_date, vr.end_date,
+		vr.days, vr.reason,
+		vr.start_half, vr.end_half,
+		vt.type_name, vt.deduct_balance
+		FROM
+		document d
 		LEFT JOIN approval_line al ON d.doc_id = al.doc_id
-		LEFT JOIN employee e ON al.approver_id = e.employee_id
-		LEFT JOIN team t ON e.team_id = t.team_id
-		WHERE d.employee_id = #{employeeId} AND d.doc_id = #{docId}
+		LEFT JOIN
+		employee e ON al.approver_id = e.employee_id
+		LEFT JOIN team t ON
+		e.team_id = t.team_id
+		LEFT JOIN vacation_request vr ON d.doc_id =
+		vr.doc_id
+		LEFT JOIN vacation_type vt ON vr.vacation_type_id =
+		vt.vacation_type_id
+		WHERE d.employee_id = #{employeeId} AND d.doc_id =
+		#{docId}
 		ORDER BY al.approval_order
 	</select>
 
@@ -141,7 +155,16 @@
 		)
 	</delete>
 
-
+	<!-- 임시저장 휴가정보 삭제 -->
+	<delete id="deleteVacationRequest">
+		DELETE FROM vacation_request
+		WHERE doc_id = #{docId}
+		AND doc_id IN (
+		SELECT doc_id FROM document
+		WHERE doc_id = #{docId} AND
+		employee_id = #{employeeId}
+		)
+	</delete>
 
 	<!-- 결재자 수만큼 insert (여러건의 경우) -->
 	<insert id="insertApprovalLines">

@@ -576,7 +576,25 @@ $(document).ready(function() {
           }<c:if test="${!st.last}">,</c:if>
         </c:forEach>
       ];
-      if (recLine.length > 0) {
+      /* 임시저장 문서를 다시 열었을 때 이미 저장돼 있던 결재선.
+         selectDraft 가 approval_line 을 JOIN 해서 doc.approvalLine 에 담아준다.
+         화면이 쓰는 이름(employeeId·dept)과 VO 의 이름(approverId·teamName)이 달라 갈아 끼운다. */
+      var savedLine = [
+        <c:forEach items="${doc.approvalLine}" var="a" varStatus="st">
+          {
+            employeeId : ${a.approverId},
+            name       : '${a.name}',
+            position   : '${a.position}',
+            dept       : '${a.teamName}',
+            roleCode   : 'APPROVAL'
+          }<c:if test="${!st.last}">,</c:if>
+        </c:forEach>
+      ];
+
+      // 저장해 둔 결재선이 우선이다. 추천은 새로 쓸 때만 쓴다.
+      if (savedLine.length > 0) {
+              setApprovalLine(savedLine);
+      } else if (recLine.length > 0) {
               setApprovalLine(recLine);
       }
 
@@ -605,12 +623,26 @@ $(document).ready(function() {
               syncTitle();
       });
 
-      /* 기본값은 연차(종일)다. 대부분의 신청이 연차라서 미리 골라둔다.
+      /* 처음 고를 칩을 정한다.
+         임시저장 문서를 다시 열었으면 그때 골랐던 종류를, 새 문서면 연차(종일)를 고른다.
          값을 직접 넣지 않고 위 클릭 핸들러를 그대로 태운다 —
          그래야 hidden 셋·오른쪽 카드·일수 계산·제목까지 한꺼번에 맞춰진다. */
-      $('.vchip').filter(function() {
-              return $(this).data('type') === 'ANNUAL' && $(this).data('half') === '';
-      }).first().trigger('click');
+      var savedType = '${doc.vacation.vacationTypeId}';   // 새 문서면 빈 문자열
+      var savedHalf = '${doc.vacation.startHalf}';        // 종일이거나 새 문서면 빈 문자열
+
+      function findChip(type, half) {
+              return $('.vchip').filter(function() {
+                      return $(this).data('type') === type
+                          && ($(this).data('half') || '') === half;
+              }).first();
+      }
+
+      // 저장된 종류가 있으면 그것만 찾는다. 못 찾으면(종류가 지워졌다든가) 아무것도 고르지 않는다 —
+      // 연차로 대신 골라주면 사용자 모르게 신청 내용이 바뀐다.
+      var $first = (savedType !== '') ? findChip(savedType, savedHalf)
+                                      : findChip('ANNUAL', '');
+
+      $first.trigger('click');
 
       /* 고른 종류에 맞춰 오른쪽 카드를 바꾼다.
          숫자는 vacation_type.default_days, 문구는 description 이다 — 둘 다 DB 값. */
