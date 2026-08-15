@@ -221,68 +221,143 @@ body {
 	margin-bottom: 14px;
 }
 
+/* ===== 미리보기 =====
+   문서 상세보기(documentDetail.jsp)의 '종이'를 그대로 축소한 것이다.
+   테두리·칸 나눔·도장판 구성은 같고 글자와 칸 크기만 줄였다.
+   실제로 열었을 때 딴 화면이 나오면 미리보기가 아니므로 모양을 맞춘다. */
 .paper {
 	background: #fff;
-	border: 1px solid #e3e7ef;
-	border-radius: 8px;
+	border: 1px solid #d5dbe4;
+	border-radius: 4px;
 	max-width: 380px;
 	margin: 0 auto;
-	padding: 22px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+	padding: 20px 18px 22px;
+	box-shadow: 0 1px 3px rgba(28, 36, 51, .06);
 }
 
+/* 종이 제목. 양식이 있는 문서는 자간을 벌려 결재문서처럼 보이게 한다 */
 .paper h5 {
 	text-align: center;
-	font-size: 15px;
-	color: #222;
-	margin-bottom: 4px;
+	font-size: 14px;
+	font-weight: 700;
+	color: #1c2433;
+	line-height: 1.45;
+	margin: 0;
 }
 
-.paper .no {
-	text-align: center;
-	font-size: 11px;
-	color: #a5aebd;
-	margin-bottom: 14px;
+.paper h5.form {
+	letter-spacing: 6px;
+	padding-left: 6px;
 }
 
-.fld {
-	border: 1px solid #e6eaf1;
-	border-radius: 6px;
-	padding: 8px 10px;
-	margin-bottom: 8px;
-}
-
-.fld label {
-	font-size: 10px;
-	color: #a5aebd;
-	display: block;
-}
-
-.fld .ph {
-	height: 8px;
-	background: #edf0f5;
-	border-radius: 4px;
-	margin-top: 5px;
-}
-
-.sign-row {
-	display: flex;
-	gap: 8px;
-	justify-content: flex-end;
-	margin-top: 12px;
-}
-
-.sign {
-	width: 52px;
-	height: 52px;
-	border: 1px solid #e0e5ec;
-	border-radius: 4px;
-	font-size: 10px;
-	color: #a5aebd;
+/* 왼쪽 문서정보 / 오른쪽 도장판 */
+.paper-top {
 	display: flex;
 	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 16px 0 12px;
+}
+
+.info-tbl {
+	border-collapse: collapse;
+	flex: 0 1 auto;
+	font-size: 9.5px;
+}
+
+.info-tbl th, .info-tbl td {
+	border: 1px solid #c9d0da;
+	padding: 3px 6px;
+	text-align: left;
+	line-height: 1.5;
+	white-space: nowrap;
+}
+
+.info-tbl th {
+	width: 48px;
+	background: #f2f4f7;
+	color: #3d4756;
+	font-weight: 600;
+}
+
+.info-tbl td {
+	color: #8a93a3;
+}
+
+/* 도장판. 칸 하나가 사람 한 명 (위=직급, 가운데=도장자리, 아래=처리일) */
+.stamp-box {
+	display: flex;
+	border: 1px solid #8b939f;
+	flex: 0 0 auto;
+}
+
+.stamp-side {
+	width: 13px;
+	border-right: 1px solid #8b939f;
+	background: #f2f4f7;
+	display: flex;
+	align-items: center;
 	justify-content: center;
-	padding-top: 4px;
+	font-size: 8px;
+	color: #3d4756;
+	letter-spacing: 2px;
+	writing-mode: vertical-rl;
+	padding: 3px 0;
+}
+
+.stamp-col {
+	width: 36px;
+	border-right: 1px solid #8b939f;
+	text-align: center;
+}
+
+.stamp-col:last-child {
+	border-right: none;
+}
+
+.stamp-col .pos {
+	font-size: 8px;
+	color: #3d4756;
+	padding: 2px 0;
+	border-bottom: 1px solid #8b939f;
+	background: #fafbfc;
+}
+
+.stamp-col .mark {
+	height: 28px;
+}
+
+.stamp-col .day {
+	font-size: 7.5px;
+	color: #5b6576;
+	padding: 2px 0;
+	border-top: 1px solid #8b939f;
+	min-height: 9px;
+}
+
+/* 제목 줄. 양식 문서는 종이 제목이 양식 이름이라 문서 제목이 따로 한 줄 붙는다 */
+.title-tbl {
+	width: 100%;
+	margin-bottom: -1px;
+}
+
+.title-tbl th {
+	width: 56px;
+	text-align: center;
+}
+
+/* 본문 칸 */
+.paper-body {
+	border: 1px solid #c9d0da;
+	padding: 10px 9px;
+	min-height: 96px;
+}
+
+.paper-body .ph {
+	height: 7px;
+	background: #edf0f5;
+	border-radius: 4px;
+	margin-bottom: 7px;
 }
 
 /* 하단 버튼 */
@@ -390,7 +465,7 @@ body {
 
 					<div class="meta">
 						<div>
-							<label>문서 종류</label><b id="dType">일반행정 (FREE)</b>
+							<label>문서 종류</label><b id="dType">일반행정</b>
 						</div>
 						<div>
 							<label>기안 부서</label><b>전부서</b>
@@ -407,20 +482,66 @@ body {
 						<h4>문서 미리보기</h4>
 						<div class="paper">
 							<h5 id="pTitle">자유형식 기안</h5>
-							<div class="no" id="pNo">문서번호: F001-XXXX</div>
-							<div class="fld">
-								<label>제목</label>
-								<div class="ph" style="width: 70%"></div>
+
+							<%-- 왼쪽 문서정보 / 오른쪽 도장판. 상세보기와 같은 배치다 --%>
+							<div class="paper-top">
+								<table class="info-tbl">
+									<tr>
+										<th>문서번호</th>
+										<td id="pNo">-</td>
+									</tr>
+									<tr>
+										<th>기 안 일</th>
+										<td id="pDate">-</td>
+									</tr>
+									<tr>
+										<th>기 안 자</th>
+										<td>${loginUser.name}</td>
+									</tr>
+									<tr>
+										<th>소　　속</th>
+										<td>${loginUser.departmentName} ${loginUser.teamName}</td>
+									</tr>
+								</table>
+
+								<%-- 도장 자리는 비워 둔다. 아직 아무도 결재하지 않은 문서라
+								     실제로 열어도 이 칸은 비어 있다 --%>
+								<div class="stamp-box">
+									<div class="stamp-side">기안</div>
+									<div class="stamp-col">
+										<div class="pos">${loginUser.position}</div>
+										<div class="mark"></div>
+										<div class="day"></div>
+									</div>
+
+									<div class="stamp-side">결재</div>
+									<div class="stamp-col">
+										<div class="pos">팀장</div>
+										<div class="mark"></div>
+										<div class="day"></div>
+									</div>
+									<div class="stamp-col">
+										<div class="pos">부서장</div>
+										<div class="mark"></div>
+										<div class="day"></div>
+									</div>
+								</div>
 							</div>
-							<div class="fld" id="pBody">
-								<label>내용</label>
+
+							<%-- 양식이 있는 문서는 종이 제목이 양식 이름이라
+							     문서 제목이 한 줄로 따로 붙는다 (기본기안은 안 붙는다) --%>
+							<table class="info-tbl title-tbl" id="pTitleRow"
+								style="display: none;">
+								<tr>
+									<th>제　　목</th>
+									<td>&nbsp;</td>
+								</tr>
+							</table>
+
+							<div class="paper-body">
 								<div class="ph"></div>
 								<div class="ph" style="width: 85%"></div>
 								<div class="ph" style="width: 60%"></div>
-							</div>
-							<div class="sign-row">
-								<div class="sign">기안</div>
-								<div class="sign">팀장</div>
 							</div>
 						</div>
 					</div>
@@ -476,16 +597,16 @@ body {
 			free : {
 				title : "자유형식 기안",
 				desc : "에디터로 자유롭게 작성하는 일반 기안 문서",
-				type : "일반행정 (FREE)",
+				type : "일반행정 ",
 				code : "F001",
 				approval : "순차 / 병렬"
 			},
 			vacation : {
 				title : "연차휴가신청서",
 				desc : "연차·반차 등 휴가 신청 및 결재 요청 양식",
-				type : "인사/복무 (VACATION)",
+				type : "인사/복무 ",
 				code : "V001",
-				approval : "순차 / 병렬"
+				approval : "순차"
 			}
 		};
 		var currentKey = "free";
@@ -526,10 +647,29 @@ body {
 			document.getElementById("dType").textContent = f.type;
 			document.getElementById("dCode").textContent = f.code;
 			document.getElementById("dApproval").textContent = f.approval;
-			document.getElementById("pTitle").textContent = f.title;
-			document.getElementById("pNo").textContent = "문서번호: " + f.code
-					+ "-XXXX";
+			// 종이 제목. 양식이 있는 문서만 자간을 벌린다 (상세보기와 같은 규칙)
+			var pt = document.getElementById("pTitle");
+			pt.textContent = f.title;
+			pt.className = (key === "free") ? "" : "form";
+
+			// 기본기안은 종이 제목이 곧 문서 제목이라 제목 줄이 필요 없다
+			document.getElementById("pTitleRow").style.display =
+					(key === "free") ? "none" : "";
 		}
+
+		/* 문서번호와 기안일은 저장할 때 서버가 정하는 값이다.
+		   미리보기에서는 올해 연도와 오늘 날짜로 모양만 보여 준다.
+		   날짜는 상세보기와 같은 2026-08-15 꼴로 맞춘다. */
+		(function initPaper() {
+			var now = new Date();
+			var m = ("0" + (now.getMonth() + 1)).slice(-2);
+			var d = ("0" + now.getDate()).slice(-2);
+
+			document.getElementById("pNo").textContent =
+					"DOC-" + now.getFullYear() + "-XXXX";
+			document.getElementById("pDate").textContent =
+					now.getFullYear() + "-" + m + "-" + d;
+		})();
 
 		function closeSelf() {
 			if (window.parent && window.parent.closeFormModal) {

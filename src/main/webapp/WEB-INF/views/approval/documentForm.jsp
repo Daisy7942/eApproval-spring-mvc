@@ -225,7 +225,7 @@ body { background:#f4f6fa; padding:30px; }
                               <label class="tit">첨부파일</label>
                               <div class="todo">
                                       <button type="button" class="ghost" disabled >파일 선택</button>
-                                      <span class="note">추후구현 — attachment 테이블 사용 예정</span>
+                                      <span class="note">추후구현 </span>
                               </div>
                       </div>
 

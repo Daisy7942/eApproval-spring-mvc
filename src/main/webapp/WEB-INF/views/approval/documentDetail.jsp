@@ -887,6 +887,15 @@ span.soon {
 					     위 요약 칸과 겹쳐 보이지만 저건 화면용이고 이건 인쇄물에 남아야 하는 칸이다 --%>
 					<table class="info-tbl">
 						<tr>
+							<th>문서번호</th>
+							<td>DOC-${fn:substring(doc.createdAt, 0, 4)}-<fmt:formatNumber
+									value="${doc.docId}" pattern="0000" /></td>
+						</tr>
+						<tr>
+							<th>기 안 일</th>
+							<td>${fn:substring(doc.createdAt, 0, 10)}</td>
+						</tr>
+						<tr>
 							<th>기 안 자</th>
 							<td>${doc.drafterName}<span class="sub">
 									${doc.drafterPosition}</span></td>
@@ -894,15 +903,6 @@ span.soon {
 						<tr>
 							<th>소　　속</th>
 							<td>${doc.drafterTeam}</td>
-						</tr>
-						<tr>
-							<th>기 안 일</th>
-							<td>${fn:substring(doc.createdAt, 0, 10)}</td>
-						</tr>
-						<tr>
-							<th>문서번호</th>
-							<td>DOC-${fn:substring(doc.createdAt, 0, 4)}-<fmt:formatNumber
-									value="${doc.docId}" pattern="0000" /></td>
 						</tr>
 					</table>
 
