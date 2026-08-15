@@ -28,6 +28,9 @@ public interface DocumentMapper {
 
 	// 삭제
 	int deleteDrafts(@Param("docIds") List<Long> docIds, @Param("employeeId") Long employeeId);
+	
+	// 임시저장 결재선 삭제
+	int deleteApprovalLines(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
 
 	// 결재선 여러건 저장
 	void insertApprovalLines(@Param("lines") List<ApprovalLineVO> lines);
@@ -74,5 +77,7 @@ public interface DocumentMapper {
 	
 	// 휴가신청 종류 조회
 	VacationTypeVO selectVacationType(String vacationTypeId);
+	
+	
 	
 }

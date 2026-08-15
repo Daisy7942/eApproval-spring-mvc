@@ -35,7 +35,32 @@ public class DocumentService {
 	public int saveDraft(DocumentVO documentVO) {
 		documentVO.setStatus("DRAFT"); // 상태값 :대기, 승인 등
 		documentVO.setApprovalType("SEQUENTIAL"); // 기본값: 순차 결재
-		return documentMapper.insertDocument(documentVO);
+		int result = documentMapper.insertDocument(documentVO); // 여기서 docId 가 생긴다
+		saveApprovalLines(documentVO);                          // 그래서 이 뒤에 부른다
+		return result;
+	}
+	
+	// 임시저장은 여러 번 누를 수 있고 상신도 임시저장 위에 얹힌다.
+	// INSERT 만 하면 줄이 쌓이므로 항상 지우고 다시 넣는다.
+	private void saveApprovalLines(DocumentVO documentVO) {
+		
+		//기존에 등록되어 있던 해당 문서(docId)의 결재선 전체 삭제 (중복 방지)
+		documentMapper.deleteApprovalLines(documentVO.getDocId(),documentVO.getEmployeeId());
+		
+		//새로 저장할 결재선 목록 꺼내기
+		List<ApprovalLineVO> lines = documentVO.getApprovalLine();
+		if (lines == null || lines.isEmpty()) { return; }   // 임시저장은 결재선이 없어도 정상
+		
+		//결재선 객체마다 필요한 정보(문서ID, 순서, 상태 등) 세팅
+		for (int i = 0; i < lines.size(); i++) {
+			ApprovalLineVO line = lines.get(i);
+			line.setDocId(documentVO.getDocId());
+			line.setApprovalOrder(i + 1);
+			line.setApprovalStatus("PENDING");
+			line.setApprovalType("APPROVAL");
+		}
+		// 완성이 완료된 결재선 목록을 DB에 저장
+		documentMapper.insertApprovalLines(lines);
 	}
 
 	// 상신
@@ -57,15 +82,7 @@ public class DocumentService {
 			documentMapper.submitDocument(documentVO);   // 기존 임시저장 문서를 '상신'으로 업데이트
 		}
 
-		// 화면이 보내온 건 approverId 뿐. 나머지는 서버가 채우기
-		for (int i = 0; i < lines.size(); i++) {
-			ApprovalLineVO line = lines.get(i);
-			line.setDocId(documentVO.getDocId());  // 생성된 문서 ID 세팅
-			line.setApprovalOrder(i + 1); // 결재 순서 지정
-			line.setApprovalStatus("PENDING");
-			line.setApprovalType("APPROVAL"); // 결재'대기'상태로 
-		}
-		documentMapper.insertApprovalLines(lines);   // 완성된 결재선 목록을 DB에 일괄 저장
+		saveApprovalLines(documentVO); // 결재선 저장
 
 		// 휴가 관련정보를 request테이블에 저장
 		// 휴가 문서일 때만 vacation_request 에 한 줄 더 넣는다
@@ -144,7 +161,9 @@ public class DocumentService {
 	@Transactional
 	// 임시저장 1건 수정저장
 	public int updateDraft(DocumentVO documentVO) {
-		return documentMapper.updateDraft(documentVO);
+		int result = documentMapper.updateDraft(documentVO);
+		saveApprovalLines(documentVO);
+		return result;
 	}
 
 	// 임시저장 삭제

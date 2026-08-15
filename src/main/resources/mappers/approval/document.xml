@@ -127,6 +127,18 @@
 		AND status = 'DRAFT'
 	</delete>
 
+	<!-- 임시저장 결재선 삭제 -->
+	<delete id="deleteApprovalLines">
+		DELETE FROM approval_line
+		WHERE doc_id = #{docId}
+		AND doc_id IN (
+		SELECT doc_id FROM document
+		WHERE doc_id = #{docId} AND employee_id = #{employeeId}
+		)
+	</delete>
+
+
+
 	<!-- 결재자 수만큼 insert (여러건의 경우) -->
 	<insert id="insertApprovalLines">
 		INSERT INTO approval_line
@@ -413,7 +425,8 @@
 
 	<select id="selectVacationType" parameterType="string"
 		resultType="com.eapproval.approval.vo.VacationTypeVO">
-		SELECT * FROM vacation_type WHERE vacation_type_id = #{vacationTypeId}
+		SELECT * FROM vacation_type WHERE vacation_type_id =
+		#{vacationTypeId}
 	</select>
 
 </mapper>
