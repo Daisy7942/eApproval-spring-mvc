@@ -103,7 +103,7 @@
 	background: #1f57e0;
 }
 
-/* 오른쪽 도구 : 다운로드 / 삭제 / 필드 설정 / 표시 개수 */
+/* 오른쪽 도구 : 다운로드 / 삭제 / 표시 개수 */
 .tool-bar {
 	display: flex;
 	justify-content: flex-end;
@@ -371,10 +371,6 @@ span.soon {
 
 					<span class="divider"></span>
 
-					<button type="button" class="opt soon" aria-disabled="true"
-						data-tip="추후 구현 예정">
-						<span>⚙</span> 필드 설정
-					</button>
 					<span class="soon" data-tip="추후 구현 예정">
 						<select disabled>
 						<option>20</option>

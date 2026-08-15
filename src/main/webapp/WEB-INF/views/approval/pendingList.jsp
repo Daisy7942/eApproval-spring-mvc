@@ -454,10 +454,6 @@ span.soon {
 							<span class="ico">✓</span> 일괄결재
 						</button>
 						<span class="divider"></span>
-						<button type="button" class="act soon" aria-disabled="true"
-							data-tip="추후 구현 예정">
-							<span class="ico">⚙</span> 필드 설정
-						</button>
 						<span class="soon" data-tip="추후 구현 예정">
 							<select disabled>
 							<option>20</option>

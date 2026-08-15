@@ -81,6 +81,14 @@ body {
 	font-size: 13px;
 }
 
+/* 검색 결과가 없을 때 */
+.no-form {
+	padding: 34px 0;
+	text-align: center;
+	font-size: 12.5px;
+	color: #98a3b5;
+}
+
 .search::before {
 	content: "🔍";
 	position: absolute;
@@ -319,8 +327,12 @@ body {
 		<div class="modal-body">
 			<!-- ===== 좌측: 양식 목록 ===== -->
 			<div class="list-side">
+				<%-- 양식은 다섯 개뿐이고 이미 화면에 다 그려져 있다.
+				     서버에 다시 물어볼 게 없으니 그려진 줄을 JS 로 걸러낸다.
+				     버튼 없이 타는 즉시(oninput) 걸러진다 --%>
 				<div class="search">
-					<input type="text" placeholder="양식 검색...">
+					<input type="text" id="formSearch" placeholder="양식 검색..."
+						oninput="filterForms()">
 				</div>
 				<div class="forms">
 					<div class="group-label">사용 가능한 양식</div>
@@ -364,6 +376,9 @@ body {
 						</div>
 						<span class="soon">준비 중</span>
 					</div>
+
+					<%-- 검색 결과가 하나도 없을 때만 보인다 --%>
+					<div class="no-form" id="noForm" style="display: none;">검색 결과가 없습니다.</div>
 				</div>
 			</div>
 
@@ -422,6 +437,40 @@ body {
 	</div>
 
 	<script>
+		/* 양식 검색.
+		   서버에 다시 묻지 않고 이미 그려진 .form-item 을 보이거나 숨긴다.
+		   찾는 글자는 양식 이름과 그 밑의 분류(인사/복무 · 전부서)에서 모두 찾는다.
+		   대소문자를 안 가리도록 양쪽을 소문자로 맞춘다. */
+		function filterForms() {
+			var kw = document.getElementById("formSearch").value.trim().toLowerCase();
+			var hit = 0;
+
+			document.querySelectorAll(".forms .form-item").forEach(function(item) {
+				var text = item.innerText.toLowerCase();
+				var show = (kw === "" || text.indexOf(kw) !== -1);
+				item.style.display = show ? "" : "none";
+				if (show) { hit++; }
+			});
+
+			// 묶음 제목('사용 가능한 양식')은 그 아래 남은 양식이 없으면 같이 숨긴다.
+			// 다음 묶음 제목을 만날 때까지의 형제들이 그 묶음에 속한 줄이다.
+			document.querySelectorAll(".forms .group-label").forEach(function(label) {
+				var any = false;
+				var next = label.nextElementSibling;
+
+				while (next && !next.classList.contains("group-label")) {
+					if (next.classList.contains("form-item")
+							&& next.style.display !== "none") {
+						any = true;
+					}
+					next = next.nextElementSibling;
+				}
+				label.style.display = any ? "" : "none";
+			});
+
+			document.getElementById("noForm").style.display = (hit === 0) ? "" : "none";
+		}
+
 		// 양식별 상세 데이터 (지금은 화면 전용, 추후 vacation_type 마스터와 연동 가능)
 		var FORMS = {
 			free : {
