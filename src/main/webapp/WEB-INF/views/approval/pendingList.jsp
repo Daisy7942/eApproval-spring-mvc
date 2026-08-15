@@ -417,7 +417,7 @@ span.soon {
 
 	<%@ include file="/WEB-INF/views/common/header.jsp"%>
 
-	<%-- 사이드바 '결재함 > 결재 대기 문서' 가 이 값으로 활성 표시된다 --%>
+	<%-- 사이드바 '결재하기 > 결재 대기 문서' 가 이 값으로 활성 표시된다 --%>
 	<c:set var="menu" value="apprWait" />
 	<%@ include file="/WEB-INF/views/common/sidebar.jsp"%>
 

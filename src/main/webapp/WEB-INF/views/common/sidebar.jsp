@@ -86,28 +86,46 @@
 
 			<button class="btn-new" onclick="openFormModal()">＋ 새 결재</button>
 
+			<%-- 아이콘은 글자마다 폭이 달라서(◷ 는 넓고 ✓ 는 좁다) 그냥 두면
+			     뒤따르는 글자 시작점이 줄마다 어긋난다. .mi 로 감싸 고정폭 칸에 넣는다.
+			     .mlabel 로 한 번 더 묶는 이유는 .menu a 가 space-between 이라서다 —
+			     아이콘·글자·배지가 각각 떨어지면 글자가 가운데로 밀린다. --%>
 			<nav class="menu">
-				<a href="${cp}/" class="${menu eq 'dashboard' ? 'active' : ''}">◧
-					대시보드</a>
+				<a href="${cp}/" class="${menu eq 'dashboard' ? 'active' : ''}">
+					<span class="mlabel"><span class="mi">◧</span>대시보드</span>
+				</a>
 
-				<div class="section">결재함</div>
+				<%-- '결재하기' 는 내가 손을 대야 하는 문서다.
+				     아래 '개인 문서함' 은 이미 내 손을 떠났거나 아직 안 낸 문서라 성격이 다르다. --%>
+				<div class="section">결재하기</div>
 				<a href="${cp}/document/pending"
-					class="${menu eq 'apprWait' ? 'active' : ''}">◷ 결재 대기 문서
+					class="${menu eq 'apprWait' ? 'active' : ''}">
+					<span class="mlabel"><span class="mi">◷</span>결재 대기 문서</span>
 					<c:if test="${waitCount > 0}">
 						<span class="badge">${waitCount}</span>
 					</c:if>
 				</a>
-				<a href="${cp}/document/submitted"
-					class="${menu eq 'apprSent' ? 'active' : ''}">↥ 상신 문서</a>
-				<a href="${cp}/document/completed"
-					class="${menu eq 'apprDone' ? 'active' : ''}">✓ 완료 문서</a>
 
-				<%-- 임시저장함은 결재함 3종과 성격이 다르다. 남이 볼 문서가 아니라
-				     아직 상신하지 않은 내 문서라서 구분선을 두고 따로 뺀다.
-				     draftList.jsp 가 menu="draft" 를 세팅한다. --%>
-				<div class="section">내 문서</div>
+				<div class="section">개인 문서함</div>
+				<a href="${cp}/document/submitted"
+					class="${menu eq 'apprSent' ? 'active' : ''}">
+					<span class="mlabel"><span class="mi">↥</span>상신 문서함</span>
+				</a>
+				<a href="${cp}/document/completed"
+					class="${menu eq 'apprDone' ? 'active' : ''}">
+					<span class="mlabel"><span class="mi">✓</span>완료 문서함</span>
+				</a>
 				<a href="${cp}/document/drafts"
-					class="${menu eq 'draft' ? 'active' : ''}">▤ 임시저장함</a>
+					class="${menu eq 'draft' ? 'active' : ''}">
+					<span class="mlabel"><span class="mi">▤</span>임시 저장함</span>
+				</a>
+
+				<%-- 결재자도 기안자도 아닌 사람에게 문서를 열어주는 기능.
+				     참조자·열람자를 담을 표가 없어서 아직 못 만든다 --%>
+				<div class="section">참조/수신함</div>
+				<a class="soon" data-tip="추후 구현 예정">
+					<span class="mlabel"><span class="mi">▧</span>참조/열람 문서함</span>
+				</a>
 			</nav>
 		</c:when>
 
@@ -125,15 +143,23 @@
 			<nav class="menu">
 				<div class="section">내 휴가</div>
 				<a href="${cp}/leave/my"
-					class="${menu eq 'leaveMy' ? 'active' : ''}">▤ 휴가 현황</a>
+					class="${menu eq 'leaveMy' ? 'active' : ''}">
+					<span class="mlabel"><span class="mi">▤</span>휴가 현황</span>
+				</a>
 				<%-- 연차 발생·소멸 이력은 표가 없어 아직 못 만든다 --%>
-				<a class="soon" data-tip="추후 구현 예정">▤ 연차 내역</a>
+				<a class="soon" data-tip="추후 구현 예정">
+					<span class="mlabel"><span class="mi">▤</span>연차 내역</span>
+				</a>
 
 				<%-- 관리자에게만 보이는 영역 --%>
 				<c:if test="${sessionScope.loginUser.role eq 'ADMIN'}">
 					<div class="section">전사 휴가관리</div>
-					<a class="soon" data-tip="추후 구현 예정">◔ 전사 휴가 현황</a>
-					<a class="soon" data-tip="추후 구현 예정">◔ 전사 휴가 리포트</a>
+					<a class="soon" data-tip="추후 구현 예정">
+						<span class="mlabel"><span class="mi">◔</span>전사 휴가 현황</span>
+					</a>
+					<a class="soon" data-tip="추후 구현 예정">
+						<span class="mlabel"><span class="mi">◔</span>전사 휴가 리포트</span>
+					</a>
 				</c:if>
 			</nav>
 		</c:otherwise>

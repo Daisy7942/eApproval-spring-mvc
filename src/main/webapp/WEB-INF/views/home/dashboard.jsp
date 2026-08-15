@@ -237,6 +237,56 @@
 	font-size: 13px;
 	color: #98a3b5;
 }
+
+/* ===== 아직 못 만든 메뉴 (.soon) =====
+   사이드바의 '결재 예정 문서'·'참조/열람 문서함' 이 이걸 쓴다.
+   다른 화면들과 같은 블럭이고, <style> 맨 끝에 있어야 위쪽 규칙을 이긴다 */
+.soon {
+	cursor: not-allowed;
+	position: relative;
+}
+
+.soon::after {
+	content: attr(data-tip);
+	position: absolute;
+	top: calc(100% + 8px);
+	left: 50%;
+	transform: translateX(-50%);
+	background: #2b3444;
+	color: #fff;
+	font-size: 11.5px;
+	font-weight: 400;
+	letter-spacing: 0;
+	padding: 5px 10px;
+	border-radius: 5px;
+	white-space: nowrap;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .12s;
+	pointer-events: none;
+	z-index: 30;
+}
+
+/* 말풍선 꼬리 */
+.soon::before {
+	content: "";
+	position: absolute;
+	top: calc(100% + 3px);
+	left: 50%;
+	transform: translateX(-50%);
+	border: 5px solid transparent;
+	border-bottom-color: #2b3444;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .12s;
+	pointer-events: none;
+	z-index: 30;
+}
+
+.soon:hover::after, .soon:hover::before {
+	opacity: 1;
+	visibility: visible;
+}
 </style>
 </head>
 <body>

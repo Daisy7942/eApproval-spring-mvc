@@ -7,7 +7,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>eApproval - 완료 문서</title>
+<title>eApproval - 완료 문서함</title>
 <link rel="stylesheet"
 	href="${pageContext.request.contextPath}/resources/css/common.css">
 <style>
@@ -405,7 +405,7 @@ span.soon {
 
 	<%@ include file="/WEB-INF/views/common/header.jsp"%>
 
-	<%-- 사이드바 '결재함 > 완료 문서' 가 이 값으로 활성 표시된다 --%>
+	<%-- 사이드바 '개인 문서함 > 완료 문서함' 이 이 값으로 활성 표시된다 --%>
 	<c:set var="menu" value="apprDone" />
 	<%@ include file="/WEB-INF/views/common/sidebar.jsp"%>
 
@@ -413,11 +413,11 @@ span.soon {
 		<div class="content">
 
 			<div class="crumb">
-				결재 &gt; <b>완료 문서</b>
+				결재 &gt; <b>완료 문서함</b>
 			</div>
 
 			<div class="page-title title-row">
-				<h2>완료 문서</h2>
+				<h2>완료 문서함</h2>
 				<span class="total-count">${fn:length(completedList)}건</span>
 			</div>
 

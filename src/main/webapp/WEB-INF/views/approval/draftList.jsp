@@ -342,7 +342,7 @@ span.soon {
 
 	<%@ include file="/WEB-INF/views/common/header.jsp"%>
 
-	<%-- 사이드바 '내 문서 > 임시저장함' 이 이 값으로 활성 표시된다 --%>
+	<%-- 사이드바 '개인 문서함 > 임시 저장함' 이 이 값으로 활성 표시된다 --%>
 	<c:set var="menu" value="draft" />
 	<%@ include file="/WEB-INF/views/common/sidebar.jsp"%>
 
@@ -351,7 +351,7 @@ span.soon {
 
 			<%-- 브레드크럼·제목 스타일은 common.css 에 있다 (대시보드와 동일) --%>
 			<div class="crumb">
-				결재 &gt; <b>임시저장함</b>
+				결재 &gt; <b>임시 저장함</b>
 			</div>
 
 			<div class="page-title">

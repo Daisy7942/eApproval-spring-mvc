@@ -697,11 +697,11 @@ span.soon {
 					<c:set var="boxUrl" value="/document/pending" />
 				</c:when>
 				<c:when test="${param.from eq 'done'}">
-					<c:set var="boxName" value="완료 문서" />
+					<c:set var="boxName" value="완료 문서함" />
 					<c:set var="boxUrl" value="/document/completed" />
 				</c:when>
 				<c:otherwise>
-					<c:set var="boxName" value="상신 문서" />
+					<c:set var="boxName" value="상신 문서함" />
 					<c:set var="boxUrl" value="/document/submitted" />
 				</c:otherwise>
 			</c:choose>
