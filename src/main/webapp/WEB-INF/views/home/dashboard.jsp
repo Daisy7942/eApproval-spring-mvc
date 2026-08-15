@@ -134,6 +134,27 @@
 	color: #7c4dcc;
 }
 
+/* 반려된 내 문서. 상태 카드의 반려 아이콘과 같은 빨강을 쓴다 */
+.pill.reject {
+	background: #fde3e3;
+	color: #d64545;
+}
+
+/* 제목 옆 작은 설명. 몇 건까지 보여주는지 알려준다 */
+.panel h3 .sub {
+	margin-left: 8px;
+	font-size: 11px;
+	font-weight: 400;
+	color: #9aa3b0;
+}
+
+/* 목록이 길어져도 패널 높이는 그대로 두고 안에서만 스크롤한다.
+   높이는 8줄(줄당 약 62px)에 맞췄다 — 화면에 적어둔 '8건' 과 어긋나면 안 된다 */
+.doc-list {
+	max-height: 500px;
+	overflow-y: auto;
+}
+
 /* 결재 현황 */
 .status-body {
 	padding: 16px 20px;
@@ -368,29 +389,50 @@
 
 			<div class="panels">
 
-				<%-- 처리 필요 문서 = 결재 대기함과 같은 목록. 앞 5건만 보여준다 --%>
+				<%-- 처리 필요 문서 = 내가 결재할 문서 + 내가 올렸다가 반려된 문서.
+				     둘 다 '내가 손대야 끝나는 일'이라 한 칸에 모았고, 서버가 오래된 순으로
+				     섞어서 todoDocs 로 보내준다. 여기서는 앞 8건만 그린다. --%>
 				<div class="panel">
+					<%-- 8건까지만 그리므로 그 사실을 화면에 적어둔다.
+					     안 보이는 문서가 있다는 걸 모르면 "왜 안 뜨지" 가 된다 --%>
 					<h3>
-						처리 필요 문서 <a class="more" href="${cp}/document/pending">전체보기</a>
+						처리 필요 문서 <span class="sub">오래된 순 8건</span> <a class="more"
+							href="${cp}/document/pending">전체보기</a>
 					</h3>
 
-					<c:forEach var="d" items="${waitDocs}" varStatus="st">
-						<c:if test="${st.index lt 5}">
-							<div class="doc" onclick="openDoc(${d.docId})">
-								<%-- 세로 막대 색 = 양식 종류. 휴가는 파랑, 그 밖은 보라 --%>
-								<div class="bar"
-									style="background: ${d.documentType eq 'VACATION' ? '#4d82f3' : '#7c4dcc'}"></div>
-								<div class="info">
-									<b><c:if test="${d.isUrgent}">
-											<span class="urgent-mark" title="긴급">⚠</span>
-										</c:if>${d.title}</b><span>${d.drafterName} · ${d.drafterTeam}</span>
-								</div>
-								<span class="pill progress">결재중</span>
-							</div>
-						</c:if>
-					</c:forEach>
+					<div class="doc-list">
+						<c:forEach var="d" items="${todoDocs}" varStatus="st">
+							<c:if test="${st.index lt 8}">
+								<%-- 반려된 문서는 내가 고쳐서 다시 올릴 것이라 상신함 쪽에서 왔다고 알린다 --%>
+								<c:set var="rejected" value="${d.status eq 'REJECTED'}" />
 
-					<c:if test="${empty waitDocs}">
+								<div class="doc"
+									onclick="openDoc(${d.docId}, '${rejected ? "sent" : "wait"}')">
+									<%-- 세로 막대 색 = 양식 종류. 휴가는 파랑, 그 밖은 보라 --%>
+									<div class="bar"
+										style="background: ${d.documentType eq 'VACATION' ? '#4d82f3' : '#7c4dcc'}"></div>
+									<div class="info">
+										<b><c:if test="${d.isUrgent}">
+												<span class="urgent-mark" title="긴급">⚠</span>
+											</c:if>${d.title}</b><span>${d.drafterName} · ${d.drafterTeam}</span>
+									</div>
+
+									<%-- 칩은 '이 줄이 왜 여기 있는지'를 알려준다.
+									     한 종류만 있을 때는 늘 같은 글자라 알려주는 게 없었다 --%>
+									<c:choose>
+										<c:when test="${rejected}">
+											<span class="pill reject">반려됨</span>
+										</c:when>
+										<c:otherwise>
+											<span class="pill progress">결재 필요</span>
+										</c:otherwise>
+									</c:choose>
+								</div>
+							</c:if>
+						</c:forEach>
+					</div>
+
+					<c:if test="${empty todoDocs}">
 						<div class="none">처리할 문서가 없습니다.</div>
 					</c:if>
 				</div>
@@ -444,10 +486,10 @@
 	</div>
 
 	<script>
-		// 결재 대기함에서 여는 것과 같다. from=wait 이면 상세 화면의
-		// '‹ 목록' 이 결재 대기 문서로 돌아간다
-		function openDoc(docId) {
-			location.href = "${cp}/document/detail?docId=" + docId + "&from=wait";
+		// from 은 상세 화면의 '‹ 목록' 이 어디로 돌아갈지를 정한다.
+		// 결재할 문서는 결재 대기함으로, 반려된 내 문서는 상신 문서함으로 돌아간다
+		function openDoc(docId, from) {
+			location.href = "${cp}/document/detail?docId=" + docId + "&from=" + from;
 		}
 	</script>
 
