@@ -92,6 +92,20 @@
 	outline: none;
 }
 
+.search-box .clear {
+	border: none;
+	background: none;
+	color: #a5aebd;
+	font-size: 13px;
+	line-height: 1;
+	padding: 2px 4px;
+	cursor: pointer;
+}
+
+.search-box .clear:hover {
+	color: #2b3444;
+}
+
 .act {
 	display: inline-flex;
 	align-items: center;
@@ -126,6 +140,135 @@
 	width: 1px;
 	height: 13px;
 	background: #dfe4ec;
+}
+
+/* ===== 머리글 필터 =====
+   머리글 글자 자체가 버튼이다. 눌러야 열리는 걸 알려야 해서 ▾ 를 붙였고,
+   걸려 있는 동안에는 파란색으로 남겨 지금 걸러진 상태임을 보여준다 */
+.col-filter {
+	position: relative;
+	display: inline-block;
+}
+
+.col-btn {
+	border: none;
+	background: none;
+	padding: 0;
+	font-size: 13px;
+	font-weight: 500;
+	color: #5b6576;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.col-btn:hover {
+	color: #2f6bff;
+}
+
+.col-btn.on {
+	color: #2f6bff;
+	font-weight: 600;
+}
+
+.col-btn .caret {
+	font-size: 10px;
+	color: #a5aebd;
+}
+
+.col-btn.on .caret {
+	color: #2f6bff;
+}
+
+/* 평소엔 숨어 있다가 머리글을 누르면 열린다 */
+.col-menu {
+	display: none;
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	min-width: 118px;
+	background: #fff;
+	border: 1px solid #dfe4ec;
+	border-radius: 8px;
+	box-shadow: 0 6px 18px rgba(16, 24, 40, .12);
+	padding: 4px;
+	z-index: 40;
+}
+
+.col-menu.open {
+	display: block;
+}
+
+.col-menu a {
+	display: block;
+	padding: 7px 10px;
+	font-size: 12.5px;
+	color: #3d4756;
+	text-decoration: none;
+	border-radius: 6px;
+	font-weight: 400;
+}
+
+.col-menu a:hover {
+	background: #f1f5ff;
+	color: #2f6bff;
+}
+
+/* 지금 걸려 있는 값 */
+.col-menu a.sel {
+	background: #2f6bff;
+	color: #fff;
+	font-weight: 600;
+}
+
+/* 표 아래 페이지 번호 줄. 임시 저장함과 같은 모양이다 */
+.paging {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 2px;
+	padding: 26px 0 8px;
+}
+
+.paging a, .paging span {
+	min-width: 32px;
+	height: 32px;
+	padding: 0 6px;
+	border-radius: 8px;
+	font-size: 13px;
+	color: #5b6576;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: background .12s, color .12s;
+}
+
+.paging a:hover {
+	background: #f1f5ff;
+	color: #2f6bff;
+}
+
+/* 지금 보고 있는 쪽은 누를 데가 아니라 <a> 가 아니다 */
+.paging .now {
+	background: #2f6bff;
+	color: #fff;
+	font-weight: 600;
+}
+
+.paging .arrow {
+	font-size: 16px;
+	line-height: 1;
+	color: #8a93a3;
+}
+
+.paging a.arrow:hover {
+	color: #2f6bff;
+}
+
+/* 첫 쪽에서의 '이전', 끝 쪽에서의 '다음' — 자리는 지키되 못 누른다 */
+.paging .off {
+	color: #d3d8e0;
+	cursor: default;
 }
 
 /* ===== 표 ===== */
@@ -204,20 +347,6 @@ td.attach {
 .urgent-mark {
 	color: #e5484d;
 	font-weight: bold;
-}
-
-/* 기안자 - 이름 아래 팀 이름을 작게 */
-td.drafter {
-	font-size: 13px;
-	color: #2b3444;
-	white-space: nowrap;
-}
-
-td.drafter span {
-	display: block;
-	font-size: 11.5px;
-	color: #98a3b5;
-	margin-top: 2px;
 }
 
 /* 상태 칩 - 문서 전체 상태(document.status) */
@@ -416,20 +545,33 @@ span.soon {
 				결재 &gt; <b>상신 문서함</b>
 			</div>
 
+			<%-- 페이지를 넘겨도 조건이 유지되도록, 링크에 붙일 값을 한 번만 만들어 둔다.
+			     하나라도 빠뜨리면 그 조건만 슬그머니 풀려서 여기 모아 둔다 --%>
+			<c:set var="qs"
+				value="&size=${pageVO.size}&keyword=${pageVO.keyword}&docType=${pageVO.docType}&status=${pageVO.status}" />
+
 			<div class="page-title title-row">
 				<h2>상신 문서함</h2>
-				<span class="total-count">${fn:length(submittedList)}건</span>
+				<%-- 화면에 그려진 줄이 아니라 DB 가 센 전체 건수다 --%>
+				<span class="total-count">${pageVO.total}건</span>
 			</div>
 
 			<div class="list-card">
 
 				<%-- 왼쪽 검색, 오른쪽 도구.
-				     검색은 버튼 없이 글자를 칠 때마다 걸러낸다 (oninput).
-				     목록 다운로드용 체크박스만 있고 일괄결재는 없다 --%>
+				     검색은 서버가 한다. 글자를 치고 잠깐 멈추면 알아서 다시 불러온다.
+				     여긴 내가 쓴 문서만 모인 곳이라 기안자는 늘 나여서 제목만 찾는다 --%>
 				<div class="card-head">
 					<div class="search-box">
 						<span class="ico">⌕</span> <input type="text" id="q"
-							placeholder="제목 · 기안자 검색" oninput="applyFilter()">
+							placeholder="제목 검색" value="${pageVO.keyword}" autocomplete="off"
+							oninput="scheduleSearch()"
+							onkeydown="if(event.key==='Enter'){doSearch();}">
+						<%-- 검색어가 있을 때만 뜨는 지우개 --%>
+						<c:if test="${not empty pageVO.keyword}">
+							<button type="button" class="clear" onclick="clearSearch()"
+								title="검색어 지우기">✕</button>
+						</c:if>
 					</div>
 
 					<div class="right">
@@ -438,13 +580,12 @@ span.soon {
 							<span class="ico">⭳</span> 목록 다운로드
 						</button>
 						<span class="divider"></span>
-						<span class="soon" data-tip="추후 구현 예정">
-							<select disabled>
-							<option>20</option>
-							<option>50</option>
-							<option>100</option>
+						<%-- 한 쪽에 몇 줄. 고르면 곧바로 그 줄 수로 다시 불러온다 --%>
+						<select onchange="changeSize(this.value)" title="한 쪽에 보여줄 줄 수">
+							<option value="10" ${pageVO.size eq 10 ? 'selected' : ''}>10</option>
+							<option value="20" ${pageVO.size eq 20 ? 'selected' : ''}>20</option>
+							<option value="50" ${pageVO.size eq 50 ? 'selected' : ''}>50</option>
 						</select>
-						</span>
 					</div>
 				</div>
 
@@ -453,22 +594,49 @@ span.soon {
 						<tr>
 							<th class="col-check"><input type="checkbox"
 								onclick="toggleAll(this)"></th>
-							<th style="width: 150px;">결재양식</th>
+							<%-- 머리글을 누르면 그 칸으로 거르는 목록이 열린다.
+							     거르는 일은 서버가 하므로 지금 쪽 밖에 있는 문서도 걸린다 --%>
+							<th style="width: 150px;"><div class="col-filter">
+									<button type="button" class="col-btn ${not empty pageVO.docType ? 'on' : ''}"
+										onclick="toggleMenu(event, 'mType')">
+										결재양식 <span class="caret">▾</span>
+									</button>
+									<div class="col-menu" id="mType">
+										<a href="#" onclick="setFilter('docType',''); return false;"
+											class="${empty pageVO.docType ? 'sel' : ''}">전체</a>
+										<a href="#" onclick="setFilter('docType','FREE'); return false;"
+											class="${pageVO.docType eq 'FREE' ? 'sel' : ''}">기본기안</a>
+										<a href="#" onclick="setFilter('docType','VACATION'); return false;"
+											class="${pageVO.docType eq 'VACATION' ? 'sel' : ''}">휴가신청서</a>
+									</div>
+								</div></th>
 							<th class="col-urgent">긴급</th>
 							<th>제목</th>
 							<th style="width: 80px;">첨부</th>
-							<th style="width: 110px;">기안자</th>
 							<th style="width: 130px;">기안일</th>
-							<th style="width: 110px;">상태</th>
+							<th style="width: 110px;"><div class="col-filter">
+									<button type="button" class="col-btn ${not empty pageVO.status ? 'on' : ''}"
+										onclick="toggleMenu(event, 'mStatus')">
+										상태 <span class="caret">▾</span>
+									</button>
+									<div class="col-menu" id="mStatus">
+										<a href="#" onclick="setFilter('status',''); return false;"
+											class="${empty pageVO.status ? 'sel' : ''}">전체</a>
+										<a href="#" onclick="setFilter('status','PENDING'); return false;"
+											class="${pageVO.status eq 'PENDING' ? 'sel' : ''}">결재 대기</a>
+										<a href="#" onclick="setFilter('status','APPROVED'); return false;"
+											class="${pageVO.status eq 'APPROVED' ? 'sel' : ''}">승인 완료</a>
+										<a href="#" onclick="setFilter('status','REJECTED'); return false;"
+											class="${pageVO.status eq 'REJECTED' ? 'sel' : ''}">반려</a>
+									</div>
+								</div></th>
 							<th class="appr" style="width: 160px;">결재선</th>
 						</tr>
 					</thead>
 					<tbody>
 
-						<%-- data-text 는 화면에서 걸러낼 때 쓰는 값이다 --%>
 						<c:forEach var="doc" items="${submittedList}">
-							<tr class="doc-row"
-								data-text="${fn:toLowerCase(doc.title)} ${fn:toLowerCase(doc.drafterName)}">
+							<tr class="doc-row">
 								<td class="col-check"><input type="checkbox"
 									class="row-check" value="${doc.docId}"></td>
 
@@ -488,8 +656,6 @@ span.soon {
 
 								<%-- 첨부파일 업로드 기능이 아직 없다 --%>
 								<td class="attach"></td>
-
-								<td class="drafter">${doc.drafterName}<span>${doc.drafterTeam}</span></td>
 
 								<%-- LocalDateTime 은 2026-08-06T14:22:31 모양으로 찍힌다. 앞 10글자가 날짜 --%>
 								<td class="date">${fn:substring(doc.createdAt, 0, 10)}</td>
@@ -555,65 +721,153 @@ span.soon {
 							</tr>
 						</c:forEach>
 
+						<%-- 빈 목록이어도 이유가 둘이다. 문서가 없는 건지,
+						     찾는 게 없는 건지 구분해서 말해 줘야 사용자가 헤매지 않는다 --%>
 						<c:if test="${empty submittedList}">
 							<tr>
-								<td colspan="9" class="empty"><span class="big">🗎</span>상신한
-									문서가 없습니다.</td>
+								<td colspan="8" class="empty"><span class="big">🗎</span> <c:choose>
+										<c:when test="${not empty pageVO.keyword}">'${pageVO.keyword}' 검색 결과가 없습니다.</c:when>
+										<c:otherwise>상신한 문서가 없습니다.</c:otherwise>
+									</c:choose></td>
 							</tr>
 						</c:if>
-
-						<%-- 검색으로 다 걸러졌을 때만 JS 가 이 줄을 보여준다 --%>
-						<tr id="noResult" style="display: none;">
-							<td colspan="9" class="empty"><span class="big">🗎</span>검색
-								결과가 없습니다.</td>
-						</tr>
 
 					</tbody>
 				</table>
 
-				<%-- 페이지네이션 자리. 아직 안 만들었다 (SQL LIMIT / OFFSET 필요) --%>
+				<%-- 페이지 번호 줄.
+				     lastPage 는 PageVO 가 전체 건수와 한 쪽 줄 수로 계산해 준 값이다.
+				     한 장뿐이면 번호를 그릴 이유가 없어 통째로 안 그린다 --%>
+				<c:if test="${pageVO.lastPage > 1}">
+					<div class="paging">
+
+						<c:choose>
+							<c:when test="${pageVO.page > 1}">
+								<a class="arrow"
+									href="?page=${pageVO.page - 1}${qs}" title="이전">‹</a>
+							</c:when>
+							<c:otherwise>
+								<span class="arrow off">‹</span>
+							</c:otherwise>
+						</c:choose>
+
+						<c:forEach var="i" begin="1" end="${pageVO.lastPage}">
+							<c:choose>
+								<c:when test="${i eq pageVO.page}">
+									<span class="now">${i}</span>
+								</c:when>
+								<c:otherwise>
+									<a href="?page=${i}${qs}">${i}</a>
+								</c:otherwise>
+							</c:choose>
+						</c:forEach>
+
+						<c:choose>
+							<c:when test="${pageVO.page < pageVO.lastPage}">
+								<a class="arrow"
+									href="?page=${pageVO.page + 1}${qs}" title="다음">›</a>
+							</c:when>
+							<c:otherwise>
+								<span class="arrow off">›</span>
+							</c:otherwise>
+						</c:choose>
+
+					</div>
+				</c:if>
 
 			</div>
 		</div>
 	</div>
 
 	<script>
-		// 문서 상세 화면으로. 내가 쓴 문서라 읽기만 된다
-		// from : 상세 화면이 '어느 결재함에서 왔는지' 알아야 목록으로 되돌아갈 수 있다
-		function openDoc(docId) {
-			location.href = "${pageContext.request.contextPath}/document/detail?docId="
-					+ docId + "&from=sent";
+		// ===== 주소 만들기 =====
+		// page·size·keyword·docType·status 다섯 개가 늘 같이 다녀야 한다.
+		// 하나라도 빠지면 그 조건만 풀리므로 주소는 여기서만 만든다.
+		// 바꾸고 싶은 것만 넘기면 나머지는 지금 값을 그대로 쓴다
+		var STATE = {
+			size : ${pageVO.size},
+			docType : "${pageVO.docType}",
+			status : "${pageVO.status}"
+		};
+
+		function buildUrl(o) {
+			o = o || {};
+			var kw = (o.keyword !== undefined) ? o.keyword
+					: document.getElementById("q").value.trim();
+
+			return "?page=" + (o.page || 1)
+					+ "&size=" + ((o.size !== undefined) ? o.size : STATE.size)
+					+ "&keyword=" + encodeURIComponent(kw)
+					+ "&docType=" + ((o.docType !== undefined) ? o.docType : STATE.docType)
+					+ "&status=" + ((o.status !== undefined) ? o.status : STATE.status);
 		}
 
-		// ===== 아래는 아직 서버에 만들지 않은 기능이다 =====
+		// 조건을 바꿀 때는 늘 1페이지로 돌아간다.
+		// 5페이지를 보다가 조건을 걸면 그 결과는 1~2장뿐일 수 있어서다
+		function setFilter(name, value) {
+			var o = {};
+			o[name] = value;
+			location.href = buildUrl(o);
+		}
 
+		// ===== 머리글 필터 목록 열고 닫기 =====
+		function toggleMenu(e, id) {
+			e.stopPropagation(); // 아래 document 클릭까지 번지면 열자마자 닫힌다
+			var m = document.getElementById(id);
+			var wasOpen = m.classList.contains("open");
+			closeMenus();
+			if (!wasOpen) {
+				m.classList.add("open");
+			}
+		}
+
+		function closeMenus() {
+			document.querySelectorAll(".col-menu").forEach(function(m) {
+				m.classList.remove("open");
+			});
+		}
+
+		// 딴 데를 누르면 닫힌다
+		document.addEventListener("click", closeMenus);
+
+		// ===== 검색 =====
+		// 서버가 걸러 온다. 글자 하나마다 물으면 요청이 쏟아지므로
+		// 마지막으로 친 뒤 0.4초 조용하면 그때 한 번만 보낸다
+		var searchTimer;
+
+		function scheduleSearch() {
+			clearTimeout(searchTimer);
+			searchTimer = setTimeout(doSearch, 400);
+		}
+
+		function doSearch() {
+			clearTimeout(searchTimer);
+			location.href = buildUrl({});
+		}
+
+		function clearSearch() {
+			location.href = buildUrl({ keyword : "" });
+		}
+
+		function changeSize(size) {
+			location.href = buildUrl({ size : size });
+		}
+
+		// 검색하면 화면이 새로 뜨면서 입력칸에서 손이 떨어진다.
+		// 검색 중이었다면 커서를 글자 끝에 도로 놓아 줘야 이어서 칠 수 있다
+		window.onload = function() {
+			var q = document.getElementById("q");
+			if (q.value !== "") {
+				q.focus();
+				q.setSelectionRange(q.value.length, q.value.length);
+			}
+		};
 
 		// 머리글 체크박스로 전체 선택/해제. 목록 다운로드가 생기면 여기서 골라 넘긴다
 		function toggleAll(head) {
 			document.querySelectorAll(".row-check").forEach(function(c) {
 				c.checked = head.checked;
 			});
-		}
-
-		// ===== 검색 =====
-		// 서버에 다시 묻지 않고, 이미 화면에 그려진 줄만 보였다 숨겼다 한다.
-		// 한계: 화면에 올라온 것만 걸러진다.
-		function applyFilter() {
-			var q = document.getElementById("q").value.trim().toLowerCase();
-			var rows = document.querySelectorAll(".doc-row");
-			var shown = 0;
-
-			rows.forEach(function(tr) {
-				if (q === "" || tr.dataset.text.indexOf(q) > -1) {
-					tr.style.display = "";
-					shown++;
-				} else {
-					tr.style.display = "none";
-				}
-			});
-
-			document.getElementById("noResult").style.display = (shown === 0 && rows.length > 0)
-					? "" : "none";
 		}
 	</script>
 
