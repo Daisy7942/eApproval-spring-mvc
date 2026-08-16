@@ -99,6 +99,60 @@
 	background: #dbe1ea;
 }
 
+/* 표 아래 페이지 번호 줄.
+   칸마다 테두리를 두르면 표 밑에 또 표가 생긴 것처럼 시끄러워서,
+   평소엔 글자만 두고 지금 쪽과 마우스 올린 칸에만 바탕을 깐다 */
+.paging {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 2px;
+	padding: 26px 0 8px;
+}
+
+.paging a, .paging span {
+	min-width: 32px;
+	height: 32px;
+	padding: 0 6px;
+	border-radius: 8px;
+	font-size: 13px;
+	color: #5b6576;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: background .12s, color .12s;
+}
+
+.paging a:hover {
+	background: #f1f5ff;
+	color: #2f6bff;
+}
+
+/* 지금 보고 있는 쪽은 누를 데가 아니라 <a> 가 아니다 */
+.paging .now {
+	background: #2f6bff;
+	color: #fff;
+	font-weight: 600;
+}
+
+/* 이전·다음 화살표. 번호와 살짝 떼어 둔다 */
+.paging .arrow {
+	font-size: 16px;
+	line-height: 1;
+	color: #8a93a3;
+}
+
+.paging a.arrow:hover {
+	color: #2f6bff;
+}
+
+/* 첫 쪽에서의 '이전', 끝 쪽에서의 '다음' — 자리는 지키되 못 누른다 */
+.paging .off {
+	color: #d3d8e0;
+	cursor: default;
+}
+
 .act {
 	display: inline-flex;
 	align-items: center;
@@ -341,7 +395,9 @@ span.soon {
 
 			<div class="page-title title-row">
 				<h2>임시 저장함</h2>
-				<span class="total-count">${fn:length(draftList)}건</span>
+				<%-- 화면에 그려진 줄이 아니라 DB 가 센 전체 건수다.
+				     한 쪽에 20줄이라 ${fn:length(draftList)} 는 최대 20까지밖에 안 나온다 --%>
+				<span class="total-count">${pageVO.total}건</span>
 			</div>
 
 			<div class="list-card">
@@ -450,7 +506,43 @@ span.soon {
 				</table>
 				</form>
 
-				<%-- 페이지네이션 자리. 아직 안 만들었다 (SQL LIMIT / OFFSET 필요) --%>
+				<%-- 페이지 번호 줄.
+				     lastPage 는 PageVO 가 전체 건수와 한 쪽 줄 수로 계산해 준 값이다.
+				     한 장뿐이면 번호를 그릴 이유가 없어 통째로 안 그린다 --%>
+				<c:if test="${pageVO.lastPage > 1}">
+					<div class="paging">
+
+						<c:choose>
+							<c:when test="${pageVO.page > 1}">
+								<a class="arrow" href="?page=${pageVO.page - 1}" title="이전">‹</a>
+							</c:when>
+							<c:otherwise>
+								<span class="arrow off">‹</span>
+							</c:otherwise>
+						</c:choose>
+
+						<c:forEach var="i" begin="1" end="${pageVO.lastPage}">
+							<c:choose>
+								<c:when test="${i eq pageVO.page}">
+									<span class="now">${i}</span>
+								</c:when>
+								<c:otherwise>
+									<a href="?page=${i}">${i}</a>
+								</c:otherwise>
+							</c:choose>
+						</c:forEach>
+
+						<c:choose>
+							<c:when test="${pageVO.page < pageVO.lastPage}">
+								<a class="arrow" href="?page=${pageVO.page + 1}" title="다음">›</a>
+							</c:when>
+							<c:otherwise>
+								<span class="arrow off">›</span>
+							</c:otherwise>
+						</c:choose>
+
+					</div>
+				</c:if>
 			</div>
 
 		</div>

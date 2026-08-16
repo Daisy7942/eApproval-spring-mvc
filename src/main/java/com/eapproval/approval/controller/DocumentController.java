@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.eapproval.approval.service.DocumentService;
 import com.eapproval.approval.vo.DocumentVO;
 import com.eapproval.approval.vo.VacationTypeVO;
+import com.eapproval.common.vo.PageVO;
 import com.eapproval.employee.vo.EapprovalVO;
 
 @Controller
@@ -105,13 +106,21 @@ public class DocumentController {
 
 	// 임시저장목록 조회 ---------------------------------------------
 	@GetMapping("/document/drafts")
-	public String draftList(HttpServletRequest request, Model model) {
+	public String draftList(HttpServletRequest request, Model model,
+			@RequestParam(defaultValue = "1") int page) {
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 
-		List<DocumentVO> draftList = documentService.getDraftList(empId);
+		// 목록을 자르기 전에 전체가 몇 건인지부터 세야 페이지를 몇 장 그릴지 알 수 있다.
+		// setPage 안에서 0·음수는 1로 걸러진다
+		PageVO pageVO = new PageVO();
+		pageVO.setPage(page);
+		pageVO.setTotal(documentService.getDraftCount(empId));
+
+		List<DocumentVO> draftList = documentService.getDraftList(empId, pageVO);
 
 		model.addAttribute("draftList", draftList);
+		model.addAttribute("pageVO", pageVO);
 		return "approval/draftList";
 	}
 

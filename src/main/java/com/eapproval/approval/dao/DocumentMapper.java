@@ -18,8 +18,11 @@ public interface DocumentMapper {
 	int insertDocument(DocumentVO documentVO);
 
 	// 임시저장 리스트 조회
-	List<DocumentVO> selectDraftList(Long employeeId);
+	List<DocumentVO> selectDraftList(@Param("employeeId") Long employeeId, @Param("offset")int offset, @Param("size")int size );
 
+	//임시저장 전체 건수 (페이지 수 계산용)
+	int countDrafts(Long employeeId);
+	
 	// 임시저장 조회
 	DocumentVO selectDraft(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
 

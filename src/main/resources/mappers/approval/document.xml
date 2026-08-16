@@ -76,17 +76,21 @@
 	</insert>
 
 	<!--리스트 조회 // 아래는 resultType 에 "document" 쓰면 되는데 그게 뭘 의미하는건지 적기위해서 이번에는 
-		풀어서 씀 alias 된거임 config에서 설정해놓음 -->
-	<select id="selectDraftList" parameterType="long"
+		풀어서 씀 alias 된거임 config에서 설정해놓음/ offset 20줄 건너뛰기 -->
+	<select id="selectDraftList"
 		resultType="com.eapproval.approval.vo.DocumentVO">
-		SELECT *
-		FROM
-		document
+		SELECT * FROM document
 		WHERE employee_id = #{employeeId}
-		AND
-		status = 'DRAFT'
-		ORDER BY
-		doc_id DESC
+		AND status = 'DRAFT'
+		ORDER BY doc_id DESC
+		LIMIT #{size} OFFSET #{offset}
+	</select>
+
+	<!-- 임시저장 전체 건수 (페이지 수 계산용) -->
+	<select id="countDrafts" resultType="int">
+		SELECT COUNT(*) FROM document
+		WHERE employee_id = #{employeeId}
+		AND status = 'DRAFT'
 	</select>
 
 	<!-- 임시저장 1건 조회 -->

@@ -18,8 +18,10 @@ import com.eapproval.approval.vo.DocumentVO;
 import com.eapproval.approval.vo.LeaveSummaryVO;
 import com.eapproval.approval.vo.VacationRequestVO;
 import com.eapproval.approval.vo.VacationTypeVO;
+import com.eapproval.common.vo.PageVO;
 import com.eapproval.employee.dao.EmployeeMapper;
 import com.eapproval.employee.vo.EapprovalVO;
+
 
 @Service
 public class DocumentService {
@@ -173,10 +175,17 @@ public class DocumentService {
 		return (s == null || s.trim().isEmpty()) ? null : s;
 	}
 
-	// 임시저장 리스트 조회
-	public List<DocumentVO> getDraftList(Long employeeId) {
+	// 임시저장 리스트 조회 (페이지 단위).
+	// 몇 번째부터 몇 줄인지는 PageVO 가 계산해 둠
+	public List<DocumentVO> getDraftList(Long employeeId, PageVO pageVO) {
 
-		return documentMapper.selectDraftList(employeeId);
+		return documentMapper.selectDraftList(employeeId, pageVO.getOffset(),
+				pageVO.getSize());
+	}
+	
+	// 임시저장 전체 건수. 페이지 번호를 몇 장 그릴지 정하는 데 쓴다
+	public int getDraftCount(Long employeeId) {
+		return documentMapper.countDrafts(employeeId);
 	}
 
 	// 임시저장 1건 조회
