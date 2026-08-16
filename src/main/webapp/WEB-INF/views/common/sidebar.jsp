@@ -95,8 +95,9 @@
 					<span class="mlabel"><span class="mi">◧</span>대시보드</span>
 				</a>
 
-				<%-- '결재하기' 는 내가 손을 대야 하는 문서다.
-				     아래 '개인 문서함' 은 이미 내 손을 떠났거나 아직 안 낸 문서라 성격이 다르다. --%>
+				<%-- '결재하기' 는 남이 올린 문서를 내가 처리하는 자리다.
+				     대기 문서와 완료 문서함이 '내가 결재할 것 / 내가 결재한 것' 으로 짝을 이룬다.
+				     아래 '개인 문서함' 은 내가 낸 문서라 성격이 다르다. --%>
 				<div class="section">결재하기</div>
 				<a href="${cp}/document/pending"
 					class="${menu eq 'apprWait' ? 'active' : ''}">
@@ -105,15 +106,15 @@
 						<span class="badge">${waitCount}</span>
 					</c:if>
 				</a>
+				<a href="${cp}/document/completed"
+					class="${menu eq 'apprDone' ? 'active' : ''}">
+					<span class="mlabel"><span class="mi">✓</span>완료 문서함</span>
+				</a>
 
 				<div class="section">개인 문서함</div>
 				<a href="${cp}/document/submitted"
 					class="${menu eq 'apprSent' ? 'active' : ''}">
 					<span class="mlabel"><span class="mi">↥</span>상신 문서함</span>
-				</a>
-				<a href="${cp}/document/completed"
-					class="${menu eq 'apprDone' ? 'active' : ''}">
-					<span class="mlabel"><span class="mi">✓</span>완료 문서함</span>
 				</a>
 				<a href="${cp}/document/drafts"
 					class="${menu eq 'draft' ? 'active' : ''}">
