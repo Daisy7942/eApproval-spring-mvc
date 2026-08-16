@@ -19,6 +19,8 @@
 		<result property="drafterPosition" column="drafter_position" />
 		<result property="drafterTeam" column="drafter_team" />
 		<result property="content" column="content" />
+		<!-- 순차/병렬(상세 화면 판단용) -->
+		<result property="approvalType" column="approval_type" />
 
 		<!-- 휴가신청서일 때만 딸리는 값 한 줄. 문서 1건에 1개라 association -->
 		<association property="vacation"
@@ -140,7 +142,8 @@
 		content = #{content},
 		updated_at = NOW(),
 		is_urgent
-		=#{isUrgent}
+		=#{isUrgent},
+		approval_type = #{approvalType}
 		WHERE doc_id = #{docId} AND employee_id = #{employeeId}
 		AND
 		status =
@@ -197,7 +200,8 @@
 	<update id="submitDocument" parameterType="document">
 		UPDATE document
 		SET
-		status = 'PENDING', updated_at = NOW()
+		status = 'PENDING', updated_at = NOW(),
+		approval_type = #{approvalType}
 		WHERE doc_id = #{docId} AND
 		employee_id = #{employeeId} AND status =
 		'DRAFT'
@@ -223,6 +227,7 @@
 	<!--상신함 조회 -->
 	<select id="selectSubmittedList" resultMap="documentWithLineMap">
 		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
+		d.approval_type,
 		d.employee_id, d.created_at, d.updated_at,
 		de.name AS drafter_name, de.position AS drafter_position,
 		dt.team_name AS drafter_team,
@@ -265,10 +270,12 @@
 		JOIN employee pe ON pd.employee_id = pe.employee_id
 		WHERE al2.approver_id = #{employeeId}
 		AND al2.approval_status = 'PENDING'
-		AND NOT EXISTS (SELECT 1 FROM approval_line prev
+		AND pd.status = 'PENDING'
+		AND (pd.approval_type = 'PARALLEL'
+		OR NOT EXISTS (SELECT 1 FROM approval_line prev
 		WHERE prev.doc_id = al2.doc_id
 		AND prev.approval_order &lt; al2.approval_order
-		AND prev.approval_status != 'APPROVED')
+		AND prev.approval_status != 'APPROVED'))
 		<!-- 화면 검색칸이 '제목 · 기안자'라 둘 다 뒤진다 -->
 		<if test="p.keyword != null">
 			AND (pd.title LIKE CONCAT('%', #{p.keyword}, '%')
@@ -282,6 +289,7 @@
 	<!--결재 대기함 조회 -->
 	<select id="selectPendingList" resultMap="documentWithLineMap">
 		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
+		d.approval_type,
 		d.employee_id, d.created_at, d.updated_at,
 		de.name AS drafter_name, de.position AS drafter_position,
 		dt.team_name AS drafter_team,
@@ -333,6 +341,7 @@
 	<!--완료함 조회 -->
 	<select id="selectCompletedList" resultMap="documentWithLineMap">
 		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
+		d.approval_type,
 		d.employee_id, d.created_at, d.updated_at,
 		de.name AS drafter_name, de.position AS drafter_position,
 		dt.team_name AS drafter_team,
@@ -363,7 +372,7 @@
 	<select id="selectDocumentDetail"
 		resultMap="documentWithLineMap">
 		SELECT d.doc_id, d.title, d.document_type, d.status,
-		d.is_urgent,
+		d.is_urgent, d.approval_type,
 		d.employee_id, d.created_at, d.updated_at,
 		de.name AS
 		drafter_name, de.position AS drafter_position,
@@ -421,6 +430,8 @@
 		AND approver_id = #{approverId}
 		AND approval_status =
 		'PENDING'
+		AND doc_id IN (SELECT doc_id FROM document
+		WHERE doc_id = #{docId} AND status = 'PENDING')
 	</update>
 	
 	<!-- PENDING 개수 세기 - 이 숫자로 최종상태 반영을 위함 0일때 승인으로 처리 -->

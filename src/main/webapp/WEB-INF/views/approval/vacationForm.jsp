@@ -485,6 +485,10 @@ $(document).ready(function() {
          approvalLine 배열이 유일한 기준이고 화면은 항상 이 배열을 따라 다시 그린다.
          documentForm.jsp 와 같은 함수 이름을 쓴다 — 결재선 팝업이 이 이름으로 부른다. */
       var approvalLine = [];
+
+      // 결재 방식 : SEQUENTIAL(순차) / PARALLEL(병렬).
+      // 임시저장한 문서를 다시 열면 저장해 둔 값으로 시작한다
+      var approvalType = '${empty doc.approvalType ? "SEQUENTIAL" : doc.approvalType}';
       var drafterName  = '${loginUser.name}';
 
       function makePersonChip(name, sub, kind) {
@@ -529,11 +533,21 @@ $(document).ready(function() {
                               .val(a.employeeId)
                               .appendTo($box);
               });
+
+              // 결재 방식(순차/병렬)도 같이 보낸다. 이게 없으면 서버는 늘 순차로 저장한다
+              $('<input type="hidden">')
+                      .attr('name', 'approvalType')
+                      .val(approvalType)
+                      .appendTo($box);
       }
 
       // 결재선 팝업이 부르는 함수. 이름을 documentForm.jsp 와 똑같이 맞춰야 한다.
-      window.setApprovalLine = function(list) {
+      window.setApprovalLine = function(list, mode) {
               approvalLine = list || [];
+
+              // 팝업이 방식을 안 주면(옛 호출) 지금 값을 그대로 둔다
+              if (mode) { approvalType = mode; }
+
               renderApprFlow();
               renderApprHidden();
               $('#apprErr').hide();
@@ -542,6 +556,11 @@ $(document).ready(function() {
       // 팝업이 뜰 때 '지금까지 고른 결재선'을 읽어가서 편집 상태로 시작한다
       window.getApprovalLine = function() {
               return approvalLine;
+      };
+
+      // 결재 방식도 같은 이유로 물려준다
+      window.getApprovalType = function() {
+              return approvalType;
       };
 
       $('#btnApprovalLine, #btnApprovalLineEdit').on('click', function() {

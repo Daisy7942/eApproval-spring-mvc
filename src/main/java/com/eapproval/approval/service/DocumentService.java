@@ -35,7 +35,7 @@ public class DocumentService {
 	@Transactional
 	public int saveDraft(DocumentVO documentVO) {
 		documentVO.setStatus("DRAFT"); // 상태값 :대기, 승인 등
-		documentVO.setApprovalType("SEQUENTIAL"); // 기본값: 순차 결재
+		documentVO.setApprovalType(normalizeApprovalType(documentVO.getApprovalType()));
 		int result = documentMapper.insertDocument(documentVO); // 여기서 docId 가 생긴다
 		saveApprovalLines(documentVO); // 그래서 이 뒤에 부른다
 		saveVacation(documentVO);
@@ -103,10 +103,12 @@ public class DocumentService {
 			throw new IllegalStateException("결재선이 없습니다.");
 		}
 
+		// 화면이 보낸 결재 방식을 그대로 쓴다. 안 왔거나 모르는 값이면 순차
+		documentVO.setApprovalType(normalizeApprovalType(documentVO.getApprovalType()));
+
 		// 문서 메인 데이터 저장 (신규 vs 임시저장 구분)
 		if (documentVO.getDocId() == null) {
 			documentVO.setStatus("PENDING"); // 결재'대기'상태로 셋팅
-			documentVO.setApprovalType("SEQUENTIAL");// 기본값: 순차 결재
 			documentMapper.insertDocument(documentVO); // DB에 새로 저장
 		} else {
 			documentMapper.submitDocument(documentVO); // 기존 임시저장 문서를 '상신'으로 업데이트
@@ -174,6 +176,11 @@ public class DocumentService {
 		return (s == null || s.trim().isEmpty()) ? null : s;
 	}
 
+	// 결재 방식은 서버 검증
+	private String normalizeApprovalType(String type) {
+		return "PARALLEL".equals(type) ? "PARALLEL" : "SEQUENTIAL";
+	}
+
 	// 임시저장 리스트 조회 (페이지 단위).
 	// 몇 번째부터 몇 줄인지는 PageVO 가 계산해 둠
 	public List<DocumentVO> getDraftList(Long employeeId, PageVO pageVO) {
@@ -194,6 +201,7 @@ public class DocumentService {
 	@Transactional
 	// 임시저장 1건 수정저장
 	public int updateDraft(DocumentVO documentVO) {
+		documentVO.setApprovalType(normalizeApprovalType(documentVO.getApprovalType()));
 		int result = documentMapper.updateDraft(documentVO);
 		saveApprovalLines(documentVO);
 		saveVacation(documentVO);

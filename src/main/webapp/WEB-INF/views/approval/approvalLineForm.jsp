@@ -547,7 +547,10 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 
 			if (window.opener && !window.opener.closed
 					&& window.opener.setApprovalLine) {
-				window.opener.setApprovalLine(out);
+
+				// 결재 방식(순차/병렬)도 같이 넘긴다.
+				// 이 값이 안 가면 기안 작성 창은 늘 순차로 저장해 버린다
+				window.opener.setApprovalLine(out, agreeMode);
 				window.close();
 			} else {
 				alert("기안 작성 창을 찾을 수 없습니다.");
@@ -560,6 +563,20 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 		(function () {
 			if (!window.opener || window.opener.closed
 					|| !window.opener.getApprovalLine) return;
+
+			// 결재 방식도 같이 물려받는다. 이게 없으면 병렬로 골라 둔 문서를
+			// 편집하려고 팝업을 열었을 때 순차로 되돌아가 있다
+			if (window.opener.getApprovalType) {
+				var mode = window.opener.getApprovalType();
+				if (mode) {
+					agreeMode = mode;
+					var chips = document.querySelectorAll(".role-chip");
+					for (var i = 0; i < chips.length; i++) {
+						chips[i].className = (chips[i].getAttribute("data-mode") === mode)
+								? "role-chip on" : "role-chip";
+					}
+				}
+			}
 
 			var prev = window.opener.getApprovalLine() || [];
 			picked = prev.map(function (a) {

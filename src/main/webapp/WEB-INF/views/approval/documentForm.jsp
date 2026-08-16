@@ -314,6 +314,10 @@ $(document).ready(function() {
       //   { name:'최준혁', position:'이사', department:'경영진', role:'승인' }
       //   role 은 모달의 '추가 역할' — 합의 | 승인
       var approvalLine = [];
+
+      // 결재 방식 : SEQUENTIAL(순차) / PARALLEL(병렬).
+      // 임시저장한 문서를 다시 열면 저장해 둔 값으로 시작한다
+      var approvalType = '${empty doc.approvalType ? "SEQUENTIAL" : doc.approvalType}';
       var drafterName  = $('#signArea').data('drafter');
 
       // 칸 하나를 만든다. 이름을 문자열로 붙이지 않고 .text() 로 넣어
@@ -399,14 +403,24 @@ $(document).ready(function() {
                               .val(a.employeeId)
                               .appendTo($box);
               });
+
+              // 결재 방식(순차/병렬)도 같이 보낸다. 이게 없으면 서버는 늘 순차로 저장한다
+              $('<input type="hidden">')
+                      .attr('name', 'approvalType')
+                      .val(approvalType)
+                      .appendTo($box);
       }
 
       // [결재선 설정] 모달과 이어지는 유일한 지점.
       // 모달에서 '결재선 확정'을 누를 때 결재자 배열을 넘겨 이 함수를 부르면 된다.
       //   setApprovalLine([{ name:'최준혁', position:'이사', department:'경영진', role:'승인' }, ...]);
       // 빈 배열이나 아무것도 안 넘기면 '미지정' 상태로 되돌아간다.
-      window.setApprovalLine = function(list) {
+      window.setApprovalLine = function(list, mode) {
               approvalLine = list || [];
+
+              // 팝업이 방식을 안 주면(옛 호출) 지금 값을 그대로 둔다
+              if (mode) { approvalType = mode; }
+
               renderSignArea();
               renderApprFlow();
               renderApprHidden();
@@ -416,6 +430,12 @@ $(document).ready(function() {
       // 이게 없으면 [결재선 편집] 을 눌러도 팝업이 늘 빈 화면으로 열린다.
       window.getApprovalLine = function() {
               return approvalLine;
+      };
+
+      // 결재 방식도 같은 이유로 물려준다. 병렬로 골라 놓고 편집을 열면
+      // 팝업이 순차로 돌아가 있어서 다시 저장할 때 방식이 바뀌어 버린다
+      window.getApprovalType = function() {
+              return approvalType;
       };
 
       // [＋ 결재선 지정] → 조직도 팝업. 팝업이 setApprovalLine() 을 불러준다.

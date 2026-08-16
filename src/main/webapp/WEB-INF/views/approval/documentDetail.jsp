@@ -706,8 +706,13 @@ span.soon {
 				</c:otherwise>
 			</c:choose>
 
+			<%-- 병렬이면 순서를 안 따진다. 결재자 모두가 동시에 자기 차례다 --%>
+			<c:set var="isParallel" value="${doc.approvalType eq 'PARALLEL'}" />
+
 			<%-- 결재선을 한 번 훑으면서 세 가지를 같이 알아낸다.
-			     ① 처음 만나는 PENDING = 지금 차례. 그게 나면 myTurn
+			     ① 지금 차례가 나인가 (myTurn)
+			        - 순차 : 처음 만나는 PENDING 이 나일 때
+			        - 병렬 : 내 줄이 아직 PENDING 이기만 하면
 			     ② anyDone = 한 명이라도 처리했나 (상신취소·수정을 막는 기준)
 			     ③ doneCnt = 결재이력 탭에 찍을 줄 수
 			     ④ iAmApprover = 내가 이 문서의 결재자이긴 한가 --%>
@@ -724,12 +729,20 @@ span.soon {
 						<c:set var="myTurn" value="true" />
 					</c:if>
 				</c:if>
+				<%-- 병렬은 앞사람을 기다리지 않으므로 내 줄만 보면 된다 --%>
+				<c:if
+					test="${isParallel and a.approverId eq myId and a.approvalStatus eq 'PENDING'}">
+					<c:set var="myTurn" value="true" />
+				</c:if>
 				<c:if test="${a.approvalStatus ne 'PENDING'}">
 					<c:set var="anyDone" value="true" />
 					<c:set var="doneCnt" value="${doneCnt + 1}" />
 				</c:if>
 				<c:if test="${a.approverId eq myId}">
 					<c:set var="iAmApprover" value="true" />
+					<%-- 내 줄이 어떤 상태인지. '아직 안 왔다'와 '내가 이미 했다'를
+					     구분해서 안내 문구를 고르는 데 쓴다 --%>
+					<c:set var="myLineStatus" value="${a.approvalStatus}" />
 				</c:if>
 			</c:forEach>
 
@@ -766,6 +779,22 @@ span.soon {
 				</div>
 
 				<div class="bar-btns">
+					<%-- '내 차례가 아니다'는 결재자한테만 뜻이 있는 말이다.
+					     기안자는 애초에 결재할 사람이 아니라서 이 안내가 필요 없다.
+					     버튼 맨 뒤에 두면 승인 버튼이 있던 자리라 눈이 안 가서 앞으로 뺐다 --%>
+					<c:if test="${iAmApprover and not myTurn}">
+						<span class="turn-note"> <c:choose>
+								<c:when test="${doc.status eq 'APPROVED'}">결재가 모두 끝난 문서입니다</c:when>
+								<c:when test="${doc.status eq 'REJECTED'}">반려된 문서입니다</c:when>
+								<%-- 내가 이미 처리했고 남은 결재자를 기다리는 중.
+								     병렬이면 늘 이 경우다 — 병렬엔 '앞 순번'이 없으니까 --%>
+								<c:when test="${myLineStatus ne 'PENDING'}">내 결재는 끝났고 다른 결재자를 기다리는 중입니다</c:when>
+								<c:otherwise>앞 순번 결재가 끝나면 내 차례가 됩니다</c:otherwise>
+							</c:choose>
+						</span>
+						<div class="btn-sep"></div>
+					</c:if>
+
 					<%-- 누구나 쓸 수 있는 버튼 --%>
 					<button type="button" class="btn" onclick="window.print();">
 						<span class="ico">⎙</span> 인쇄
@@ -815,17 +844,6 @@ span.soon {
 						</button>
 					</c:if>
 
-					<%-- '내 차례가 아니다'는 결재자한테만 뜻이 있는 말이다.
-					     기안자는 애초에 결재할 사람이 아니라서 이 안내가 필요 없다.
-					     문서가 지금 어떤 상태인지는 아래 요약 칸의 상태칩이 이미 말해 준다 --%>
-					<c:if test="${iAmApprover and not myTurn}">
-						<span class="turn-note"> <c:choose>
-								<c:when test="${doc.status eq 'APPROVED'}">결재가 모두 끝난 문서입니다</c:when>
-								<c:when test="${doc.status eq 'REJECTED'}">반려된 문서입니다</c:when>
-								<c:otherwise>앞 순번 결재가 끝나면 내 차례가 됩니다</c:otherwise>
-							</c:choose>
-						</span>
-					</c:if>
 				</div>
 			</div>
 
@@ -873,6 +891,12 @@ span.soon {
 						<div class="lbl">문서종류</div>
 						<div class="val">${formName}</div>
 					</div>
+					<div class="cell">
+						<%-- 순서대로 도는 문서인지 동시에 도는 문서인지.
+						     도장판만 봐서는 구분이 안 돼서 글자로 적어 준다 --%>
+						<div class="lbl">결재방식</div>
+						<div class="val">${isParallel ? '병렬 (동시 결재)' : '순차 (차례대로)'}</div>
+					</div>
 				</div>
 			</div>
 
@@ -919,7 +943,10 @@ span.soon {
 
 						<div class="stamp-side">결재</div>
 						<c:forEach var="a" items="${doc.approvalLine}">
-							<c:set var="isNow" value="${a.approverId eq curApproverId}" />
+							<%-- 병렬은 아직 안 찍은 사람 모두가 지금 차례다.
+						     순차는 그 중 맨 앞 한 명(curApproverId)만 --%>
+						<c:set var="isNow"
+							value="${isParallel ? (a.approvalStatus eq 'PENDING') : (a.approverId eq curApproverId)}" />
 							<div class="stamp-col ${isNow ? 'now' : ''}">
 								<div class="pos">${a.position}</div>
 								<div class="mark">
@@ -1040,7 +1067,12 @@ span.soon {
 							</tr>
 							<c:forEach var="a" items="${doc.approvalLine}">
 								<tr>
-									<td class="role">${a.approvalOrder}차 결재</td>
+									<%-- 병렬은 동시에 결재하므로 차수가 없다.
+									     1차·2차로 적으면 순서가 있는 것처럼 읽힌다 --%>
+									<td class="role"><c:choose>
+											<c:when test="${isParallel}">병렬 결재</c:when>
+											<c:otherwise>${a.approvalOrder}차 결재</c:otherwise>
+										</c:choose></td>
 									<td class="who">${a.name} ${a.position}</td>
 									<td>${a.teamName}</td>
 									<td><c:choose>
@@ -1050,7 +1082,9 @@ span.soon {
 											<c:when test="${a.approvalStatus eq 'REJECTED'}">
 												<span class="act no">반려</span>
 											</c:when>
-											<c:when test="${a.approverId eq curApproverId}">
+											<%-- 병렬은 안 찍은 사람 모두가 검토중 --%>
+											<c:when
+												test="${isParallel or a.approverId eq curApproverId}">
 												<span class="act">검토중</span>
 											</c:when>
 											<c:otherwise>
