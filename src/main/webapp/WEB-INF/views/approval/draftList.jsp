@@ -421,13 +421,12 @@ span.soon {
 
 						<span class="divider"></span>
 
-						<span class="soon" data-tip="추후 구현 예정">
-							<select disabled>
-							<option>20</option>
-							<option>50</option>
-							<option>100</option>
+						<%-- 한 쪽에 몇 줄. 고르면 곧바로 그 줄 수로 다시 불러온다 --%>
+						<select onchange="changeSize(this.value)" title="한 쪽에 보여줄 줄 수">
+							<option value="20" ${pageVO.size eq 20 ? 'selected' : ''}>20</option>
+							<option value="50" ${pageVO.size eq 50 ? 'selected' : ''}>50</option>
+							<option value="100" ${pageVO.size eq 100 ? 'selected' : ''}>100</option>
 						</select>
-						</span>
 					</div>
 				</div>
 
@@ -514,7 +513,8 @@ span.soon {
 
 						<c:choose>
 							<c:when test="${pageVO.page > 1}">
-								<a class="arrow" href="?page=${pageVO.page - 1}" title="이전">‹</a>
+								<a class="arrow"
+									href="?page=${pageVO.page - 1}&size=${pageVO.size}" title="이전">‹</a>
 							</c:when>
 							<c:otherwise>
 								<span class="arrow off">‹</span>
@@ -527,14 +527,15 @@ span.soon {
 									<span class="now">${i}</span>
 								</c:when>
 								<c:otherwise>
-									<a href="?page=${i}">${i}</a>
+									<a href="?page=${i}&size=${pageVO.size}">${i}</a>
 								</c:otherwise>
 							</c:choose>
 						</c:forEach>
 
 						<c:choose>
 							<c:when test="${pageVO.page < pageVO.lastPage}">
-								<a class="arrow" href="?page=${pageVO.page + 1}" title="다음">›</a>
+								<a class="arrow"
+									href="?page=${pageVO.page + 1}&size=${pageVO.size}" title="다음">›</a>
 							</c:when>
 							<c:otherwise>
 								<span class="arrow off">›</span>
@@ -601,6 +602,13 @@ span.soon {
 
 		}
 		
+
+		// 한 쪽 줄 수 바꾸기.
+		// 반드시 1페이지로 돌아간다 — 5페이지를 보다가 100줄로 바꾸면
+		// 그 문서들이 1페이지 안으로 들어와 5페이지는 아예 없는 쪽이 된다
+		function changeSize(size) {
+			location.href = "?page=1&size=" + size;
+		}
 
 		// ===== 검색 =====
 		// 서버에 다시 묻지 않고, 이미 화면에 그려진 줄만 보였다 숨겼다 한다.

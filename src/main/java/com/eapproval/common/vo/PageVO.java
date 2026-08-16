@@ -27,7 +27,7 @@ public class PageVO {
 	}
 
 	public void setSize(int size) {
-		this.size = (size < 1) ? 20 : size;
+		this.size = (size == 20 || size == 50 || size == 100) ? size : 20;
 	}
 
 	public int getTotal() {

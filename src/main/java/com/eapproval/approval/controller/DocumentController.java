@@ -107,7 +107,7 @@ public class DocumentController {
 	// 임시저장목록 조회 ---------------------------------------------
 	@GetMapping("/document/drafts")
 	public String draftList(HttpServletRequest request, Model model,
-			@RequestParam(defaultValue = "1") int page) {
+			@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 
@@ -115,6 +115,7 @@ public class DocumentController {
 		// setPage 안에서 0·음수는 1로 걸러진다
 		PageVO pageVO = new PageVO();
 		pageVO.setPage(page);
+		pageVO.setSize(size);
 		pageVO.setTotal(documentService.getDraftCount(empId));
 
 		List<DocumentVO> draftList = documentService.getDraftList(empId, pageVO);
