@@ -149,9 +149,9 @@
 }
 
 /* 목록이 길어져도 패널 높이는 그대로 두고 안에서만 스크롤한다.
-   높이는 8줄(줄당 약 62px)에 맞췄다 — 화면에 적어둔 '8건' 과 어긋나면 안 된다 */
+   높이는 6줄(줄당 약 62px)에 맞췄다 — 화면에 적어둔 '6건' 과 어긋나면 안 된다 */
 .doc-list {
-	max-height: 500px;
+	max-height: 380px;
 	overflow-y: auto;
 }
 
@@ -391,18 +391,18 @@
 
 				<%-- 처리 필요 문서 = 내가 결재할 문서 + 내가 올렸다가 반려된 문서.
 				     둘 다 '내가 손대야 끝나는 일'이라 한 칸에 모았고, 서버가 오래된 순으로
-				     섞어서 todoDocs 로 보내준다. 여기서는 앞 8건만 그린다. --%>
+				     섞어서 todoDocs 로 보내준다. 여기서는 앞 6건만 그린다. --%>
 				<div class="panel">
-					<%-- 8건까지만 그리므로 그 사실을 화면에 적어둔다.
+					<%-- 6건까지만 그리므로 그 사실을 화면에 적어둔다.
 					     안 보이는 문서가 있다는 걸 모르면 "왜 안 뜨지" 가 된다 --%>
 					<h3>
-						처리 필요 문서 <span class="sub">오래된 순 8건</span> <a class="more"
+						처리 필요 문서 <span class="sub">최신순 6건</span> <a class="more"
 							href="${cp}/document/pending">전체보기</a>
 					</h3>
 
 					<div class="doc-list">
 						<c:forEach var="d" items="${todoDocs}" varStatus="st">
-							<c:if test="${st.index lt 8}">
+							<c:if test="${st.index lt 6}">
 								<%-- 반려된 문서는 내가 고쳐서 다시 올릴 것이라 상신함 쪽에서 왔다고 알린다 --%>
 								<c:set var="rejected" value="${d.status eq 'REJECTED'}" />
 

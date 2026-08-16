@@ -45,8 +45,8 @@ public class DashboardController {
 			}
 		}
 
-		// 정렬 (오래된것이 위로)
-		todoDocs.sort(Comparator.comparing(DocumentVO::getCreatedAt));
+		// 정렬 (최신순)
+		todoDocs.sort(Comparator.comparing(DocumentVO::getCreatedAt).reversed());
 		model.addAttribute("todoDocs", todoDocs);
 
 		return "home/dashboard";
