@@ -24,6 +24,14 @@
 	margin-bottom: 28px;
 }
 
+/* 제목 밑 한 줄 설명. 이 문서함에 뭐가 담기는지 말해 준다 */
+.page-desc {
+	font-size: 12.5px;
+	color: #98a3b5;
+	margin: -22px 0 22px;
+	line-height: 1.5;
+}
+
 .total-count {
 	font-size: 12.5px;
 	color: #8a93a3;
@@ -154,14 +162,14 @@
 .col-menu {
 	display: none;
 	position: absolute;
-	top: calc(100% + 6px);
-	left: 0;
-	min-width: 118px;
+	top: calc(100% + 8px);
+	left: -6px;
+	min-width: 140px;
 	background: #fff;
-	border: 1px solid #dfe4ec;
-	border-radius: 8px;
-	box-shadow: 0 6px 18px rgba(16, 24, 40, .12);
-	padding: 4px;
+	border: 1px solid #e6eaf1;
+	border-radius: 10px;
+	box-shadow: 0 10px 24px rgba(16, 24, 40, .10), 0 2px 6px rgba(16, 24, 40, .06);
+	padding: 5px;
 	z-index: 40;
 }
 
@@ -169,26 +177,44 @@
 	display: block;
 }
 
+/* 항목. 왼쪽에 체크 자리를 비워 두고, 고른 것만 그 자리에 ✓ 가 들어온다.
+   예전처럼 파랗게 꽉 채우면 목록 안에서 그 줄만 튀어서 시끄럽다 */
 .col-menu a {
-	display: block;
-	padding: 7px 10px;
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	padding: 8px 10px 8px 8px;
 	font-size: 12.5px;
+	font-weight: 400;
 	color: #3d4756;
 	text-decoration: none;
-	border-radius: 6px;
-	font-weight: 400;
+	border-radius: 7px;
+	white-space: nowrap;
+}
+
+.col-menu a::before {
+	content: "";
+	flex: 0 0 auto;
+	width: 13px;
+	text-align: center;
+	font-size: 11px;
+	color: transparent;
 }
 
 .col-menu a:hover {
-	background: #f1f5ff;
+	background: #f4f7fd;
 	color: #2f6bff;
 }
 
 /* 지금 걸려 있는 값 */
 .col-menu a.sel {
-	background: #2f6bff;
-	color: #fff;
+	color: #2f6bff;
 	font-weight: 600;
+}
+
+.col-menu a.sel::before {
+	content: "✓";
+	color: #2f6bff;
 }
 
 /* 표 아래 페이지 번호 줄.
@@ -495,6 +521,8 @@ span.soon {
 				     한 쪽에 20줄이라 ${fn:length(draftList)} 는 최대 20까지밖에 안 나온다 --%>
 				<span class="total-count">${pageVO.total}건</span>
 			</div>
+
+			<p class="page-desc">작성 중 보관된 문서입니다.</p>
 
 			<div class="list-card">
 

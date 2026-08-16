@@ -23,6 +23,14 @@
 	margin-bottom: 28px;
 }
 
+/* 제목 밑 한 줄 설명. 이 문서함에 뭐가 담기는지 말해 준다 */
+.page-desc {
+	font-size: 12.5px;
+	color: #98a3b5;
+	margin: -22px 0 22px;
+	line-height: 1.5;
+}
+
 .total-count {
 	font-size: 12.5px;
 	color: #8a93a3;
@@ -147,14 +155,14 @@
 .col-menu {
 	display: none;
 	position: absolute;
-	top: calc(100% + 6px);
-	left: 0;
-	min-width: 118px;
+	top: calc(100% + 8px);
+	left: -6px;
+	min-width: 140px;
 	background: #fff;
-	border: 1px solid #dfe4ec;
-	border-radius: 8px;
-	box-shadow: 0 6px 18px rgba(16, 24, 40, .12);
-	padding: 4px;
+	border: 1px solid #e6eaf1;
+	border-radius: 10px;
+	box-shadow: 0 10px 24px rgba(16, 24, 40, .10), 0 2px 6px rgba(16, 24, 40, .06);
+	padding: 5px;
 	z-index: 40;
 }
 
@@ -162,26 +170,115 @@
 	display: block;
 }
 
+/* 항목. 왼쪽에 체크 자리를 비워 두고, 고른 것만 그 자리에 ✓ 가 들어온다.
+   예전처럼 파랗게 꽉 채우면 목록 안에서 그 줄만 튀어서 시끄럽다 */
 .col-menu a {
-	display: block;
-	padding: 7px 10px;
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	padding: 8px 10px 8px 8px;
 	font-size: 12.5px;
+	font-weight: 400;
 	color: #3d4756;
 	text-decoration: none;
-	border-radius: 6px;
-	font-weight: 400;
+	border-radius: 7px;
+	white-space: nowrap;
+}
+
+.col-menu a::before {
+	content: "";
+	flex: 0 0 auto;
+	width: 13px;
+	text-align: center;
+	font-size: 11px;
+	color: transparent;
 }
 
 .col-menu a:hover {
-	background: #f1f5ff;
+	background: #f4f7fd;
 	color: #2f6bff;
 }
 
 /* 지금 걸려 있는 값 */
 .col-menu a.sel {
-	background: #2f6bff;
-	color: #fff;
+	color: #2f6bff;
 	font-weight: 600;
+}
+
+.col-menu a.sel::before {
+	content: "✓";
+	color: #2f6bff;
+}
+
+/* ===== 머리글 도움말 =====
+   결재선 동그라미의 색이 뭘 뜻하는지는 하나하나 마우스를 올려 봐야 알 수 있었다.
+   머리글 옆 물음표에 마우스를 올리면 한 번에 읽을 수 있게 한다 */
+.help {
+	position: relative;
+	cursor: help;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	margin-left: 4px;
+	border: 1px solid #c3c9d4;
+	border-radius: 50%;
+	font-size: 9.5px;
+	font-weight: 600;
+	color: #98a3b5;
+	vertical-align: middle;
+}
+
+.help:hover {
+	border-color: #2f6bff;
+	color: #2f6bff;
+}
+
+/* 말풍선. 표 위에 뜨는 안내라 어두우면 화면이 무거워져서 흰 카드로 띄운다 */
+.help::after {
+	content: attr(data-tip);
+	position: absolute;
+	top: calc(100% + 9px);
+	right: -6px;
+	background: #fff;
+	color: #3d4756;
+	border: 1px solid #dfe4ec;
+	box-shadow: 0 6px 18px rgba(16, 24, 40, .14);
+	font-size: 11.5px;
+	font-weight: 400;
+	line-height: 1.7;
+	text-align: left;
+	padding: 10px 13px;
+	border-radius: 8px;
+	/* 줄바꿈(&#10;)을 그대로 살린다. 안 그러면 한 줄로 뭉개진다 */
+	white-space: pre;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .12s;
+	pointer-events: none;
+	z-index: 40;
+}
+
+/* 말풍선 꼬리 */
+.help::before {
+	content: "";
+	position: absolute;
+	top: calc(100% + 4px);
+	right: 0px;
+	border: 5px solid transparent;
+	border-bottom-color: #fff;
+	filter: drop-shadow(0 -1px 0 #dfe4ec);
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .12s;
+	pointer-events: none;
+	z-index: 41;
+}
+
+.help:hover::after, .help:hover::before {
+	opacity: 1;
+	visibility: visible;
 }
 
 /* 표 아래 페이지 번호 줄. 문서함 네 곳이 같은 모양이다 */
@@ -441,6 +538,15 @@ td.appr {
 .appr-dot.now {
 	background: #f0932b;
 } /* 검토중 = 지금 이 사람 차례 */
+
+/* 병렬은 검토중이 여러 명이라 꽉 찬 주황이 줄줄이 서면 시끄럽다.
+   같은 주황을 쓰되 채우지 않고 테두리로만 그려 색 면적을 줄인다.
+   덕분에 순차(채움)와 병렬(테두리)이 모양으로도 구분된다 */
+.appr-dot.now.par {
+	background: #fff8ef;
+	border: 2px solid #f0932b;
+	color: #d97d15;
+}
 .appr-dot.reject {
 	background: #e05252;
 } /* 반려 */
@@ -570,6 +676,8 @@ span.soon {
 				<span class="total-count">${pageVO.total}건</span>
 			</div>
 
+			<p class="page-desc">다른 사람이 기안하여 내가 결재(승인·반려)를 마친 문서입니다.</p>
+
 			<div class="list-card">
 
 				<%-- 왼쪽 검색, 오른쪽 도구.
@@ -641,7 +749,8 @@ span.soon {
 										class="${pageVO.status eq 'REJECTED' ? 'sel' : ''}">반려</a>
 								</div>
 							</div></th>
-							<th class="appr" style="width: 160px;">결재선</th>
+							<th class="appr" style="width: 160px;">결재선<span class="help"
+								data-tip="왼쪽부터 기안자 → 결재 순서입니다.&#10;&#10;● 초록  승인 완료&#10;● 주황  검토중 (지금 차례)&#10;○ 주황  검토중 (병렬 · 동시 결재)&#10;● 회색  대기&#10;● 빨강  반려&#10;&#10;동그라미에 마우스를 올리면 이름이 보입니다.">?</span></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -714,8 +823,12 @@ span.soon {
 													<c:set var="cls" value="reject" />
 													<c:set var="lbl" value="반려" />
 												</c:when>
-												<c:when test="${not metPending}">
-													<c:set var="cls" value="now" />
+												<%-- 병렬은 순서를 안 따지므로 아직 안 찍은 사람 모두가 '검토중'이다.
+												     순차는 그 중 맨 앞 한 명만 --%>
+												<c:when
+													test="${doc.approvalType eq 'PARALLEL' or not metPending}">
+													<c:set var="cls"
+													value="${doc.approvalType eq 'PARALLEL' ? 'now par' : 'now'}" />
 													<c:set var="lbl" value="검토중" />
 													<c:set var="metPending" value="true" />
 												</c:when>
