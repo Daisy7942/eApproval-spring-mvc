@@ -3,7 +3,7 @@
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.eapproval.approval.dao.DocumentMapper">
-
+	<!--resultType 이 짧은건 alias 된거임 config에서 설정해놓음 -->
 
 	<!-- 문서 1건 + 결재선 여러 명을 한 덩어리로 묶는 지도 -->
 	<resultMap id="documentWithLineMap" type="document">
@@ -75,22 +75,33 @@
 		)
 	</insert>
 
-	<!--리스트 조회 // 아래는 resultType 에 "document" 쓰면 되는데 그게 뭘 의미하는건지 적기위해서 이번에는 
-		풀어서 씀 alias 된거임 config에서 설정해놓음/ offset 20줄 건너뛰기 -->
+
+	<!-- 임시저장함 조회 조건. 목록·건수 아래 두 쿼리가 같이 쓴다 -->
+	<sql id="draftWhere">
+		WHERE employee_id = #{employeeId}
+		AND status = 'DRAFT'
+		<if test="p.keyword != null">
+			AND title LIKE CONCAT('%', #{p.keyword}, '%')
+		</if>
+		<if test="p.docType != null">
+			AND document_type = #{p.docType}
+		</if>
+	</sql>
+
+	<!--임시저장 리스트 조회 // offset 몇줄 건너뛰기라는 의미 -->
 	<select id="selectDraftList"
 		resultType="com.eapproval.approval.vo.DocumentVO">
 		SELECT * FROM document
-		WHERE employee_id = #{employeeId}
-		AND status = 'DRAFT'
+		<include refid="draftWhere" />
 		ORDER BY doc_id DESC
-		LIMIT #{size} OFFSET #{offset}
+		LIMIT #{p.size} OFFSET #{p.offset}
 	</select>
+
 
 	<!-- 임시저장 전체 건수 (페이지 수 계산용) -->
 	<select id="countDrafts" resultType="int">
 		SELECT COUNT(*) FROM document
-		WHERE employee_id = #{employeeId}
-		AND status = 'DRAFT'
+		<include refid="draftWhere" />
 	</select>
 
 	<!-- 임시저장 1건 조회 -->
@@ -194,105 +205,157 @@
 
 
 
-	<!--상신함 조회 : 내가 쓴 문서 중 임시저장이 아닌 것 -->
-	<select id="selectSubmittedList" parameterType="long"
-		resultMap="documentWithLineMap">
-		SELECT d.doc_id, d.title, d.document_type, d.status,
-		d.is_urgent,
+	<!-- 상신함에 뜰 문서 조건 : 내가 쓴 문서 중 임시저장이 아닌 것 -->
+	<sql id="submittedWhere">
+		WHERE employee_id = #{employeeId}
+		AND status != 'DRAFT'
+		<if test="p.keyword != null">
+			AND title LIKE CONCAT('%', #{p.keyword}, '%')
+		</if>
+		<if test="p.docType != null">
+			AND document_type = #{p.docType}
+		</if>
+		<if test="p.status != null">
+			AND status = #{p.status}
+		</if>
+	</sql>
+
+	<!--상신함 조회 -->
+	<select id="selectSubmittedList" resultMap="documentWithLineMap">
+		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
 		d.employee_id, d.created_at, d.updated_at,
-		de.name AS
-		drafter_name, de.position AS drafter_position,
-		dt.team_name AS
-		drafter_team,
+		de.name AS drafter_name, de.position AS drafter_position,
+		dt.team_name AS drafter_team,
 		al.approval_line_id, al.approver_id, al.approval_order,
 		al.approval_status,
 		e.name, e.position, t.team_name
 		FROM document d
-		JOIN
-		employee de ON d.employee_id = de.employee_id
-		LEFT JOIN team dt ON
-		de.team_id = dt.team_id
+		<!-- 이 쪽에 보여줄 문서번호만 먼저 고른다. 결재선을 붙이기 전이라
+		     여기서는 문서 1건이 1줄이라 LIMIT 이 곧 문서 건수가 된다.
+		     size 가 없으면(대시보드처럼) 자르지 않고 전부 가져온다 -->
+		JOIN (SELECT doc_id FROM document
+		<include refid="submittedWhere" />
+		ORDER BY doc_id DESC
+		<if test="!p.all">
+			LIMIT #{p.size} OFFSET #{p.offset}
+		</if>) p ON p.doc_id = d.doc_id
+		JOIN employee de ON d.employee_id = de.employee_id
+		LEFT JOIN team dt ON de.team_id = dt.team_id
 		JOIN approval_line al ON d.doc_id = al.doc_id
 		JOIN employee e ON al.approver_id = e.employee_id
-		LEFT JOIN team t ON
-		e.team_id = t.team_id
-		WHERE d.employee_id = #{employeeId}
-		AND d.status
-		!= 'DRAFT'
+		LEFT JOIN team t ON e.team_id = t.team_id
 		ORDER BY d.doc_id DESC, al.approval_order
+	</select>
+
+	<!-- 상신함 전체 건수 -->
+	<select id="countSubmitted" resultType="int">
+		SELECT COUNT(*) FROM document
+		<include refid="submittedWhere" />
 	</select>
 
 
 
 
+	<!-- 결재 대기함에 뜰 문서 조건 : 내 차례가 온 문서.
+	     내 결재선이 PENDING 이고, 나보다 앞 순서가 모두 APPROVED 인 것 -->
+	<sql id="pendingDocs">
+		SELECT DISTINCT al2.doc_id
+		FROM approval_line al2
+		JOIN document pd ON pd.doc_id = al2.doc_id
+		JOIN employee pe ON pd.employee_id = pe.employee_id
+		WHERE al2.approver_id = #{employeeId}
+		AND al2.approval_status = 'PENDING'
+		AND NOT EXISTS (SELECT 1 FROM approval_line prev
+		WHERE prev.doc_id = al2.doc_id
+		AND prev.approval_order &lt; al2.approval_order
+		AND prev.approval_status != 'APPROVED')
+		<!-- 화면 검색칸이 '제목 · 기안자'라 둘 다 뒤진다 -->
+		<if test="p.keyword != null">
+			AND (pd.title LIKE CONCAT('%', #{p.keyword}, '%')
+			OR pe.name LIKE CONCAT('%', #{p.keyword}, '%'))
+		</if>
+		<if test="p.docType != null">
+			AND pd.document_type = #{p.docType}
+		</if>
+	</sql>
 
 	<!--결재 대기함 조회 -->
-	<select id="selectPendingList" parameterType="long"
-		resultMap="documentWithLineMap">
-		SELECT d.doc_id, d.title, d.document_type, d.status,
-		d.is_urgent,
+	<select id="selectPendingList" resultMap="documentWithLineMap">
+		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
 		d.employee_id, d.created_at, d.updated_at,
-		de.name AS
-		drafter_name, de.position AS drafter_position,
-		dt.team_name AS
-		drafter_team,
+		de.name AS drafter_name, de.position AS drafter_position,
+		dt.team_name AS drafter_team,
 		al.approval_line_id, al.approver_id, al.approval_order,
 		al.approval_status,
 		e.name, e.position, t.team_name
 		FROM document d
-		JOIN
-		employee de ON d.employee_id = de.employee_id
-		LEFT JOIN team dt ON
-		de.team_id = dt.team_id
+		<!-- 이 쪽에 보여줄 문서번호만 먼저 고른다. 결재선을 붙이기 전이라
+		     여기서는 문서 1건이 1줄이라 LIMIT 이 곧 문서 건수가 된다 -->
+		JOIN (SELECT doc_id FROM (<include refid="pendingDocs" />) pick
+		ORDER BY doc_id DESC
+		<if test="!p.all">
+			LIMIT #{p.size} OFFSET #{p.offset}
+		</if>) p ON p.doc_id = d.doc_id
+		JOIN employee de ON d.employee_id = de.employee_id
+		LEFT JOIN team dt ON de.team_id = dt.team_id
 		JOIN approval_line al ON d.doc_id = al.doc_id
 		JOIN employee e ON al.approver_id = e.employee_id
-		LEFT JOIN team t ON
-		e.team_id = t.team_id
-		WHERE d.doc_id IN (SELECT al2.doc_id
-		FROM
-		approval_line al2
-		WHERE al2.approver_id = #{employeeId}
-		AND
-		al2.approval_status = 'PENDING'
-		AND NOT EXISTS (SELECT 1 FROM
-		approval_line prev
-		WHERE prev.doc_id = al2.doc_id
-		AND
-		prev.approval_order &lt; al2.approval_order
-		AND prev.approval_status !=
-		'APPROVED'))
+		LEFT JOIN team t ON e.team_id = t.team_id
 		ORDER BY d.doc_id DESC, al.approval_order
 	</select>
 
+	<!-- 결재 대기함 전체 건수 -->
+	<select id="countPending" resultType="int">
+		SELECT COUNT(*) FROM (<include refid="pendingDocs" />) c
+	</select>
+
+
+	<!-- 완료 문서함에 뜰 문서 조건 : 내가 이미 처리한(승인·반려) 문서 -->
+	<sql id="completedDocs">
+		SELECT DISTINCT al2.doc_id
+		FROM approval_line al2
+		JOIN document cd ON cd.doc_id = al2.doc_id
+		JOIN employee ce ON cd.employee_id = ce.employee_id
+		WHERE al2.approver_id = #{employeeId}
+		AND al2.approval_status != 'PENDING'
+		<if test="p.keyword != null">
+			AND (cd.title LIKE CONCAT('%', #{p.keyword}, '%')
+			OR ce.name LIKE CONCAT('%', #{p.keyword}, '%'))
+		</if>
+		<if test="p.docType != null">
+			AND cd.document_type = #{p.docType}
+		</if>
+		<if test="p.status != null">
+			AND cd.status = #{p.status}
+		</if>
+	</sql>
 
 	<!--완료함 조회 -->
-	<select id="selectCompletedList" parameterType="long"
-		resultMap="documentWithLineMap">
-		SELECT d.doc_id, d.title, d.document_type, d.status,
-		d.is_urgent,
+	<select id="selectCompletedList" resultMap="documentWithLineMap">
+		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
 		d.employee_id, d.created_at, d.updated_at,
-		de.name AS
-		drafter_name, de.position AS drafter_position,
-		dt.team_name AS
-		drafter_team,
+		de.name AS drafter_name, de.position AS drafter_position,
+		dt.team_name AS drafter_team,
 		al.approval_line_id, al.approver_id, al.approval_order,
 		al.approval_status,
 		e.name, e.position, t.team_name
 		FROM document d
-		JOIN
-		employee de ON d.employee_id = de.employee_id
-		LEFT JOIN team dt ON
-		de.team_id = dt.team_id
+		JOIN (SELECT doc_id FROM (<include refid="completedDocs" />) pick
+		ORDER BY doc_id DESC
+		<if test="!p.all">
+			LIMIT #{p.size} OFFSET #{p.offset}
+		</if>) p ON p.doc_id = d.doc_id
+		JOIN employee de ON d.employee_id = de.employee_id
+		LEFT JOIN team dt ON de.team_id = dt.team_id
 		JOIN approval_line al ON d.doc_id = al.doc_id
 		JOIN employee e ON al.approver_id = e.employee_id
-		LEFT JOIN team t ON
-		e.team_id = t.team_id
-		WHERE d.doc_id IN (SELECT doc_id FROM
-		approval_line
-		WHERE approver_id = #{employeeId}
-		AND approval_status !=
-		'PENDING')
+		LEFT JOIN team t ON e.team_id = t.team_id
 		ORDER BY d.doc_id DESC, al.approval_order
+	</select>
+
+	<!-- 완료 문서함 전체 건수 -->
+	<select id="countCompleted" resultType="int">
+		SELECT COUNT(*) FROM (<include refid="completedDocs" />) c
 	</select>
 
 
@@ -359,6 +422,7 @@
 		AND approval_status =
 		'PENDING'
 	</update>
+	
 	<!-- PENDING 개수 세기 - 이 숫자로 최종상태 반영을 위함 0일때 승인으로 처리 -->
 	<select id="countPendingLines" resultType="int">
 		SELECT COUNT(*)

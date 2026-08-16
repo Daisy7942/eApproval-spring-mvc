@@ -22,7 +22,6 @@ import com.eapproval.common.vo.PageVO;
 import com.eapproval.employee.dao.EmployeeMapper;
 import com.eapproval.employee.vo.EapprovalVO;
 
-
 @Service
 public class DocumentService {
 
@@ -170,7 +169,7 @@ public class DocumentService {
 		return new BigDecimal(work);
 	}
 
-	// 화면에서 온 빈 문자열은 '값 없음'으로 통일
+	// 화면에서 온 빈 문자열은 NUll로 통일
 	private String nullIfEmpty(String s) {
 		return (s == null || s.trim().isEmpty()) ? null : s;
 	}
@@ -179,13 +178,12 @@ public class DocumentService {
 	// 몇 번째부터 몇 줄인지는 PageVO 가 계산해 둠
 	public List<DocumentVO> getDraftList(Long employeeId, PageVO pageVO) {
 
-		return documentMapper.selectDraftList(employeeId, pageVO.getOffset(),
-				pageVO.getSize());
+		return documentMapper.selectDraftList(employeeId, pageVO);
 	}
-	
-	// 임시저장 전체 건수. 페이지 번호를 몇 장 그릴지 정하는 데 쓴다
-	public int getDraftCount(Long employeeId) {
-		return documentMapper.countDrafts(employeeId);
+
+	// 임시저장 전체 건수. 검색, 필터 중에도 페이지 장수 맞추기 위해
+	public int getDraftCount(Long employeeId, PageVO pageVO) {
+		return documentMapper.countDrafts(employeeId, pageVO);
 	}
 
 	// 임시저장 1건 조회
@@ -208,22 +206,50 @@ public class DocumentService {
 		return documentMapper.deleteDrafts(docIds, employeeId);
 	}
 
-	// 상신함 리스트 조회
+	// 상신함 리스트 조회 (페이지,검색,필터)
+	public List<DocumentVO> getSubmittedList(Long employeeId, PageVO pageVO) {
+
+		return documentMapper.selectSubmittedList(employeeId, pageVO);
+	}
+
+	// 상신함 리스트 조회 (전부)
+	// 대시보드는 상태별 개수를 세고 반려 문서를 골라내야 해서 잘라 주면 숫자가 틀어진다
 	public List<DocumentVO> getSubmittedList(Long employeeId) {
 
-		return documentMapper.selectSubmittedList(employeeId);
+		return documentMapper.selectSubmittedList(employeeId, PageVO.all());
 	}
 
-	// 결재대기함 리스트 조회
+	// 상신함 전체 건수
+	public int getSubmittedCount(Long employeeId, PageVO pageVO) {
+		return documentMapper.countSubmitted(employeeId, pageVO);
+	}
+
+	// 결재대기함 리스트 조회 (페이지,검색,필터)
+	public List<DocumentVO> getPendingList(Long employeeId, PageVO pageVO) {
+
+		return documentMapper.selectPendingList(employeeId, pageVO);
+	}
+
+	// 결재대기함 리스트 조회 (전부). 대시보드에서 사용
 	public List<DocumentVO> getPendingList(Long employeeId) {
 
-		return documentMapper.selectPendingList(employeeId);
+		return documentMapper.selectPendingList(employeeId, PageVO.all());
 	}
 
-	// 결재완료함 리스트 조회
-	public List<DocumentVO> getCompletedList(Long employeeId) {
+	// 결재대기함 전체 건수
+	public int getPendingCount(Long employeeId, PageVO pageVO) {
+		return documentMapper.countPending(employeeId, pageVO);
+	}
 
-		return documentMapper.selectCompletedList(employeeId);
+	// 결재완료함 리스트 조회 (페이지·검색·필터)
+	public List<DocumentVO> getCompletedList(Long employeeId, PageVO pageVO) {
+
+		return documentMapper.selectCompletedList(employeeId, pageVO);
+	}
+
+	// 결재완료함 전체 건수
+	public int getCompletedCount(Long employeeId, PageVO pageVO) {
+		return documentMapper.countCompleted(employeeId, pageVO);
 	}
 
 	// 추천 상사 결재 라인 //approval_order로 상사라인은 데이터베이스로 셋팅 해놓았음

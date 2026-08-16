@@ -105,18 +105,14 @@ public class DocumentController {
 	}
 
 	// 임시저장목록 조회 ---------------------------------------------
+	// page·size·keyword·docType 은 PageVO 가 통째로 받아 준다.
 	@GetMapping("/document/drafts")
-	public String draftList(HttpServletRequest request, Model model,
-			@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
+	public String draftList(HttpServletRequest request, Model model, PageVO pageVO) {
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 
-		// 목록을 자르기 전에 전체가 몇 건인지부터 세야 페이지를 몇 장 그릴지 알 수 있다.
-		// setPage 안에서 0·음수는 1로 걸러진다
-		PageVO pageVO = new PageVO();
-		pageVO.setPage(page);
-		pageVO.setSize(size);
-		pageVO.setTotal(documentService.getDraftCount(empId));
+		// 목록을 자르기 전에 조건에 걸린 게 몇 건인지부터 세야 페이지를 몇 장 그릴지 알 수 있다
+		pageVO.setTotal(documentService.getDraftCount(empId, pageVO));
 
 		List<DocumentVO> draftList = documentService.getDraftList(empId, pageVO);
 
@@ -140,34 +136,46 @@ public class DocumentController {
 
 	// 상신 목록 조회 ---------------------------------------------
 	@GetMapping("/document/submitted")
-	public String submittedList(HttpServletRequest request, Model model) {
+	public String submittedList(HttpServletRequest request, Model model, PageVO pageVO) {
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 
-		List<DocumentVO> submittedList = documentService.getSubmittedList(empId);
+		pageVO.setTotal(documentService.getSubmittedCount(empId, pageVO));
+
+		List<DocumentVO> submittedList = documentService.getSubmittedList(empId, pageVO);
+
 		model.addAttribute("submittedList", submittedList);
+		model.addAttribute("pageVO", pageVO);
 		return "approval/submittedList";
 	}
 
 	// 결재 대기 목록 조회 ---------------------------------------------
 	@GetMapping("/document/pending")
-	public String pendingList(HttpServletRequest request, Model model) {
+	public String pendingList(HttpServletRequest request, Model model, PageVO pageVO) {
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 
-		List<DocumentVO> pendingList = documentService.getPendingList(empId);
+		pageVO.setTotal(documentService.getPendingCount(empId, pageVO));
+
+		List<DocumentVO> pendingList = documentService.getPendingList(empId, pageVO);
+
 		model.addAttribute("pendingList", pendingList);
+		model.addAttribute("pageVO", pageVO);
 		return "approval/pendingList";
 	}
 
 	// 결재 완료 목록 조회 ---------------------------------------------
 	@GetMapping("/document/completed")
-	public String completedList(HttpServletRequest request, Model model) {
+	public String completedList(HttpServletRequest request, Model model, PageVO pageVO) {
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 
-		List<DocumentVO> completedList = documentService.getCompletedList(empId);
+		pageVO.setTotal(documentService.getCompletedCount(empId, pageVO));
+
+		List<DocumentVO> completedList = documentService.getCompletedList(empId, pageVO);
+
 		model.addAttribute("completedList", completedList);
+		model.addAttribute("pageVO", pageVO);
 		return "approval/completedList";
 	}
 
