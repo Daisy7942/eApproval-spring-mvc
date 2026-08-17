@@ -46,6 +46,9 @@ public interface DocumentMapper {
 
 	// 상신 : status DRAFT → PENDING
 	int submitDocument(DocumentVO documentVO);
+	
+	// 상신 취소 : status PENDING → DRAFT (아무도 결재 안 했을 때만)
+	int cancelSubmission(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
 
 	// 상신함 조회. PageVO.all() 을 주면 자르지 않고 전부 가져온다
 	List<DocumentVO> selectSubmittedList(@Param("employeeId") Long employeeId,

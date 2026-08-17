@@ -54,7 +54,7 @@ public class DocumentController {
 				return "approval/documentForm";
 			} // 새 문서 창으로 이동
 
-		// docId가 이미 있으면 -> [임시저장 문서 재조회 화면]
+			// docId가 이미 있으면 -> [임시저장 문서 재조회 화면]
 		} else {
 
 			// DB에서 기존에 임시저장해둔 문서 정보를 불러와서 화면(Model)에 전달
@@ -206,6 +206,15 @@ public class DocumentController {
 		long empId = loginUser.getEmployeeId();
 		documentService.reject(docId, empId, comment);
 		return "redirect:/document/detail?docId=" + docId;
+	}
+
+	// 상신 취소 --------------------------------------------------
+	@PostMapping("/document/cancel")
+	public String cancelSubmission(@RequestParam Long docId, HttpServletRequest request) {
+		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+		long empId = loginUser.getEmployeeId();
+		documentService.cancelSubmission(docId, empId);
+		return "redirect:/document/drafts";
 	}
 
 	// IllegalStateException 예외 발생 시 처리해주는 전담 메서드

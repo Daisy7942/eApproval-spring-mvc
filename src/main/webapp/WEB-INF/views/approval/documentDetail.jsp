@@ -822,8 +822,7 @@ span.soon {
 							data-tip="추후 구현 예정">
 							<span class="ico blue">✎</span> 문서수정
 						</button>
-						<button type="button" class="btn soon" aria-disabled="true"
-							data-tip="추후 구현 예정">
+						<button type="button" class="btn" onclick="doCancel();">
 							<span class="ico violet">↩</span> 상신취소
 						</button>
 					</c:if>
@@ -1154,6 +1153,14 @@ span.soon {
 			}
 			document.getElementById("cmtField").value = c;
 			document.getElementById("apprForm").action = ctx + "/document/reject";
+			document.getElementById("apprForm").submit();
+		}
+
+		// 상신취소 : 되돌리면 결재 대기 중인 사람들 목록에서 문서가 사라지므로
+		// 한 번 물어본다. 의견은 받을 이유가 없어 폼만 다시 쓴다
+		function doCancel() {
+			if (!confirm("상신을 취소하고 임시저장으로 되돌립니다.\n계속하시겠습니까?")) return;
+			document.getElementById("apprForm").action = ctx + "/document/cancel";
 			document.getElementById("apprForm").submit();
 		}
 

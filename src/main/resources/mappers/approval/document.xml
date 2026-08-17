@@ -144,7 +144,8 @@
 		is_urgent
 		=#{isUrgent},
 		approval_type = #{approvalType}
-		WHERE doc_id = #{docId} AND employee_id = #{employeeId}
+		WHERE doc_id = #{docId}
+		AND employee_id = #{employeeId}
 		AND
 		status =
 		'DRAFT'
@@ -206,7 +207,17 @@
 		employee_id = #{employeeId} AND status =
 		'DRAFT'
 	</update>
-
+	<!-- 상신 취소 : 아무도 결재하지 않았을 때만 임시저장으로 되돌린다 -->
+	<update id="cancelSubmission">
+		UPDATE document
+		SET status = 'DRAFT', updated_at = NOW()
+		WHERE doc_id = #{docId}
+		AND employee_id = #{employeeId}
+		AND status = 'PENDING'
+		AND NOT EXISTS (SELECT 1 FROM approval_line al
+		WHERE al.doc_id = #{docId}
+		AND al.approval_status != 'PENDING')
+	</update>
 
 
 	<!-- 상신함에 뜰 문서 조건 : 내가 쓴 문서 중 임시저장이 아닌 것 -->
@@ -229,26 +240,32 @@
 		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
 		d.approval_type,
 		d.employee_id, d.created_at, d.updated_at,
-		de.name AS drafter_name, de.position AS drafter_position,
-		dt.team_name AS drafter_team,
+		de.name AS
+		drafter_name, de.position AS drafter_position,
+		dt.team_name AS
+		drafter_team,
 		al.approval_line_id, al.approver_id, al.approval_order,
 		al.approval_status,
 		e.name, e.position, t.team_name
 		FROM document d
-		<!-- 이 쪽에 보여줄 문서번호만 먼저 고른다. 결재선을 붙이기 전이라
-		     여기서는 문서 1건이 1줄이라 LIMIT 이 곧 문서 건수가 된다.
-		     size 가 없으면(대시보드처럼) 자르지 않고 전부 가져온다 -->
+		<!-- 이 쪽에 보여줄 문서번호만 먼저 고른다. 결재선을 붙이기 전이라 여기서는 문서 1건이 1줄이라 LIMIT 이 곧 문서 
+			건수가 된다.  -->
 		JOIN (SELECT doc_id FROM document
 		<include refid="submittedWhere" />
 		ORDER BY doc_id DESC
 		<if test="!p.all">
 			LIMIT #{p.size} OFFSET #{p.offset}
-		</if>) p ON p.doc_id = d.doc_id
-		JOIN employee de ON d.employee_id = de.employee_id
+		</if>
+		) p ON p.doc_id = d.doc_id
+		JOIN employee de ON d.employee_id =
+		de.employee_id
 		LEFT JOIN team dt ON de.team_id = dt.team_id
-		JOIN approval_line al ON d.doc_id = al.doc_id
-		JOIN employee e ON al.approver_id = e.employee_id
-		LEFT JOIN team t ON e.team_id = t.team_id
+		JOIN
+		approval_line al ON d.doc_id = al.doc_id
+		JOIN employee e ON
+		al.approver_id = e.employee_id
+		LEFT JOIN team t ON e.team_id =
+		t.team_id
 		ORDER BY d.doc_id DESC, al.approval_order
 	</select>
 
@@ -261,25 +278,33 @@
 
 
 
-	<!-- 결재 대기함에 뜰 문서 조건 : 내 차례가 온 문서.
-	     내 결재선이 PENDING 이고, 나보다 앞 순서가 모두 APPROVED 인 것 -->
+	<!-- 결재 대기함에 뜰 문서 조건 : 내 차례가 온 문서. 내 결재선이 PENDING 이고, 나보다 앞 순서가 모두 APPROVED 
+		인 것 -->
 	<sql id="pendingDocs">
 		SELECT DISTINCT al2.doc_id
 		FROM approval_line al2
-		JOIN document pd ON pd.doc_id = al2.doc_id
-		JOIN employee pe ON pd.employee_id = pe.employee_id
+		JOIN document pd ON
+		pd.doc_id = al2.doc_id
+		JOIN employee pe ON pd.employee_id =
+		pe.employee_id
 		WHERE al2.approver_id = #{employeeId}
-		AND al2.approval_status = 'PENDING'
+		AND
+		al2.approval_status = 'PENDING'
 		AND pd.status = 'PENDING'
-		AND (pd.approval_type = 'PARALLEL'
-		OR NOT EXISTS (SELECT 1 FROM approval_line prev
+		AND
+		(pd.approval_type = 'PARALLEL'
+		OR NOT EXISTS (SELECT 1 FROM
+		approval_line prev
 		WHERE prev.doc_id = al2.doc_id
-		AND prev.approval_order &lt; al2.approval_order
-		AND prev.approval_status != 'APPROVED'))
+		AND
+		prev.approval_order &lt; al2.approval_order
+		AND prev.approval_status !=
+		'APPROVED'))
 		<!-- 화면 검색칸이 '제목 · 기안자'라 둘 다 뒤진다 -->
 		<if test="p.keyword != null">
 			AND (pd.title LIKE CONCAT('%', #{p.keyword}, '%')
-			OR pe.name LIKE CONCAT('%', #{p.keyword}, '%'))
+			OR
+			pe.name LIKE CONCAT('%', #{p.keyword}, '%'))
 		</if>
 		<if test="p.docType != null">
 			AND pd.document_type = #{p.docType}
@@ -291,30 +316,40 @@
 		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
 		d.approval_type,
 		d.employee_id, d.created_at, d.updated_at,
-		de.name AS drafter_name, de.position AS drafter_position,
-		dt.team_name AS drafter_team,
+		de.name AS
+		drafter_name, de.position AS drafter_position,
+		dt.team_name AS
+		drafter_team,
 		al.approval_line_id, al.approver_id, al.approval_order,
 		al.approval_status,
 		e.name, e.position, t.team_name
 		FROM document d
-		<!-- 이 쪽에 보여줄 문서번호만 먼저 고른다. 결재선을 붙이기 전이라
-		     여기서는 문서 1건이 1줄이라 LIMIT 이 곧 문서 건수가 된다 -->
-		JOIN (SELECT doc_id FROM (<include refid="pendingDocs" />) pick
+		<!-- 이 쪽에 보여줄 문서번호만 먼저 고르기 -->
+		JOIN (SELECT doc_id FROM (
+		<include refid="pendingDocs" />
+		) pick
 		ORDER BY doc_id DESC
 		<if test="!p.all">
 			LIMIT #{p.size} OFFSET #{p.offset}
-		</if>) p ON p.doc_id = d.doc_id
-		JOIN employee de ON d.employee_id = de.employee_id
+		</if>
+		) p ON p.doc_id = d.doc_id
+		JOIN employee de ON d.employee_id =
+		de.employee_id
 		LEFT JOIN team dt ON de.team_id = dt.team_id
-		JOIN approval_line al ON d.doc_id = al.doc_id
-		JOIN employee e ON al.approver_id = e.employee_id
-		LEFT JOIN team t ON e.team_id = t.team_id
+		JOIN
+		approval_line al ON d.doc_id = al.doc_id
+		JOIN employee e ON
+		al.approver_id = e.employee_id
+		LEFT JOIN team t ON e.team_id =
+		t.team_id
 		ORDER BY d.doc_id DESC, al.approval_order
 	</select>
 
 	<!-- 결재 대기함 전체 건수 -->
 	<select id="countPending" resultType="int">
-		SELECT COUNT(*) FROM (<include refid="pendingDocs" />) c
+		SELECT COUNT(*) FROM (
+		<include refid="pendingDocs" />
+		) c
 	</select>
 
 
@@ -322,13 +357,17 @@
 	<sql id="completedDocs">
 		SELECT DISTINCT al2.doc_id
 		FROM approval_line al2
-		JOIN document cd ON cd.doc_id = al2.doc_id
-		JOIN employee ce ON cd.employee_id = ce.employee_id
+		JOIN document cd ON
+		cd.doc_id = al2.doc_id
+		JOIN employee ce ON cd.employee_id =
+		ce.employee_id
 		WHERE al2.approver_id = #{employeeId}
-		AND al2.approval_status != 'PENDING'
+		AND
+		al2.approval_status != 'PENDING'
 		<if test="p.keyword != null">
 			AND (cd.title LIKE CONCAT('%', #{p.keyword}, '%')
-			OR ce.name LIKE CONCAT('%', #{p.keyword}, '%'))
+			OR
+			ce.name LIKE CONCAT('%', #{p.keyword}, '%'))
 		</if>
 		<if test="p.docType != null">
 			AND cd.document_type = #{p.docType}
@@ -343,28 +382,40 @@
 		SELECT d.doc_id, d.title, d.document_type, d.status, d.is_urgent,
 		d.approval_type,
 		d.employee_id, d.created_at, d.updated_at,
-		de.name AS drafter_name, de.position AS drafter_position,
-		dt.team_name AS drafter_team,
+		de.name AS
+		drafter_name, de.position AS drafter_position,
+		dt.team_name AS
+		drafter_team,
 		al.approval_line_id, al.approver_id, al.approval_order,
 		al.approval_status,
 		e.name, e.position, t.team_name
 		FROM document d
-		JOIN (SELECT doc_id FROM (<include refid="completedDocs" />) pick
+		JOIN
+		(SELECT doc_id FROM (
+		<include refid="completedDocs" />
+		) pick
 		ORDER BY doc_id DESC
 		<if test="!p.all">
 			LIMIT #{p.size} OFFSET #{p.offset}
-		</if>) p ON p.doc_id = d.doc_id
-		JOIN employee de ON d.employee_id = de.employee_id
+		</if>
+		) p ON p.doc_id = d.doc_id
+		JOIN employee de ON d.employee_id =
+		de.employee_id
 		LEFT JOIN team dt ON de.team_id = dt.team_id
-		JOIN approval_line al ON d.doc_id = al.doc_id
-		JOIN employee e ON al.approver_id = e.employee_id
-		LEFT JOIN team t ON e.team_id = t.team_id
+		JOIN
+		approval_line al ON d.doc_id = al.doc_id
+		JOIN employee e ON
+		al.approver_id = e.employee_id
+		LEFT JOIN team t ON e.team_id =
+		t.team_id
 		ORDER BY d.doc_id DESC, al.approval_order
 	</select>
 
 	<!-- 완료 문서함 전체 건수 -->
 	<select id="countCompleted" resultType="int">
-		SELECT COUNT(*) FROM (<include refid="completedDocs" />) c
+		SELECT COUNT(*) FROM (
+		<include refid="completedDocs" />
+		) c
 	</select>
 
 
@@ -373,22 +424,27 @@
 		resultMap="documentWithLineMap">
 		SELECT d.doc_id, d.title, d.document_type, d.status,
 		d.is_urgent, d.approval_type,
-		d.employee_id, d.created_at, d.updated_at,
+		d.employee_id, d.created_at,
+		d.updated_at,
 		de.name AS
 		drafter_name, de.position AS drafter_position,
 		dt.team_name AS
 		drafter_team,
-		al.approval_line_id, al.approver_id, al.approval_order,
+		al.approval_line_id, al.approver_id,
+		al.approval_order,
 		al.approval_status,
 		e.name, e.position,
 		t.team_name,d.content,
 		al.comment,
 		al.approved_at,
-		vr.vacation_id, vr.vacation_type_id,
+		vr.vacation_id,
+		vr.vacation_type_id,
 		vr.start_date, vr.end_date,
-		vr.days, vr.reason, vr.start_half,
+		vr.days, vr.reason,
+		vr.start_half,
 		vr.end_half, vt.type_name,vt.deduct_balance
-		FROM document d
+		FROM document
+		d
 		JOIN
 		employee de ON
 		d.employee_id =
@@ -431,9 +487,10 @@
 		AND approval_status =
 		'PENDING'
 		AND doc_id IN (SELECT doc_id FROM document
-		WHERE doc_id = #{docId} AND status = 'PENDING')
+		WHERE doc_id =
+		#{docId} AND status = 'PENDING')
 	</update>
-	
+
 	<!-- PENDING 개수 세기 - 이 숫자로 최종상태 반영을 위함 0일때 승인으로 처리 -->
 	<select id="countPendingLines" resultType="int">
 		SELECT COUNT(*)

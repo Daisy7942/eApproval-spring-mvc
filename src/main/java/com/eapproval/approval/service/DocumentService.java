@@ -145,6 +145,15 @@ public class DocumentService {
 		saveVacation(documentVO);
 	}
 
+	// 상신 취소 — 임시저장으로 되돌린다
+	@Transactional
+	public void cancelSubmission(Long docId, Long employeeId) {
+		int updated = documentMapper.cancelSubmission(docId, employeeId);
+		if (updated == 0) {
+			throw new IllegalStateException("이미 결재가 진행된 문서이거나 취소할 수 없는 문서입니다.");
+		}
+	}
+	
 	// 근무일 수 세기 (토·일 제외). 공휴일은 아직...
 	private int countWorkDays(LocalDate from, LocalDate to) {
 		LocalDate d = from;
