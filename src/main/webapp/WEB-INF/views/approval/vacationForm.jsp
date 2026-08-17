@@ -952,8 +952,11 @@ $(document).ready(function() {
                       }
               }
 
-              // 사유는 필수다. 공백만 친 것도 안 쓴 것으로 본다.
-              if ($.trim($('#reason').val()) === '') {
+              // 사유는 신청(상신)할 때만 필수다. 공백만 친 것도 안 쓴 것으로 본다.
+              // 임시저장은 쓰다 만 신청서를 그대로 쟁여두는 기능이라 빈칸이어도 저장돼야 한다.
+              // vacation_request.reason 이 NULL 을 받는 컬럼이라 DB 도 막지 않는다.
+              // (종류·기간은 못 푼다 — vacation_type_id·start_date·end_date·days 가 NOT NULL 이다)
+              if (isSubmitDoc && $.trim($('#reason').val()) === '') {
                       $('#reasonErr').show();
                       msgs.push('휴가 사유를 입력해 주세요.');
                       first = first || function() { $('#reason').focus(); };
