@@ -206,6 +206,8 @@
 		UPDATE document
 		SET
 		status = 'PENDING', updated_at = NOW(),
+		title = #{title}, content = #{content},
+		is_urgent = #{isUrgent}, due_date = #{dueDate},
 		approval_type = #{approvalType}
 		WHERE doc_id = #{docId} AND
 		employee_id = #{employeeId} AND status =

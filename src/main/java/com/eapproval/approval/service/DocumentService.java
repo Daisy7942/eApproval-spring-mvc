@@ -72,12 +72,13 @@ public class DocumentService {
 	private void saveVacation(DocumentVO documentVO) {
 
 		// 기존에 작성된 휴가 신청 정보 삭제
-		documentMapper.deleteVacationRequest(documentVO.getDocId(), documentVO.getEmployeeId());
-
 		VacationRequestVO v = documentVO.getVacation();
 		if (v == null) {
 			return;
 		} // 휴가 신청서가 아닌 일반 문서면 여기서 끝
+
+		// 기존에 작성된 휴가 신청 정보 삭제
+		documentMapper.deleteVacationRequest(documentVO.getDocId(), documentVO.getEmployeeId());
 
 		// 휴가 신청 객체에 문서 ID 및 작성자 사원 ID 매핑
 		v.setDocId(documentVO.getDocId());
@@ -106,21 +107,11 @@ public class DocumentService {
 		// 화면이 보낸 결재 방식을 그대로 쓴다. 안 왔거나 모르는 값이면 순차
 		documentVO.setApprovalType(normalizeApprovalType(documentVO.getApprovalType()));
 
-		// 문서 메인 데이터 저장 (신규 vs 임시저장 구분)
-		if (documentVO.getDocId() == null) {
-			documentVO.setStatus("PENDING"); // 결재'대기'상태로 셋팅
-			documentMapper.insertDocument(documentVO); // DB에 새로 저장
-		} else {
-			documentMapper.submitDocument(documentVO); // 기존 임시저장 문서를 '상신'으로 업데이트
-		}
-
-		saveApprovalLines(documentVO); // 결재선 저장
-
-		// 휴가 관련정보를 request테이블에 저장
-		// 휴가 문서일 때만 vacation_request 에 한 줄 더 넣는다
+		// 휴가 검증은 문서를 PENDING 으로 바꾸기 전에 한다.
+		// 먼저 바꿔 버리면 이 문서에 이미 딸려 있던 휴가 줄이 '대기 중인 연차'로 같이 세어져
+		// 재상신할 때 자기 자신 때문에 연차가 모자라게 나온다
 		if (documentVO.getVacation() != null) {
 			VacationRequestVO v = documentVO.getVacation();
-			v.setDocId(documentVO.getDocId());
 			v.setEmployeeId(documentVO.getEmployeeId());
 			if (v.getReason() == null || v.getReason().trim().isEmpty()) {
 				throw new IllegalStateException("휴가 사유를 입력해주세요.");
@@ -142,6 +133,19 @@ public class DocumentService {
 				}
 			}
 		}
+
+		// 문서 메인 데이터 저장 (신규 vs 임시저장 구분)
+		if (documentVO.getDocId() == null) {
+			documentVO.setStatus("PENDING"); // 결재'대기'상태로 셋팅
+			documentMapper.insertDocument(documentVO); // DB에 새로 저장
+		} else {
+			documentMapper.submitDocument(documentVO); // 기존 임시저장 문서를 '상신'으로 업데이트
+		}
+
+		saveApprovalLines(documentVO); // 결재선 저장
+
+		// 휴가 관련정보를 request테이블에 저장
+		// 휴가 문서일 때만 vacation_request 에 한 줄 더 넣는다
 		saveVacation(documentVO);
 	}
 
