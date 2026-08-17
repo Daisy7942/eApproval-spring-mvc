@@ -189,6 +189,9 @@ body { background:#f4f6fa; padding:26px; }
 .pchip.agreement .av { background:#d08a1e; }
 
 .err { color:#d94848; font-size:12px; margin-top:7px; display:none; }
+/* 칸 아래 설명 한 줄. documentForm.jsp 와 같은 이름·같은 모양으로 둔다 —
+   두 화면이 같은 칸을 다르게 그리면 같은 기능으로 안 읽힌다 */
+.hint { font-size:11px; color:#a5aebd; margin-top:6px; }
 /* 오류가 아니라 안내다. 붉은색 대신 회색으로 조용히 알린다. */
 .half-info { color:#8b94a3; font-size:11.5px; margin-top:7px; display:none; }
 
@@ -431,6 +434,20 @@ body { background:#f4f6fa; padding:26px; }
                               <div id="apprHidden"></div>
                       </div>
 
+                      <%-- ===== 결재 마감일 =====
+                           document.due_date 는 문서 공통 칸인데 이 화면에만 빠져 있었다.
+                           칸이 없으면 값이 안 실려 와서, 마감일을 넣어 둔 휴가 문서를
+                           여기서 한 번만 저장해도 due_date 가 null 로 덮어써진다.
+                           휴가 기간(startDate·endDate)과는 아무 상관 없는 값이다 —
+                           저건 '언제 쉬는가', 이건 '언제까지 결재를 받아야 하는가'다.
+                           documentForm.jsp 와 이름·모양을 똑같이 맞춰 뒀다 --%>
+                      <div class="row">
+                              <label class="tit" for="dueDate">결재 마감일 <span class="opt">(선택)</span></label>
+                              <input type="date" id="dueDate" name="dueDate" value="${doc.dueDate}">
+                              <p class="hint">언제까지 결재를 받아야 하는지 지정합니다. 비워두면 마감일 없이 진행됩니다.</p>
+                              <p class="err" id="dueDateErr">마감일은 오늘 이후로 지정해주세요.</p>
+                      </div>
+
               </div>
 
               <div class="foot">
@@ -452,6 +469,14 @@ $(document).ready(function() {
       var t = new Date();
       var pad = function(n) { return (n < 10 ? '0' : '') + n; };
       var todayStr = t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
+
+      /* 결재 마감일은 휴가 기간과 달리 지난 날짜를 열어둘 이유가 없다.
+         이미 지난 마감일이 채워진 채로 열렸으면(오래 묵은 임시저장) min 을 걸지 않는다 —
+         걸면 브라우저가 그 칸을 '유효하지 않음'으로 잡아 임시저장 버튼조차 안 먹는다. */
+      if (!$('#dueDate').val() || $('#dueDate').val() >= todayStr) {
+              $('#dueDate').attr('min', todayStr);
+      }
+      $('#dueDate').on('input change', function() { $('#dueDateErr').hide(); });
 
       /* 지난 날짜도 고를 수 있게 열어둔다.
          급하게 휴가를 쓰고 신청서를 나중에 올리는 경우가 있어서다.
@@ -917,6 +942,16 @@ $(document).ready(function() {
                       $('#apprErr').show();
                       msgs.push('결재선을 먼저 지정해 주세요.');
                       first = first || function() { $('#btnApprovalLine').focus(); };
+              }
+
+              /* 달력의 min 은 브라우저 UI만 막을 뿐, 직접 쳐 넣으면 통과된다.
+                 신청(상신)할 때만 본다 — 오래 묵혀 둔 임시저장은 마감일이 이미
+                 지나 있을 수 있는데 그걸로 쟁여두기까지 막으면 안 된다. */
+              var due = $('#dueDate').val();
+              if (isSubmitDoc && due !== '' && due < todayStr) {
+                      $('#dueDateErr').show();
+                      msgs.push('결재 마감일은 오늘 이후로 지정해 주세요.');
+                      first = first || function() { $('#dueDate').focus(); };
               }
 
               if (msgs.length > 0) {

@@ -267,13 +267,13 @@ body { background:#f4f6fa; padding:30px; }
                       </div>
 
                       <%-- ===== 결재 마감일 =====
-                           ⚠ 아직 저장되지 않는다. 저장하려면 3곳을 더 손봐야 한다.
-                              ① document 테이블에 due_date DATE NULL 컬럼 추가
-                              ② DocumentVO 에 dueDate 필드 + getter/setter
-                              ③ document.xml 의 INSERT 에 due_date, #{dueDate} 추가 --%>
+                           value 가 있어야 임시저장 문서를 다시 열었을 때 칸이 채워진다.
+                           비워 두면 화면만 빈 게 아니라, 그 상태로 저장하는 순간
+                           updateDraft 가 due_date = null 로 덮어써서 저장해 둔 마감일이 지워진다.
+                           LocalDate 는 그대로 찍으면 'YYYY-MM-DD' 라 input[type=date] 가 바로 받는다 --%>
                       <div class="row">
                               <label class="tit" for="dueDate">결재 마감일 <span class="opt">선택</span></label>
-                              <input type="date" id="dueDate" name="dueDate">
+                              <input type="date" id="dueDate" name="dueDate" value="${doc.dueDate}">
                               <p class="hint">언제까지 결재를 받아야 하는지 지정합니다. 비워두면 마감일 없이 진행됩니다.</p>
                               <p class="err" id="dueDateErr">마감일은 오늘 이후로 지정해주세요.</p>
                       </div>
@@ -308,7 +308,11 @@ $(document).ready(function() {
       var t = new Date();
       var pad = function(n) { return (n < 10 ? '0' : '') + n; };
       var todayStr = t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
-      $('#dueDate').attr('min', todayStr);
+      // 이미 지난 마감일이 채워진 채로 열렸으면(오래 묵은 임시저장) min 을 걸지 않는다.
+      // 걸어 버리면 브라우저가 그 칸을 '유효하지 않음'으로 잡아 임시저장 버튼조차 안 먹는다
+      if (!$('#dueDate').val() || $('#dueDate').val() >= todayStr) {
+              $('#dueDate').attr('min', todayStr);
+      }
 
       /* ═══════════════ 결재란 ═══════════════
          결재란 = [기안 1칸] + [결재자 수만큼의 칸].
@@ -554,8 +558,10 @@ $(document).ready(function() {
               }
 
               // 달력의 min 은 브라우저 UI만 막을 뿐, 직접 입력하면 통과된다.
+              // 제목·내용과 같이 상신할 때만 본다 — 오래 묵혀 둔 임시저장 문서는
+              // 마감일이 이미 지나 있을 수 있는데, 그걸로 임시저장까지 막으면 쟁여둘 수가 없다
               var due = $('#dueDate').val();
-              if (due !== '' && due < todayStr) {   // 'YYYY-MM-DD' 는 문자열끼리 비교해도 날짜순이 맞다
+              if (isSubmitDoc && due !== '' && due < todayStr) {   // 'YYYY-MM-DD' 는 문자열끼리 비교해도 날짜순이 맞다
                       $('#dueDateErr').show();
                       msgs.push('결재 마감일은 오늘 이후로 지정해 주세요.');
                       first = first || function() { $('#dueDate').focus(); };
