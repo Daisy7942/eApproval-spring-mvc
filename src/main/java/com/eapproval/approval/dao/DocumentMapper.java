@@ -15,10 +15,10 @@ import com.eapproval.common.vo.PageVO;
 
 @Mapper
 public interface DocumentMapper {
-	// 저장
+	// 문서 저장
 	int insertDocument(DocumentVO documentVO);
 
-	// 임시저장 리스트 조회.
+	// 임시저장 목록 조회.
 	// 페이지·검색·필터 조건은 PageVO 하나에 다 들어 있다
 	List<DocumentVO> selectDraftList(@Param("employeeId") Long employeeId,
 			@Param("p") PageVO p);
@@ -35,8 +35,15 @@ public interface DocumentMapper {
 	// 삭제
 	int deleteDrafts(@Param("docIds") List<Long> docIds, @Param("employeeId") Long employeeId);
 
-	// 임시저장 결재선 삭제
-	int deleteApprovalLines(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
+	// 임시저장 결재선 삭제 (지금 쓰는 차수만. 지난 차수는 이력이라 노터치)
+	int deleteApprovalLines(@Param("docId") Long docId, @Param("employeeId") Long employeeId,
+			@Param("round") int round);
+
+	// 결재선의 마지막 차수 ( 결재선 미존재 시 null )
+	Integer selectMaxRound(@Param("docId") Long docId);
+
+	// 해당 차수의 결재 완료(승인·반려·취소) 건수 조회
+	int countDoneLines(@Param("docId") Long docId, @Param("round") int round);
 
 	// 임시저장 휴가정보 삭제
 	int deleteVacationRequest(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
@@ -49,6 +56,12 @@ public interface DocumentMapper {
 	
 	// 상신 취소 : status PENDING → DRAFT (아무도 결재 안 했을 때만)
 	int cancelSubmission(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
+
+	// 재상신 준비 : status REJECTED → DRAFT (반려된 내 문서만)
+	int reopenRejected(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
+
+	// 결재 이력 : 지난 차수까지 전부. 도장이 찍힌 줄만
+	List<ApprovalLineVO> selectApprovalHistory(@Param("docId") Long docId);
 
 	// 상신함 조회. PageVO.all() 을 주면 자르지 않고 전부 가져온다
 	List<DocumentVO> selectSubmittedList(@Param("employeeId") Long employeeId,

@@ -236,4 +236,13 @@ public class DocumentController {
 	    documentService.cancelSubmission(docId, empId);
 	    return "redirect:/document/write?docId=" + docId;
 	}
+
+	// 재상신 : 반려 문서를 임시저장으로 전환 후 수정 화면으로 이동
+	@PostMapping("/document/redraft")
+	public String redraftDocument(@RequestParam Long docId, HttpServletRequest request) {
+	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+	    long empId = loginUser.getEmployeeId();
+	    documentService.reopenRejected(docId, empId);
+	    return "redirect:/document/write?docId=" + docId;
+	}
 }

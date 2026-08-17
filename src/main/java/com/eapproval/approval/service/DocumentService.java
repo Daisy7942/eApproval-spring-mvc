@@ -42,12 +42,26 @@ public class DocumentService {
 		return result;
 	}
 
+	// 결재선을 새로 쓸 때 들어갈 차수.
+	// 해당 차수의 결재 이력이 없으면 기존 차수 유지 (임시저장 반복 시 차수 미증가)
+	// 결재 진행 이력(승인·반려)이 존재하면 다음 차수로 신규 생성 (재상신 처리)
+	private int writableRound(Long docId) {
+		Integer max = documentMapper.selectMaxRound(docId);
+		if (max == null) {
+			return 1;
+		} // 결재선을 처음 넣는 문서
+		return documentMapper.countDoneLines(docId, max) > 0 ? max + 1 : max;
+	}
+
 	// 임시저장은 여러 번 누를 수 있고 상신도 임시저장 위에 얹힌다.
 	// INSERT 만 하면 줄이 쌓이므로 항상 지우고 다시 넣는다.
 	private void saveApprovalLines(DocumentVO documentVO) {
 
-		// 기존에 등록되어 있던 해당 문서(docId)의 결재선 전체 삭제 (중복 방지)
-		documentMapper.deleteApprovalLines(documentVO.getDocId(), documentVO.getEmployeeId());
+		int round = writableRound(documentVO.getDocId());
+
+		// 기존에 등록되어 있던 해당 문서(docId)의 결재선 삭제 (중복 방지).
+		// 현재 차수의 기존 결재선 삭제 (과거 차수 결재 이력 보존)
+		documentMapper.deleteApprovalLines(documentVO.getDocId(), documentVO.getEmployeeId(), round);
 
 		// 새로 저장할 결재선 목록 꺼내기
 		List<ApprovalLineVO> lines = documentVO.getApprovalLine();
@@ -60,6 +74,7 @@ public class DocumentService {
 			ApprovalLineVO line = lines.get(i);
 			line.setDocId(documentVO.getDocId());
 			line.setApprovalOrder(i + 1);
+			line.setRound(round);
 			line.setApprovalStatus("PENDING");
 			line.setApprovalType("APPROVAL");
 		}
@@ -157,7 +172,20 @@ public class DocumentService {
 			throw new IllegalStateException("이미 결재가 진행된 문서이거나 취소할 수 없는 문서입니다.");
 		}
 	}
-	
+
+	// 재상신 준비 — 반려된 문서를 임시저장으로 되돌린다.
+	// 상신 취소와 겉모습은 같지만 조건이 정반대라(저쪽은 아무도 결재 안 했을 때만,
+	// 이쪽은 반려 도장이 찍혀 있어야) 쿼리도 메서드도 따로 둔다.
+	// 찍혀 있던 결재선은 지우지 않는다 — 다음 상신 때 차수가 하나 올라가며 이력으로 남는다
+	@Transactional
+	public void reopenRejected(Long docId, Long employeeId) {
+		int updated = documentMapper.reopenRejected(docId, employeeId);
+		if (updated == 0) {
+			throw new IllegalStateException("반려된 문서가 아니거나 재상신할 수 없는 문서입니다.");
+		}
+	}
+
+
 	// 근무일 수 세기 (토·일 제외). 공휴일은 아직...
 	private int countWorkDays(LocalDate from, LocalDate to) {
 		LocalDate d = from;
@@ -309,6 +337,10 @@ public class DocumentService {
 		if (!canRead) {
 			throw new IllegalStateException("이 문서를 볼 권한이 없습니다.");
 		}
+
+		// 위 approvalLine 은 지금 돌고 있는 한 벌(최신 차수)뿐이라
+		// 전체 차수의 결재 이력 조회 (이력 탭 제공용)
+		doc.setHistory(documentMapper.selectApprovalHistory(docId));
 		return doc;
 	}
 

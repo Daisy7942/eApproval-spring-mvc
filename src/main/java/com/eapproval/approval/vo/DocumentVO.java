@@ -20,7 +20,8 @@ public class DocumentVO {
     private LocalDateTime signedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private List<ApprovalLineVO> approvalLine;
+    private List<ApprovalLineVO> approvalLine;   // 지금 돌고 있는 결재선 하나 (최신 차수)
+    private List<ApprovalLineVO> history;        // 지난 차수까지 실제로 찍힌 결재 이력
     private String drafterName;
     private String drafterPosition;
     private String drafterTeam;
@@ -64,6 +65,12 @@ public class DocumentVO {
 	}
 	public void setApprovalLine(List<ApprovalLineVO> approvalLine) {
 		this.approvalLine = approvalLine;
+	}
+	public List<ApprovalLineVO> getHistory() {
+		return history;
+	}
+	public void setHistory(List<ApprovalLineVO> history) {
+		this.history = history;
 	}
 	public Long getDocId() {
 		return docId;

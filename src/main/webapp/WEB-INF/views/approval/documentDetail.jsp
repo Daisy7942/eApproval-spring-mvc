@@ -611,6 +611,18 @@
 	color: #8a93a3;
 }
 
+/* 재상신된 문서에서 '지금 보고 있는 게 몇 회차 결재선인가'를 알리는 한 줄.
+   표 위에 붙어야 표를 읽기 전에 눈에 든다 */
+.round-note {
+	margin: 10px 0 2px;
+	padding: 8px 12px;
+	background: #f8fafc;
+	border: 1px solid #eaeef4;
+	border-radius: 5px;
+	font-size: 12.5px;
+	color: #5b6576;
+}
+
 /* 인쇄하면 종이 한 장만 남는다.
    왼쪽 아이콘 줄(.rail)과 '새 결재' 팝업(#formModal)까지 지워야 진짜로 사라진다 */
 @media print {
@@ -731,17 +743,19 @@ span.soon {
 			<%-- 병렬이면 순서를 안 따진다. 결재자 모두가 동시에 자기 차례다 --%>
 			<c:set var="isParallel" value="${doc.approvalType eq 'PARALLEL'}" />
 
-			<%-- 결재선을 한 번 훑으면서 세 가지를 같이 알아낸다.
+			<%-- 결재선을 한 번 훑으면서 네 가지를 같이 알아낸다.
+			     doc.approvalLine 은 지금 돌고 있는 한 벌(최신 차수)뿐이라
+			     반려됐던 지난 차수는 여기 없다 — 그건 doc.history 가 들고 있다.
 			     ① 지금 차례가 나인가 (myTurn)
 			        - 순차 : 처음 만나는 PENDING 이 나일 때
 			        - 병렬 : 내 줄이 아직 PENDING 이기만 하면
-			     ② anyDone = 한 명이라도 처리했나 (상신취소·수정을 막는 기준)
-			     ③ doneCnt = 결재이력 탭에 찍을 줄 수
+			     ② anyDone = 이번 차수에서 한 명이라도 처리했나 (상신취소·수정을 막는 기준)
+			     ③ curRound = 지금 몇 차인가. 2 이상이면 재상신된 문서다
 			     ④ iAmApprover = 내가 이 문서의 결재자이긴 한가 --%>
 			<c:set var="metPending" value="false" />
 			<c:set var="myTurn" value="false" />
 			<c:set var="anyDone" value="false" />
-			<c:set var="doneCnt" value="0" />
+			<c:set var="curRound" value="1" />
 			<c:set var="iAmApprover" value="false" />
 			<c:forEach var="a" items="${doc.approvalLine}">
 				<c:if test="${a.approvalStatus eq 'PENDING' and not metPending}">
@@ -756,13 +770,14 @@ span.soon {
 					test="${isParallel and a.approverId eq myId and a.approvalStatus eq 'PENDING'}">
 					<c:set var="myTurn" value="true" />
 				</c:if>
+				<%-- 한 벌은 통째로 같은 차수라 아무 줄에서나 읽으면 된다 --%>
+				<c:set var="curRound" value="${a.round}" />
 				<%-- CANCELED(앞사람 반려로 차례가 사라진 줄)는 사람이 한 일이 아니라
 				     이력에 남길 것도, 처리로 셀 것도 없다. 그래서 'PENDING 이 아닌 것'이 아니라
 				     실제로 찍힌 두 상태만 센다 --%>
 				<c:if
 					test="${a.approvalStatus eq 'APPROVED' or a.approvalStatus eq 'REJECTED'}">
 					<c:set var="anyDone" value="true" />
-					<c:set var="doneCnt" value="${doneCnt + 1}" />
 				</c:if>
 				<c:if test="${a.approverId eq myId}">
 					<c:set var="iAmApprover" value="true" />
@@ -778,6 +793,13 @@ span.soon {
 			<c:set var="isDrafter" value="${doc.employeeId eq myId}" />
 			<c:set var="canEdit"
 				value="${isDrafter and doc.status eq 'PENDING' and not anyDone}" />
+
+			<%-- 재상신은 반대다. canEdit 은 status 가 PENDING 일 때, 이쪽은 REJECTED 일 때라
+			     한 문서에서 둘이 같이 켜질 수 없다 — 상태는 하나뿐이니까.
+			     결재가 찍혔는지(anyDone)는 여기서 안 본다. 반려됐다는 것 자체가
+			     결재가 끝났다는 뜻이라 더 볼 게 없다. 반려 문서는 기안자만 되살릴 수 있다 --%>
+			<c:set var="canRedraft"
+				value="${isDrafter and doc.status eq 'REJECTED'}" />
 
 			<%-- 문서 종류 이름 --%>
 			<c:set var="formName">
@@ -839,6 +861,14 @@ span.soon {
 						</button>
 						<button type="button" class="btn" onclick="doCancel();">
 							<span class="ico violet">↩</span> 상신취소
+						</button>
+					</c:if>
+
+					<%-- 반려된 내 문서 : 고쳐서 다시 올린다 --%>
+					<c:if test="${canRedraft}">
+						<div class="btn-sep"></div>
+						<button type="button" class="btn btn-approve" onclick="doRedraft();">
+							<span class="ico">↻</span> 재상신
 						</button>
 					</c:if>
 
@@ -1040,65 +1070,80 @@ span.soon {
 				<div class="list-block">
 					<div class="list-tabs">
 						<button type="button" class="ltab on" onclick="showPane('hist', this);">
-							결재이력 <span class="cnt">(${doneCnt + 1})</span>
+							결재이력 <span class="cnt">(${fn:length(doc.history) + 1})</span>
 						</button>
 						<button type="button" class="ltab" onclick="showPane('line', this);">
 							결재선 <span class="cnt">(${fn:length(doc.approvalLine)})</span>
 						</button>
-						<%-- 댓글·수정이력은 담을 테이블이 아예 없다.
-						     열어봐야 빈 칸이라 탭 자체를 못 누르게 막고 말풍선으로 알린다 --%>
-						<button type="button" class="ltab soon" aria-disabled="true"
-							data-tip="추후 구현 예정">
-							댓글 <span class="cnt">(0)</span>
-						</button>
-						<button type="button" class="ltab soon" aria-disabled="true"
-							data-tip="추후 구현 예정">
-							수정이력 <span class="cnt">(0)</span>
-						</button>
+						<%-- 댓글·수정이력 탭을 뺐다.
+						     둘 다 담을 테이블이 없어서 (0) 만 띄우고 못 누르는 탭이었는데,
+						     '있는데 안 되는 것'처럼 보여서 없느니만 못했다.
+						     수정이력은 회차가 언제 올라갔는지 적을 시각 컬럼조차 없어
+						     document_history 테이블이 생기기 전엔 만들 수가 없다.
+						     테이블이 생기면 여기 탭을 다시 붙이면 된다 --%>
 					</div>
 
 					<%-- 결재이력 : 따로 이력 테이블이 있는 게 아니라
 					     document.created_at(상신) + approval_line.approved_at(승인·반려)을 늘어놓은 것이다.
-					     결재 의견도 여기 같이 붙였다 — 언제 누가 무슨 말을 했는지가 한 줄에 있어야 읽힌다 --%>
+					     결재 의견도 여기 같이 붙였다 — 언제 누가 무슨 말을 했는지가 한 줄에 있어야 읽힌다.
+					     위 도장판과 달리 여기는 doc.history 를 본다 — 반려 후 재상신하면
+					     지난 차수의 반려 사유가 여기서만 남는다. 그게 이력 탭이 있는 이유다 --%>
 					<div class="pane on" id="pane-hist">
 						<table class="list-tbl">
 							<tr>
+								<%-- 한 번도 반려된 적 없는 문서는 전부 1회차라 칸이 있어 봐야 같은 값만 반복된다.
+								     아래 결재선 탭이 순서를 'N차 결재'라고 부르고 있어서
+								     재상신 차수는 'N회차'로 갈라 적는다. 둘 다 '차'면 못 읽는다 --%>
+								<c:if test="${curRound > 1}">
+									<th>회차</th>
+								</c:if>
 								<th>날짜</th>
 								<th>내역</th>
 								<th>사용자</th>
 								<th>의견</th>
 							</tr>
 							<tr>
+								<%-- 상신은 document 에 시각이 한 개(created_at)뿐이라
+								     재상신을 몇 번 했든 최초 기안 한 줄만 적는다.
+								     상신 시각을 차수별로 남기려면 이력 테이블이 따로 있어야 한다 --%>
+								<c:if test="${curRound > 1}">
+									<td class="role">1회차</td>
+								</c:if>
 								<td class="dt">${fn:replace(fn:substring(doc.createdAt, 0, 16), 'T', ' ')}</td>
 								<td><span class="act">상신</span></td>
 								<td class="who">${doc.drafterName} ${doc.drafterPosition}</td>
 								<td class="memo none">-</td>
 							</tr>
-							<c:forEach var="a" items="${doc.approvalLine}">
-								<%-- 아직 처리 안 한 사람은 이력이 없다. 찍힌 것만 나온다.
-								     취소된 줄도 찍은 게 아니라 여기 안 들어온다 (doneCnt 와 같은 기준) --%>
-								<c:if
-									test="${a.approvalStatus eq 'APPROVED' or a.approvalStatus eq 'REJECTED'}">
-									<tr>
-										<td class="dt">${fn:replace(fn:substring(a.approvedAt, 0, 16), 'T', ' ')}</td>
-										<td><c:choose>
-												<c:when test="${a.approvalStatus eq 'REJECTED'}">
-													<span class="act no">반려</span>
-												</c:when>
-												<c:otherwise>
-													<span class="act ok">승인</span>
-												</c:otherwise>
-											</c:choose></td>
-										<td class="who">${a.name} ${a.position}</td>
-										<td class="memo ${empty a.comment ? 'none' : ''}">${empty a.comment ? '-' : a.comment}</td>
-									</tr>
-								</c:if>
+							<%-- history 는 이미 '찍힌 줄'만 담아 오고 차수·순서대로 정렬돼 있다.
+							     대기 중이거나 앞사람 반려로 취소된 줄은 애초에 안 들어온다 --%>
+							<c:forEach var="a" items="${doc.history}">
+								<tr>
+									<c:if test="${curRound > 1}">
+										<td class="role">${a.round}회차</td>
+									</c:if>
+									<td class="dt">${fn:replace(fn:substring(a.approvedAt, 0, 16), 'T', ' ')}</td>
+									<td><c:choose>
+											<c:when test="${a.approvalStatus eq 'REJECTED'}">
+												<span class="act no">반려</span>
+											</c:when>
+											<c:otherwise>
+												<span class="act ok">승인</span>
+											</c:otherwise>
+										</c:choose></td>
+									<td class="who">${a.name} ${a.position}</td>
+									<td class="memo ${empty a.comment ? 'none' : ''}">${empty a.comment ? '-' : a.comment}</td>
+								</tr>
 							</c:forEach>
 						</table>
 					</div>
 
-					<%-- 결재선 : 상신할 때 정해진 한 벌. 순서대로 --%>
+					<%-- 결재선 : 상신할 때 정해진 한 벌. 순서대로.
+					     재상신하면 결재선을 다시 짤 수 있으므로 여기 뜨는 건 늘 지금 도는 한 벌이다.
+					     지난 회차 사람들은 이력 탭에 남아 있다 --%>
 					<div class="pane" id="pane-line">
+						<c:if test="${curRound > 1}">
+							<div class="round-note">반려 후 재상신된 문서입니다. 아래는 ${curRound}회차 결재선입니다.</div>
+						</c:if>
 						<table class="list-tbl">
 							<tr>
 								<th>구분</th>
@@ -1204,6 +1249,20 @@ span.soon {
 					+ "계속 진행하시겠습니까?";
 			if (!confirm(msg)) return;
 			document.getElementById("apprForm").action = ctx + "/document/edit";
+			document.getElementById("apprForm").submit();
+		}
+
+		// 재상신 : 반려된 문서를 임시저장으로 되돌려 작성 화면으로 보낸다.
+		// 문서수정과 가는 곳은 같지만 이쪽은 되돌릴 상신이 없다 —
+		// 이미 반려로 끝난 문서라 '취소된다'가 아니라 '다시 연다'로 설명해야 맞는다
+		function doRedraft() {
+			var msg = "반려된 문서를 다시 작성합니다.\n\n"
+					+ "문서가 '임시저장' 상태로 바뀌며 상신 문서함에서 내려갑니다.\n"
+					+ "내용을 고친 뒤 다시 상신해야 결재가 진행됩니다.\n\n"
+					+ "지난 결재 의견은 결재이력에 그대로 남습니다.\n\n"
+					+ "계속 진행하시겠습니까?";
+			if (!confirm(msg)) return;
+			document.getElementById("apprForm").action = ctx + "/document/redraft";
 			document.getElementById("apprForm").submit();
 		}
 
