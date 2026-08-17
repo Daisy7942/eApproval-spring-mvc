@@ -210,11 +210,15 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 
 				<div class="flow-box">
 					<div class="role-pick" style="margin-bottom: 12px;">
-						<span class="lbl">합의 방식</span>
+						<%-- '합의 방식'이 아니라 '결재 방식'이다. 이 값은 document.approval_type 으로
+						     저장돼 결재선 전원(합의자 포함)의 진행 순서를 정한다.
+						     아래 사람마다 고르는 승인/합의는 역할(approval_line.approval_type)이라 다른 값이고,
+						     같은 화면에서 둘 다 '합의'라고 부르면 구분이 안 된다 --%>
+						<span class="lbl">결재 방식</span>
 						<button type="button" class="role-chip on" data-mode="SEQUENTIAL"
-							onclick="pickAgreeMode(this)">순차합의</button>
+							onclick="pickApprMode(this)">순차 결재</button>
 						<button type="button" class="role-chip" data-mode="PARALLEL"
-							onclick="pickAgreeMode(this)">병렬합의</button>
+							onclick="pickApprMode(this)">병렬 결재</button>
 					</div>
 					<div class="cap">결재 흐름</div>
 					<div class="flow" id="flow"></div>
@@ -307,7 +311,7 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 
 		var picked   = [];              // 고른 결재자 [{eid,name,pos,tname,role}]
 		var role     = "APPROVAL";      // 새로 고른 사람에게 붙을 역할. 합의는 아직 못 쓴다
-		var agreeMode = "SEQUENTIAL";   // 합의 방식 : 순차 / 병렬
+		var apprMode = "SEQUENTIAL";    // 결재 방식 : 순차 / 병렬 (문서 전체가 도는 순서)
 		// 접어둔 부서·팀. 이름을 closed 로 두면 안 된다 —
 		// window.closed(창이 닫혔는지 알려주는 읽기 전용 값)와 겹쳐서 대입이 통째로 무시된다
 		var folded   = {};
@@ -412,9 +416,9 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 			if (!org) drawMine();
 		}
 
-		// 합의 방식 : 순차 / 병렬
-		function pickAgreeMode(btn) {
-			agreeMode = btn.getAttribute("data-mode");
+		// 결재 방식 : 순차 / 병렬
+		function pickApprMode(btn) {
+			apprMode = btn.getAttribute("data-mode");
 			var chips = document.querySelectorAll(".role-chip");
 			for (var i = 0; i < chips.length; i++) {
 				chips[i].className = (chips[i] === btn) ? "role-chip on" : "role-chip";
@@ -550,7 +554,7 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 
 				// 결재 방식(순차/병렬)도 같이 넘긴다.
 				// 이 값이 안 가면 기안 작성 창은 늘 순차로 저장해 버린다
-				window.opener.setApprovalLine(out, agreeMode);
+				window.opener.setApprovalLine(out, apprMode);
 				window.close();
 			} else {
 				alert("기안 작성 창을 찾을 수 없습니다.");
@@ -569,7 +573,7 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 			if (window.opener.getApprovalType) {
 				var mode = window.opener.getApprovalType();
 				if (mode) {
-					agreeMode = mode;
+					apprMode = mode;
 					var chips = document.querySelectorAll(".role-chip");
 					for (var i = 0; i < chips.length; i++) {
 						chips[i].className = (chips[i].getAttribute("data-mode") === mode)

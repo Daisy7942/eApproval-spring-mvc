@@ -973,8 +973,8 @@ span.soon {
 					<div class="cell">
 						<%-- 순서대로 도는 문서인지 동시에 도는 문서인지.
 						     도장판만 봐서는 구분이 안 돼서 글자로 적어 준다 --%>
-						<div class="lbl">결재방식</div>
-						<div class="val">${isParallel ? '병렬 (동시 결재)' : '순차 (차례대로)'}</div>
+						<div class="lbl">결재 방식</div>
+						<div class="val">${isParallel ? '병렬 결재 (동시에)' : '순차 결재 (차례대로)'}</div>
 					</div>
 				</div>
 			</div>
