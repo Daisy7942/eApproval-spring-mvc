@@ -233,6 +233,22 @@
 	color: #c3cad5;
 }
 
+/* 결재 마감일. 목록과 같은 네 단계다 — 여유는 기본 글자색,
+   임박은 빨강, 오늘은 굵게, 지난 것은 주황.
+   요약 칸은 글자가 이미 커서 목록처럼 작게 줄이지 않는다 */
+.sum-meta .val.due.near {
+	color: #d64545;
+}
+
+.sum-meta .val.due.today {
+	color: #d64545;
+	font-weight: 700;
+}
+
+.sum-meta .val.due.over {
+	color: #d99a00;
+}
+
 /* ===== ② 문서 영역 : 종이 한 장 ===== */
 .paper {
 	background: #fff;
@@ -892,9 +908,25 @@ span.soon {
 						<div class="val">${fn:substring(doc.createdAt, 0, 10)}</div>
 					</div>
 					<div class="cell">
-						<%-- document 테이블에 마감일 컬럼이 아직 없다. 자리만 잡아둔 칸 --%>
 						<div class="lbl">결재마감</div>
-						<div class="val none">-</div>
+						<%-- 마감일은 선택이라 안 고른 문서는 목록처럼 비우지 않고 '-' 로 둔다.
+						     요약 칸은 줄 수가 정해져 있어 칸이 통째로 사라지면 옆 칸들이 밀린다 --%>
+						<c:choose>
+							<c:when test="${empty doc.dueDate}">
+								<div class="val none">-</div>
+							</c:when>
+							<c:otherwise>
+								<div
+									class="val due ${doc.overdue ? 'over' : (doc.daysLeft eq 0 ? 'today' : (doc.daysLeft le 3 ? 'near' : ''))}">
+									${doc.dueDate}
+									<c:choose>
+										<c:when test="${doc.overdue}">(${doc.daysLeft * -1}일 지남)</c:when>
+										<c:when test="${doc.daysLeft eq 0}">(오늘) ★</c:when>
+										<c:when test="${doc.daysLeft le 3}">(${doc.daysLeft}일 남음)</c:when>
+									</c:choose>
+								</div>
+							</c:otherwise>
+						</c:choose>
 					</div>
 					<div class="cell">
 						<div class="lbl">문서종류</div>

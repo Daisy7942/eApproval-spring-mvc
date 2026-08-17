@@ -435,6 +435,33 @@ td.date {
 	font-size: 13px;
 }
 
+/* 결재 마감일. 기안일 밑에 한 줄 더 붙는다.
+   기본이 회색인 건 빨강을 아끼기 위해서다 — 전부 빨가면 눈이 그냥 지나치고,
+   회색 사이에 하나만 빨개야 그게 걸린다 */
+.due {
+	display: block;
+	margin-top: 3px;
+	font-size: 11.5px;
+	color: #8a93a3;
+}
+
+/* 3일 안쪽 : 빨강 */
+.due.near {
+	color: #d64545;
+}
+
+/* 바로 오늘 : 가장 급한 줄이라 같은 빨강에 굵게까지 얹는다 */
+.due.today {
+	color: #d64545;
+	font-weight: 700;
+}
+
+/* 이미 지남 : 주황. 늦은 건 이미 벌어진 일이라, 아직 손쓸 수 있는
+   오늘·임박보다 한 단계 낮춰 눈이 급한 쪽으로 먼저 가게 한다 */
+.due.over {
+	color: #d99a00;
+}
+
 td.attach {
 	color: #8a93a3;
 	font-size: 12px;
@@ -775,7 +802,19 @@ span.soon {
 								<td class="attach"></td>
 
 								<%-- LocalDateTime 은 2026-08-06T14:22:31 모양으로 찍힌다. 앞 10글자가 날짜 --%>
-								<td class="date">${fn:substring(doc.createdAt, 0, 10)}</td>
+								<td class="date">${fn:substring(doc.createdAt, 0, 10)} <%-- 마감일은 선택이라
+									고른 문서에만 붙는다. 남은 날수를 같이 적는 이유는
+									날짜만 보면 며칠 남았는지 머리로 빼야 하기 때문이다 --%>
+									<c:if test="${not empty doc.dueDate}">
+										<span
+											class="due ${doc.overdue ? 'over' : (doc.daysLeft eq 0 ? 'today' : (doc.daysLeft le 3 ? 'near' : ''))}">
+											마감 ${doc.dueDate} <c:choose>
+												<c:when test="${doc.overdue}">(${doc.daysLeft * -1}일 지남)</c:when>
+												<c:when test="${doc.daysLeft eq 0}">(오늘) ★</c:when>
+												<c:when test="${doc.daysLeft le 3}">(${doc.daysLeft}일 남음)</c:when>
+											</c:choose>
+										</span>
+									</c:if></td>
 
 								<td><c:choose>
 										<c:when test="${doc.status eq 'PENDING'}">

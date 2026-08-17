@@ -1,7 +1,10 @@
 package com.eapproval.approval.vo;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import org.springframework.format.annotation.DateTimeFormat;
 
 public class DocumentVO {
 
@@ -22,7 +25,16 @@ public class DocumentVO {
     private String drafterPosition;
     private String drafterTeam;
     private VacationRequestVO vacation;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate dueDate;       // 결재 마감일 (선택. 없으면 NULL)
     
+    
+	public LocalDate getDueDate() {
+		return dueDate;
+	}
+	public void setDueDate(LocalDate dueDate) {
+		this.dueDate = dueDate;
+	}
 	public VacationRequestVO getVacation() {
 		return vacation;
 	}
@@ -126,4 +138,15 @@ public class DocumentVO {
 		this.updatedAt = updatedAt;
 	}
 
+	// 마감일이 지났는가. 색구별용.
+	public boolean isOverdue() {
+		return dueDate != null && dueDate.isBefore(LocalDate.now());
+	}
+	
+	// 마감까지 남은 날수. 음수면 그만큼 지난 것
+	public long getDaysLeft() {
+		return dueDate == null ? 0 : java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), dueDate);
+	}
 }
+
+

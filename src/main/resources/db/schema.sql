@@ -205,3 +205,8 @@ CREATE TABLE `delegation` (
   CONSTRAINT `delegation_ibfk_2` FOREIGN KEY (`original_approver_id`) REFERENCES `employee` (`employee_id`),
   CONSTRAINT `delegation_ibfk_3` FOREIGN KEY (`delegated_to_id`) REFERENCES `employee` (`employee_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+ALTER TABLE document
+  ADD COLUMN due_date DATE NULL AFTER is_urgent;
