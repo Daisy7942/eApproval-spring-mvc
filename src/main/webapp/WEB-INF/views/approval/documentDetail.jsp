@@ -581,6 +581,12 @@
 	color: #d5dbe4;
 }
 
+/* 값이 없는 칸. 그냥 비워 두면 표가 깨진 것처럼 보여서 '-' 를 옅게 넣는다.
+   팀에 속하지 않은 임원(사장·부장)은 team_name 이 늘 비어 있다 */
+.list-tbl td.none {
+	color: #d5dbe4;
+}
+
 /* 결재이력의 '내역' 칸 : 상신 / 승인 / 반려 */
 .act {
 	display: inline-block;
@@ -606,9 +612,12 @@
 	color: #b8c0cd;
 }
 
+/* 구분 칸. '1차 결재'·'병렬 결재'가 네 글자라 60px 에서는 '1차 결/재' 로 잘렸다.
+   글자 수가 늘 같은 칸이니 줄바꿈을 막고 그만큼 자리를 준다 */
 .list-tbl td.role {
-	width: 60px;
+	width: 78px;
 	color: #8a93a3;
+	white-space: nowrap;
 }
 
 /* 재상신된 문서에서 '지금 보고 있는 게 몇 회차 결재선인가'를 알리는 한 줄.
@@ -1154,7 +1163,7 @@ span.soon {
 							<tr>
 								<td class="role">기안</td>
 								<td class="who">${doc.drafterName} ${doc.drafterPosition}</td>
-								<td>${doc.drafterTeam}</td>
+								<td class="${empty doc.drafterTeam ? 'none' : ''}">${empty doc.drafterTeam ? '-' : doc.drafterTeam}</td>
 								<td><span class="act">상신</span></td>
 							</tr>
 							<c:forEach var="a" items="${doc.approvalLine}">
@@ -1166,7 +1175,7 @@ span.soon {
 											<c:otherwise>${a.approvalOrder}차 결재</c:otherwise>
 										</c:choose></td>
 									<td class="who">${a.name} ${a.position}</td>
-									<td>${a.teamName}</td>
+									<td class="${empty a.teamName ? 'none' : ''}">${empty a.teamName ? '-' : a.teamName}</td>
 									<td><c:choose>
 											<c:when test="${a.approvalStatus eq 'APPROVED'}">
 												<span class="act ok">승인</span>
