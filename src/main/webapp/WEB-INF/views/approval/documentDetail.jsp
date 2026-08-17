@@ -834,8 +834,7 @@ span.soon {
 					<%-- 기안자 전용 --%>
 					<c:if test="${canEdit}">
 						<div class="btn-sep"></div>
-						<button type="button" class="btn soon" aria-disabled="true"
-							data-tip="추후 구현 예정">
+						<button type="button" class="btn" onclick="doEdit();">
 							<span class="ico blue">✎</span> 문서수정
 						</button>
 						<button type="button" class="btn" onclick="doCancel();">
@@ -1193,6 +1192,18 @@ span.soon {
 		function doCancel() {
 			if (!confirm("상신을 취소하고 임시저장으로 되돌립니다.\n계속하시겠습니까?")) return;
 			document.getElementById("apprForm").action = ctx + "/document/cancel";
+			document.getElementById("apprForm").submit();
+		}
+
+		// 문서수정 : 고치려면 임시저장으로 내려가야 해서 결재가 한 번 취소된다.
+		// 되돌리는 일은 상신취소와 같고 끝나고 가는 곳만 작성 화면으로 다르다
+		function doEdit() {
+			var msg = "문서를 수정하면 상신이 취소되며 '임시저장' 상태로 전환됩니다.\n\n"
+					+ "수정 작업을 취소하더라도 상신 상태로 복구되지 않으므로,\n"
+					+ "결재를 진행하려면 반드시 재상신을 해주셔야 합니다.\n\n"
+					+ "계속 진행하시겠습니까?";
+			if (!confirm(msg)) return;
+			document.getElementById("apprForm").action = ctx + "/document/edit";
 			document.getElementById("apprForm").submit();
 		}
 

@@ -73,7 +73,7 @@ public class DocumentController {
 
 	// 새결재 페이지 작성------------------------------------------
 	@PostMapping("/document/write")
-	public String saveDraft(DocumentVO documentVO, HttpServletRequest request) {
+	public String saveDraft(DocumentVO documentVO, HttpServletRequest request, Model model) {
 
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 
@@ -87,12 +87,14 @@ public class DocumentController {
 			documentService.updateDraft(documentVO);
 		}
 
+		// 팝업이 아니라 같은 탭에서 저장한 경우 saveResult 가 보낼 곳
+		model.addAttribute("nextUrl", "/document/drafts");
 		return "approval/saveResult";
 	}
 
 	// 상신 -------------------------------------------------------------
 	@PostMapping("/document/submit")
-	public String submitDocument(DocumentVO documentVO, HttpServletRequest request) {
+	public String submitDocument(DocumentVO documentVO, HttpServletRequest request, Model model) {
 
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 
@@ -101,6 +103,8 @@ public class DocumentController {
 
 		documentService.submitDocument(documentVO);
 
+		// 팝업이 아니라 같은 탭에서 상신한 경우 saveResult 가 보낼 곳
+		model.addAttribute("nextUrl", "/document/submitted");
 		return "approval/saveResult";
 	}
 
@@ -224,4 +228,12 @@ public class DocumentController {
 		return "approval/error"; // 에러 전용 페이지(approval/error.jsp)로 이동
 	}
 
+	// 문서수정 — 임시저장으로 되돌린 뒤 작성 화면으로
+	@PostMapping("/document/edit")
+	public String editDocument(@RequestParam Long docId, HttpServletRequest request) {
+	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
+	    long empId = loginUser.getEmployeeId();
+	    documentService.cancelSubmission(docId, empId);
+	    return "redirect:/document/write?docId=" + docId;
+	}
 }
