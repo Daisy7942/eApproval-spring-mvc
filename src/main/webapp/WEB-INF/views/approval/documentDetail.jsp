@@ -380,6 +380,12 @@
 	color: #b8c0cd;
 }
 
+/* 취소 : 대기와 같은 옅은 이름이라 구분이 안 된다. 줄을 그어 끝난 칸임을 보인다 */
+.stamp-col .waiting.cancel {
+	text-decoration: line-through;
+	color: #cbd2dc;
+}
+
 .stamp-col.now .waiting {
 	color: #f0932b;
 	font-weight: 600;
@@ -734,7 +740,11 @@ span.soon {
 					test="${isParallel and a.approverId eq myId and a.approvalStatus eq 'PENDING'}">
 					<c:set var="myTurn" value="true" />
 				</c:if>
-				<c:if test="${a.approvalStatus ne 'PENDING'}">
+				<%-- CANCELED(앞사람 반려로 차례가 사라진 줄)는 사람이 한 일이 아니라
+				     이력에 남길 것도, 처리로 셀 것도 없다. 그래서 'PENDING 이 아닌 것'이 아니라
+				     실제로 찍힌 두 상태만 센다 --%>
+				<c:if
+					test="${a.approvalStatus eq 'APPROVED' or a.approvalStatus eq 'REJECTED'}">
 					<c:set var="anyDone" value="true" />
 					<c:set var="doneCnt" value="${doneCnt + 1}" />
 				</c:if>
@@ -957,6 +967,11 @@ span.soon {
 										<c:when test="${a.approvalStatus eq 'REJECTED'}">
 											<span class="stamp reject">반려</span>
 										</c:when>
+										<%-- 차례가 오지 않은 채 끝난 칸. 대기와 같은 모습이면
+										     아직 기다리는 것처럼 보이므로 취소선으로 구분한다 --%>
+										<c:when test="${a.approvalStatus eq 'CANCELED'}">
+											<span class="waiting cancel">${a.name}</span>
+										</c:when>
 										<c:otherwise>
 											<%-- 아직 안 찍힌 칸 : 도장 없이 이름만. 내 차례면 주황색이 된다 --%>
 											<span class="waiting">${a.name}</span>
@@ -1030,8 +1045,10 @@ span.soon {
 								<td class="memo none">-</td>
 							</tr>
 							<c:forEach var="a" items="${doc.approvalLine}">
-								<%-- 아직 처리 안 한 사람은 이력이 없다. 찍힌 것만 나온다 --%>
-								<c:if test="${a.approvalStatus ne 'PENDING'}">
+								<%-- 아직 처리 안 한 사람은 이력이 없다. 찍힌 것만 나온다.
+								     취소된 줄도 찍은 게 아니라 여기 안 들어온다 (doneCnt 와 같은 기준) --%>
+								<c:if
+									test="${a.approvalStatus eq 'APPROVED' or a.approvalStatus eq 'REJECTED'}">
 									<tr>
 										<td class="dt">${fn:replace(fn:substring(a.approvedAt, 0, 16), 'T', ' ')}</td>
 										<td><c:choose>
@@ -1081,6 +1098,11 @@ span.soon {
 											</c:when>
 											<c:when test="${a.approvalStatus eq 'REJECTED'}">
 												<span class="act no">반려</span>
+											</c:when>
+											<%-- 앞사람이 반려해 차례가 오지 않은 사람.
+											     검토중 판정보다 먼저 걸러야 한다 --%>
+											<c:when test="${a.approvalStatus eq 'CANCELED'}">
+												<span class="act wait">취소</span>
 											</c:when>
 											<%-- 병렬은 안 찍은 사람 모두가 검토중 --%>
 											<c:when

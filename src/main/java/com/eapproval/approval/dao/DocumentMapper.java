@@ -78,6 +78,9 @@ public interface DocumentMapper {
 	// PENDING 개수 세기 - 이 숫자로 최종상태 반영을 위함 0일때 승인으로 처리
 	int countPendingLines(@Param("docId") Long docId);
 
+	// 반려된 문서의 남은 대기 결재선 취소
+	int cancelRemainingLines(@Param("docId") Long docId);
+
 	// 문서 전체 상태 바꾸기(승인·반려 공용)
 	int updateDocumentStatus(@Param("docId") Long docId, @Param("status") String status);
 

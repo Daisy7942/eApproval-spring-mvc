@@ -318,7 +318,7 @@
 	</select>
 
 
-	<!-- 완료 문서함에 뜰 문서 조건 : 내가 이미 처리한(승인·반려) 문서 -->
+	<!-- 완료 문서함 : 내 차례가 끝난 문서 -->
 	<sql id="completedDocs">
 		SELECT DISTINCT al2.doc_id
 		FROM approval_line al2
@@ -442,6 +442,14 @@
 		WHERE doc_id = #{docId}
 		AND approval_status = 'PENDING'
 	</select>
+
+	<!-- 반려된 문서의 남은 대기 결재선 취소 -->
+	<update id="cancelRemainingLines">
+		UPDATE approval_line
+		SET approval_status = 'CANCELED'
+		WHERE doc_id = #{docId}
+		AND approval_status = 'PENDING'
+	</update>
 
 	<!-- 문서 전체 상태 바꾸기(승인·반려 공용) -->
 	<update id="updateDocumentStatus">

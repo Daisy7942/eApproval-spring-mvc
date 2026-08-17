@@ -331,6 +331,8 @@ public class DocumentService {
 		}
 		documentMapper.updateDocumentStatus(docId, "REJECTED");
 
+		// 남은 결재자들은 더 결재할 이유가 없으므로 대기 줄을 취소 처리
+		documentMapper.cancelRemainingLines(docId);
 	}
 
 	// vacation 종류 칩 조회

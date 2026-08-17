@@ -551,6 +551,14 @@ td.appr {
 	background: #e05252;
 } /* 반려 */
 
+/* 취소(앞사람 반려로 차례가 사라진 사람). 기본 대기가 '채운 회색'이라
+   같은 회색이면 구분이 안 된다. 비우고 점선으로 그려 '무효'로 읽히게 한다 */
+.appr-dot.cancel {
+	background: #f4f5f7;
+	border: 1px dashed #c8cdd6;
+	color: #a6adb9;
+}
+
 /* 전달(연보라) 은 아직 기능이 없다. 색만 잡아뒀고 걸리는 데이터가 없다 */
 .appr-dot.pass {
 	background: #9b8cf5;
@@ -676,7 +684,8 @@ span.soon {
 				<span class="total-count">${pageVO.total}건</span>
 			</div>
 
-			<p class="page-desc">다른 사람이 기안하여 내가 결재(승인·반려)를 마친 문서입니다.</p>
+			<p class="page-desc">타인이 기안한 문서 중 내 검토를 마쳐 다음 단계로
+				진행되었거나 결재가 종료된 문서입니다.</p>
 
 			<div class="list-card">
 
@@ -822,6 +831,12 @@ span.soon {
 												<c:when test="${a.approvalStatus eq 'REJECTED'}">
 													<c:set var="cls" value="reject" />
 													<c:set var="lbl" value="반려" />
+												</c:when>
+												<%-- 앞사람이 반려해서 차례가 오지 않은 사람.
+												     대기가 아니므로 metPending 은 건드리지 않는다 --%>
+												<c:when test="${a.approvalStatus eq 'CANCELED'}">
+													<c:set var="cls" value="cancel" />
+													<c:set var="lbl" value="취소" />
 												</c:when>
 												<%-- 병렬은 순서를 안 따지므로 아직 안 찍은 사람 모두가 '검토중'이다.
 												     순차는 그 중 맨 앞 한 명만 --%>
