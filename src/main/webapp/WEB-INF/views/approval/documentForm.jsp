@@ -104,6 +104,13 @@ body { background:#f4f6fa; padding:30px; }
 /* ===== 결재선 영역 ===== */
 .appr-head { display:flex; justify-content:space-between; align-items:center;
              margin-bottom:10px; }
+/* 왼쪽 묶음(제목 + 방식 뱃지). space-between 이라 묶지 않으면 셋이 흩어진다 */
+.appr-head-l { display:flex; align-items:center; gap:8px; }
+/* 결재 방식 뱃지. 팝업에서 고르고 나면 지금까지 화면 어디에도 안 보였다.
+   순차는 파랑, 병렬은 보라 — 아래 흐름의 구분자와 색을 맞춘다 */
+.appr-mode { font-size:11.5px; border-radius:4px; padding:3px 9px;
+             background:#eef2fb; color:#4a5a7a; white-space:nowrap; }
+.appr-mode.parallel { background:#f3ecfd; color:#7c4dcc; }
 .appr-edit { display:inline-flex; align-items:center; gap:6px;
              padding:7px 14px; border:1px solid #dbe1ea; border-radius:8px;
              background:#fff; color:#3d4756; font-size:12.5px; cursor:pointer; }
@@ -249,7 +256,13 @@ body { background:#f4f6fa; padding:30px; }
                               <%-- ② 골랐을 때 : 기안자 ▸ 결재자… 흐름. renderApprFlow() 가 그린다 --%>
                               <div id="apprPicked" style="display:none;">
                                       <div class="appr-head">
-                                              <label class="tit" style="margin:0;">결재선 설정</label>
+                                              <div class="appr-head-l">
+                                                      <label class="tit" style="margin:0;">결재선 설정</label>
+                                                      <%-- 순차/병렬은 결재선 팝업에서 고르는데, 닫고 나면
+                                                           고른 값이 화면 어디에도 안 남아서 확인할 방법이 없었다.
+                                                           JS 의 approvalType 을 그대로 뱃지로 띄운다 --%>
+                                                      <span class="appr-mode" id="apprMode"></span>
+                                              </div>
                                               <button type="button" class="appr-edit" id="btnApprovalLineEdit">
                                                       <span>👥</span> 결재선 편집
                                               </button>
@@ -384,6 +397,11 @@ $(document).ready(function() {
               $('#apprEmpty').hide();
               $('#apprPicked').show();
 
+              // 결재 방식 뱃지. 팝업에서 고른 값이 여기 말고는 보이는 데가 없다
+              var isPar = (approvalType === 'PARALLEL');
+              $('#apprMode').text(isPar ? '병렬 결재' : '순차 결재')
+                            .toggleClass('parallel', isPar);
+
               $flow.append(makePersonChip(drafterName, '기안자', ''));
 
               $.each(approvalLine, function(i, a) {
@@ -393,7 +411,11 @@ $(document).ready(function() {
                       // 위쪽 결재 도장칸과 같은 이름이 찍힌다. 승인/합의는 칩 색으로 구분한다.
                       // 둘 다 비면 역할이라도 보여준다.
                       var sub = [ a.position, a.dept ].filter(function(v) { return v; }).join(' · ');
-                      $flow.append('<span class="sep">›</span>');
+                      // 기안자 → 첫 결재자는 병렬이어도 순서가 맞으므로 늘 화살표다.
+                      // 병렬에서 순서가 없는 건 결재자들끼리이므로 둘째부터 + 로 잇는다
+                      //   순차 : 기안자 › 결재자1 › 결재자2
+                      //   병렬 : 기안자 › 결재자1 + 결재자2
+                      $flow.append('<span class="sep">' + (isPar && i > 0 ? '+' : '›') + '</span>');
                       $flow.append(makePersonChip(a.name, sub || a.role, kind));
               });
 
