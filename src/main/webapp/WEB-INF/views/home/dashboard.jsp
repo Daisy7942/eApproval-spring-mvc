@@ -150,8 +150,12 @@
 
 /* 목록이 길어져도 패널 높이는 그대로 두고 안에서만 스크롤한다.
    높이는 6줄(줄당 약 62px)에 맞췄다 — 화면에 적어둔 '6건' 과 어긋나면 안 된다 */
+/* 6줄이 스크롤 없이 다 들어가는 높이가 420px 다.
+   다만 화면이 낮은 모니터에서 420px 를 고집하면 패널이 창 밖으로 밀린다.
+   그래서 둘 중 작은 쪽을 쓴다 — 넉넉한 화면은 420px 로 고정되고,
+   좁은 화면에서만 46vh 로 줄면서 안쪽에 스크롤이 생긴다 */
 .doc-list {
-	max-height: 380px;
+	height: min(420px, 46vh);
 	overflow-y: auto;
 }
 
@@ -246,7 +250,7 @@
 }
 
 /* 긴급 표시. 다른 목록(draftList·completedList)과 같은 ⚠ 로 맞춘다 */
-.urgent-mark {
+.doc .info .urgent-mark {
 	color: #e5484d;
 	font-weight: bold;
 	margin-right: 3px;
@@ -410,10 +414,10 @@
 									onclick="openDoc(${d.docId}, '${rejected ? "sent" : "wait"}')">
 									<%-- 세로 막대 색 = 양식 종류. 휴가는 파랑, 그 밖은 보라 --%>
 									<div class="bar"
-										style="background: ${d.documentType eq 'VACATION' ? '#4d82f3' : '#7c4dcc'}"></div>
+										style="background: ${d.documentType eq 'VACATION' ? '#2f6bff' : '#0e9594'}"></div>
 									<div class="info">
 										<b><c:if test="${d.isUrgent}">
-												<span class="urgent-mark" title="긴급">⚠</span>
+												<span class="urgent-mark" title="긴급">⚠&#xFE0E;</span>
 											</c:if>${d.title}</b><span>${d.drafterName} · ${d.drafterTeam}</span>
 									</div>
 
@@ -430,11 +434,12 @@
 								</div>
 							</c:if>
 						</c:forEach>
+						<%-- 높이를 6줄로 고정했으므로 빈 안내도 목록 안에 넣는다.
+						     밖에 두면 빈 상자 아래에 글만 따로 떠서 어색하다 --%>
+						<c:if test="${empty todoDocs}">
+							<div class="none">처리할 문서가 없습니다.</div>
+						</c:if>
 					</div>
-
-					<c:if test="${empty todoDocs}">
-						<div class="none">처리할 문서가 없습니다.</div>
-					</c:if>
 				</div>
 
 				<%-- 결재 현황 = 내가 올린 문서를 상태별로. 위에서 이미 센 값을 그대로 쓴다.
