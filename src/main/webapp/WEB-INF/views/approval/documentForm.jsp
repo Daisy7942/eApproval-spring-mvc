@@ -142,6 +142,7 @@ body { background:#f4f6fa; padding:30px; }
 .btn.primary { background:#2f6bff; border-color:#2f6bff; color:#fff; }
 .btn:disabled { background:#f2f4f8; color:#b4bcc9; cursor:not-allowed;
                 border-color:#e4e8ef; }
+
 </style>
 </head>
 <body>
@@ -167,7 +168,8 @@ body { background:#f4f6fa; padding:30px; }
                                       <span class="chip"><span class="dot"></span>긴급 문서</span>
                               </label>
                       </div>
-                      <a class="x" href="#" onclick="window.close(); return false;">✕</a>
+                      <a class="x" href="${pageContext.request.contextPath}/document/drafts"
+                         onclick="if (window.opener) { window.close(); return false; }">✕</a>
               </div>
 
               <div class="body">
@@ -280,7 +282,10 @@ body { background:#f4f6fa; padding:30px; }
 
               <!-- ===== 하단 버튼 ===== -->
               <div class="foot">
-                      <a class="btn" href="#" onclick="window.close(); return false;">취소</a>
+                      <%-- 팝업으로 열렸으면 창을 닫는다. 문서수정처럼 같은 탭으로 들어온 경우엔
+                           닫을 창이 없어 아무 일도 안 일어나므로 임시보관함으로 보낸다 --%>
+                      <a class="btn" href="${pageContext.request.contextPath}/document/drafts"
+                         onclick="if (window.opener) { window.close(); return false; }">취소</a>
                       <button type="submit" class="btn" id="btnSaveDraft">임시저장</button>
                       <%-- 상신은 보내는 값이 임시저장과 같고 서버가 할 일만 다르다
                            (status 를 PENDING 으로 바꾸고 결재선을 INSERT).

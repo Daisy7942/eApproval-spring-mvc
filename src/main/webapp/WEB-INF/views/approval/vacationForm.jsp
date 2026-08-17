@@ -241,7 +241,8 @@ body { background:#f4f6fa; padding:26px; }
                                       <span class="chip"><span class="dot"></span>긴급</span>
                               </label>
                       </div>
-                      <a class="x" href="#" onclick="window.close(); return false;">✕</a>
+                      <a class="x" href="${pageContext.request.contextPath}/document/drafts"
+                         onclick="if (window.opener) { window.close(); return false; }">✕</a>
               </div>
 
               <div class="body">
@@ -433,7 +434,10 @@ body { background:#f4f6fa; padding:26px; }
               </div>
 
               <div class="foot">
-                      <a class="btn" href="#" onclick="window.close(); return false;">취소</a>
+                      <%-- 팝업으로 열렸으면 창을 닫는다. 문서수정처럼 같은 탭으로 들어온 경우엔
+                           닫을 창이 없어 아무 일도 안 일어나므로 임시보관함으로 보낸다 --%>
+                      <a class="btn" href="${pageContext.request.contextPath}/document/drafts"
+                         onclick="if (window.opener) { window.close(); return false; }">취소</a>
                       <button type="submit" class="btn" id="btnSaveDraft">임시저장</button>
                       <button type="submit" class="btn primary" id="btnSubmitDoc"
                               formaction="${pageContext.request.contextPath}/document/submit">휴가 신청</button>
@@ -843,6 +847,14 @@ $(document).ready(function() {
       markPast($('#startDate'));
       markPast($('#endDate'));
       recalc();
+
+      /* 뒤로가기로 돌아온 경우. 브라우저는 입력칸 값만 되살리고 스크립트는 다시 안 돌린다.
+         게다가 값을 되살리면서 change 를 띄우지 않아 화면 숫자가 옛날 값으로 남는다.
+         그래서 되살리기가 끝난 뒤에 한 번 더 계산한다 */
+      $(window).on('pageshow', function() {
+              recalc();
+              syncTitle();
+      });
 
       $('#docForm').on('submit', function() {
               $('.err').hide();

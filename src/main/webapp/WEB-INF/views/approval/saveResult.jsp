@@ -14,6 +14,12 @@
 	}
 	// 이 팝업 창 닫기
 	window.close();
+
+	// 팝업이 아니라 같은 탭에서 들어온 경우(문서수정 등)엔 닫을 창이 없어 빈 화면만 남는다.
+	// 그때는 컨트롤러가 정해준 곳으로 보낸다 — 임시저장이면 임시보관함, 상신이면 상신함
+	if (!window.opener) {
+		location.replace('${pageContext.request.contextPath}${empty nextUrl ? "/document/drafts" : nextUrl}');
+	}
 </script>
 </body>
 </html>
