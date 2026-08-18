@@ -35,6 +35,13 @@ public interface DocumentMapper {
 	// 삭제
 	int deleteDrafts(@Param("docIds") List<Long> docIds, @Param("employeeId") Long employeeId);
 
+	// 임시저장 문서 삭제 시 관련 결재선 전체 삭제 (FK 제약조건 방지)
+	int deleteDraftApprovalLines(@Param("docIds") List<Long> docIds,
+			@Param("employeeId") Long employeeId);
+	// 임시저장 문서 삭제 시 관련 휴가 신청 정보 삭제 (FK 제약조건 방지)
+	int deleteDraftVacations(@Param("docIds") List<Long> docIds,
+			@Param("employeeId") Long employeeId);
+
 	// 임시저장 결재선 삭제 (지금 쓰는 차수만. 지난 차수는 이력이라 노터치)
 	int deleteApprovalLines(@Param("docId") Long docId, @Param("employeeId") Long employeeId,
 			@Param("round") int round);
@@ -56,9 +63,6 @@ public interface DocumentMapper {
 	
 	// 상신 취소 : status PENDING → DRAFT (아무도 결재 안 했을 때만)
 	int cancelSubmission(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
-
-	// 재상신 준비 : status REJECTED → DRAFT (반려된 내 문서만)
-	int reopenRejected(@Param("docId") Long docId, @Param("employeeId") Long employeeId);
 
 	// 결재 이력 : 지난 차수까지 전부. 도장이 찍힌 줄만
 	List<ApprovalLineVO> selectApprovalHistory(@Param("docId") Long docId);

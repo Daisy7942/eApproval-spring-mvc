@@ -156,6 +156,17 @@ body { background:#f4f6fa; padding:30px; }
 
 <div class="wrap">
 
+      <%-- 반려 문서를 고치는 중인가(재상신). 이 화면은 그때 두 가지가 달라진다 —
+           나갈 곳이 상신함이고, 임시저장 버튼이 없다 --%>
+      <c:set var="isRedraft" value="${doc.status eq 'REJECTED'}" />
+
+      <%-- 이 화면을 그냥 나갔을 때 돌아갈 곳.
+           재상신 중이면 그 문서는 status 가 REJECTED 그대로라 임시저장함에 없다 —
+           거기로 보내면 방금 보던 문서를 못 찾는다.
+           새 문서·임시저장 문서는 지금까지처럼 임시저장함으로 --%>
+      <c:set var="backUrl"
+             value="${isRedraft ? '/document/submitted' : '/document/drafts'}" />
+
       <form id="docForm" method="post"
             action="${pageContext.request.contextPath}/document/write">
 
@@ -175,7 +186,7 @@ body { background:#f4f6fa; padding:30px; }
                                       <span class="chip"><span class="dot"></span>긴급 문서</span>
                               </label>
                       </div>
-                      <a class="x" href="${pageContext.request.contextPath}/document/drafts"
+                      <a class="x" href="${pageContext.request.contextPath}${backUrl}"
                          onclick="if (window.opener) { window.close(); return false; }">✕</a>
               </div>
 
@@ -295,16 +306,22 @@ body { background:#f4f6fa; padding:30px; }
 
               <!-- ===== 하단 버튼 ===== -->
               <div class="foot">
-                      <%-- 팝업으로 열렸으면 창을 닫는다. 문서수정처럼 같은 탭으로 들어온 경우엔
-                           닫을 창이 없어 아무 일도 안 일어나므로 임시보관함으로 보낸다 --%>
-                      <a class="btn" href="${pageContext.request.contextPath}/document/drafts"
+                      <%-- 팝업으로 열렸으면 창을 닫는다. 문서수정·재상신처럼 같은 탭으로 들어온
+                           경우엔 닫을 창이 없어 아무 일도 안 일어나므로 backUrl 로 보낸다 --%>
+                      <a class="btn" href="${pageContext.request.contextPath}${backUrl}"
                          onclick="if (window.opener) { window.close(); return false; }">취소</a>
-                      <button type="submit" class="btn" id="btnSaveDraft">임시저장</button>
+                      <%-- 재상신 중에는 임시저장을 주지 않는다. 반려 문서는 상태가 REJECTED 라
+                           임시저장함에 들어가지도 않고, 저장해 봐야 다음 회차 결재선만 미리 깔려서
+                           결재자 도장판에서 반려 도장이 사라진다.
+                           고쳐서 바로 올리거나, 그만두거나 둘 중 하나다 --%>
+                      <c:if test="${not isRedraft}">
+                              <button type="submit" class="btn" id="btnSaveDraft">임시저장</button>
+                      </c:if>
                       <%-- 상신은 보내는 값이 임시저장과 같고 서버가 할 일만 다르다
                            (status 를 PENDING 으로 바꾸고 결재선을 INSERT).
                            그래서 폼을 따로 만들지 않고 formaction 으로 이 버튼만 다른 주소로 보낸다. --%>
                       <button type="submit" class="btn primary" id="btnSubmitDoc"
-                              formaction="${pageContext.request.contextPath}/document/submit">상신</button>
+                              formaction="${pageContext.request.contextPath}/document/submit">${isRedraft ? '재상신' : '상신'}</button>
               </div>
 
       </form>
@@ -554,6 +571,19 @@ $(document).ready(function() {
       $('#title').on('input', function() { $('#titleErr').hide(); });
       $('#dueDate').on('input change', function() { $('#dueDateErr').hide(); });
       $('#summernote').on('summernote.change', function() { $('#contentErr').hide(); });
+
+      /* 입력칸에서 엔터를 치면 폼이 통째로 넘어간다. 브라우저가 '첫 번째 submit 버튼'을
+         누른 것으로 치기 때문인데, 재상신 화면에는 임시저장이 없어서 그 첫 버튼이
+         '재상신'이다 — 제목 칸에서 엔터만 쳐도 그대로 상신돼 버린다.
+         textarea 는 줄바꿈을 써야 하므로 input 에만 건다 */
+      $('#docForm').on('keydown', 'input', function(e) {
+              // 한글 조합 중에 누른 엔터는 글자를 확정하는 용도라 막으면 안 된다.
+              // 그것까지 막으면 마지막 글자가 안 들어간다
+              if (e.key === 'Enter'
+                              && !(e.originalEvent && e.originalEvent.isComposing)) {
+                      e.preventDefault();
+              }
+      });
 
       $('#docForm').on('submit', function(e) {
               $('.err').hide();

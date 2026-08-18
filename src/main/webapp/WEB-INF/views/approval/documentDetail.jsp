@@ -1211,6 +1211,10 @@ span.soon {
 				action="${pageContext.request.contextPath}/document/approve">
 				<input type="hidden" name="docId" value="${doc.docId}"> <input
 					type="hidden" name="comment" id="cmtField">
+				<%-- 어느 결재함에서 들어왔는지를 같이 보낸다. 승인·반려는 처리 후 이 화면으로
+				     되돌아오는데, 이 값이 없으면 주소에 from 이 사라져서 '‹ 목록' 이
+				     엉뚱하게 상신 문서함을 가리킨다. 결재자는 대기함에서 왔는데도 --%>
+				<input type="hidden" name="from" value="${param.from}">
 			</form>
 
 		</div>
@@ -1261,13 +1265,14 @@ span.soon {
 			document.getElementById("apprForm").submit();
 		}
 
-		// 재상신 : 반려된 문서를 임시저장으로 되돌려 작성 화면으로 보낸다.
-		// 문서수정과 가는 곳은 같지만 이쪽은 되돌릴 상신이 없다 —
-		// 이미 반려로 끝난 문서라 '취소된다'가 아니라 '다시 연다'로 설명해야 맞는다
+		// 재상신 : 작성 화면만 연다. 문서 상태는 '반려' 그대로 둔다 —
+		// 결재자에게는 계속 반려로 보여야 하고, 임시저장으로 내려보내면
+		// 임시저장함에서 삭제돼 반려 이력이 사라진다.
+		// 그래서 문서수정과 달리 '취소된다'고 할 게 없다
 		function doRedraft() {
-			var msg = "반려된 문서를 다시 작성합니다.\n\n"
-					+ "문서가 '임시저장' 상태로 바뀌며 상신 문서함에서 내려갑니다.\n"
-					+ "내용을 고친 뒤 다시 상신해야 결재가 진행됩니다.\n\n"
+			var msg = "반려된 문서를 고쳐서 다시 올립니다.\n\n"
+					+ "다시 상신하기 전까지 문서는 '반려' 상태로 남아 있고,\n"
+					+ "결재자에게도 반려된 문서로 보입니다.\n\n"
 					+ "지난 결재 의견은 결재이력에 그대로 남습니다.\n\n"
 					+ "계속 진행하시겠습니까?";
 			if (!confirm(msg)) return;

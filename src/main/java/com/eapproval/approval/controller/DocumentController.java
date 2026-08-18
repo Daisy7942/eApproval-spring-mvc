@@ -87,8 +87,11 @@ public class DocumentController {
 			documentService.updateDraft(documentVO);
 		}
 
-		// 팝업이 아니라 같은 탭에서 저장한 경우 saveResult 가 보낼 곳
-		model.addAttribute("nextUrl", "/document/drafts");
+		// 저장 성공 후 이동할 목록 URL 설정(팝업 x, 같은탭의 경우)
+		// (반려 문서는 REJECTED 상태이므로 임시저장함이 아닌 상신함으로 이동)
+		DocumentVO saved = documentService.getDraft(documentVO.getDocId(), empId);
+		boolean rejected = saved != null && "REJECTED".equals(saved.getStatus());
+		model.addAttribute("nextUrl", rejected ? "/document/submitted" : "/document/drafts");
 		return "approval/saveResult";
 	}
 
@@ -196,20 +199,32 @@ public class DocumentController {
 
 	// 문서 승인 --------------------------------------------------
 	@PostMapping("/document/approve")
-	public String approve(@RequestParam Long docId, @RequestParam String comment, HttpServletRequest request) {
+	public String approve(@RequestParam Long docId, @RequestParam String comment,
+			@RequestParam(required = false) String from, HttpServletRequest request) {
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 		documentService.approve(docId, empId, comment);
-		return "redirect:/document/detail?docId=" + docId;
+		return "redirect:/document/detail?docId=" + docId + fromParam(from);
 	}
 
 	// 문서 반려 --------------------------------------------------
 	@PostMapping("/document/reject")
-	public String reject(@RequestParam Long docId, @RequestParam String comment, HttpServletRequest request) {
+	public String reject(@RequestParam Long docId, @RequestParam String comment,
+			@RequestParam(required = false) String from, HttpServletRequest request) {
 		EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 		long empId = loginUser.getEmployeeId();
 		documentService.reject(docId, empId, comment);
-		return "redirect:/document/detail?docId=" + docId;
+		return "redirect:/document/detail?docId=" + docId + fromParam(from);
+	}
+
+	// 결재 처리 완료 후 이전 목록으로 복귀하기 위한 from 파라미터 검증
+	// - 허용 값: wait(결재대기함), done(결재완료함), sent(상신문서함)
+	// - 검증되지 않은 임의의 문자열 주입 방지 및 기본값(상신문서함) 이동 오동작 방지
+	private String fromParam(String from) {
+		if ("wait".equals(from) || "done".equals(from) || "sent".equals(from)) {
+			return "&from=" + from;
+		}
+		return "";
 	}
 
 	// 상신 취소 --------------------------------------------------
@@ -237,12 +252,13 @@ public class DocumentController {
 	    return "redirect:/document/write?docId=" + docId;
 	}
 
-	// 재상신 : 반려 문서를 임시저장으로 전환 후 수정 화면으로 이동
+	// 반려 문서 재상신 작성 화면 진입 (재상신 가능 여부 검증 후 작성 페이지로 리다이렉트)
+	// ※ 문서는 REJECTED 상태를 유지하며, 실제 상태 변경(DRAFT/PENDING)은 작성 완료 시 진행됨
 	@PostMapping("/document/redraft")
 	public String redraftDocument(@RequestParam Long docId, HttpServletRequest request) {
 	    EapprovalVO loginUser = (EapprovalVO) request.getSession().getAttribute("loginUser");
 	    long empId = loginUser.getEmployeeId();
-	    documentService.reopenRejected(docId, empId);
+	    documentService.checkRedraftable(docId, empId);
 	    return "redirect:/document/write?docId=" + docId;
 	}
 }

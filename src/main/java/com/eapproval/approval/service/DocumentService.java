@@ -173,18 +173,14 @@ public class DocumentService {
 		}
 	}
 
-	// 재상신 준비 — 반려된 문서를 임시저장으로 되돌린다.
-	// 상신 취소와 겉모습은 같지만 조건이 정반대라(저쪽은 아무도 결재 안 했을 때만,
-	// 이쪽은 반려 도장이 찍혀 있어야) 쿼리도 메서드도 따로 둔다.
-	// 찍혀 있던 결재선은 지우지 않는다 — 다음 상신 때 차수가 하나 올라가며 이력으로 남는다
-	@Transactional
-	public void reopenRejected(Long docId, Long employeeId) {
-		int updated = documentMapper.reopenRejected(docId, employeeId);
-		if (updated == 0) {
+	// 반려 문서의 재상신 가능 여부 검증
+	// (반려 이력 보존 및 결재 완료함의 상태 왜곡 방지를 위해 REJECTED 상태를 유지한 채 검증만 수행)
+	public void checkRedraftable(Long docId, Long employeeId) {
+		DocumentVO doc = documentMapper.selectDraft(docId, employeeId);
+		if (doc == null || !"REJECTED".equals(doc.getStatus())) {
 			throw new IllegalStateException("반려된 문서가 아니거나 재상신할 수 없는 문서입니다.");
 		}
 	}
-
 
 	// 근무일 수 세기 (토·일 제외). 공휴일은 아직...
 	private int countWorkDays(LocalDate from, LocalDate to) {
@@ -250,8 +246,16 @@ public class DocumentService {
 	}
 
 	// 임시저장 삭제
+	// 임시저장 문서 및 연관 데이터(결재선, 휴가신청 정보) 일괄 삭제
+	// ※ FK 삭제 제약(1451) 방지를 위해 자식 테이블(결재선/휴가)을 먼저 삭제
 	@Transactional
 	public int deleteDrafts(List<Long> docIds, Long employeeId) {
+
+		// FK 제약 방지를 위해 연관 자식 데이터 선 삭제
+		documentMapper.deleteDraftApprovalLines(docIds, employeeId);
+		documentMapper.deleteDraftVacations(docIds, employeeId);
+
+		// 메인 문서 삭제 (추후 첨부파일/즐겨찾기/위임 기능 추가 시 연관 삭제 처리 필요)
 		return documentMapper.deleteDrafts(docIds, employeeId);
 	}
 

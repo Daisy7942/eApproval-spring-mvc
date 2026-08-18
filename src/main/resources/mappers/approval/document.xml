@@ -58,14 +58,29 @@
 
 	</resultMap>
 
-	<!-- 결재선을 붙이는 모든 조회가 같이 쓰는 조건- 최신 차수만 남긴다.
-	     지난 차수는 selectApprovalHistory 가 따로 꺼낸다.
-	     문서는 d, 결재선은 al 로 별칭 -->
+	<!-- 결재선 조회 시 최신 회차(round) 조건 조각 (문서: d, 결재선: al) -->
+	<!-- 과거 회차의 결재 이력은 selectApprovalHistory에서 별도 조회 -->
 	<sql id="latestRound">
 		al.round = (SELECT MAX(r.round) FROM approval_line r WHERE
 		r.doc_id = d.doc_id)
 	</sql>
 
+<!-- 결재자/조회용 화면 노출 회차(round) 조건 조각 -->
+<!-- PENDING / APPROVED: 작성/진행 중인 최신 회차 노출 -->
+	<!-- DRAFT / REJECTED  : 최신 결재 이력 회차 노출 (미상신 작성 중 결재선 노출 및 이력 왜곡 방지) -->
+	<!-- 결재 미진행 문서   : 결재 이력이 없는 경우 최신 회차 적용 (COALESCE) -->
+	<!-- 작성자 편집 화면(selectDraft)은 작성 중인 결재선 확인을 위해 latestRound 사용 -->
+	<sql id="visibleRound">
+		al.round = COALESCE(
+		(SELECT MAX(r.round) FROM approval_line r
+		WHERE r.doc_id = d.doc_id
+		AND (d.status IN ('PENDING', 'APPROVED')
+		OR r.approval_status &lt;&gt; 'PENDING')),
+		(SELECT MAX(r2.round) FROM approval_line r2 WHERE r2.doc_id = d.doc_id))
+	</sql>
+
+
+<!-- 신규 기안 문서 등록 -->
 	<insert id="insertDocument" parameterType="document"
 		useGeneratedKeys="true" keyProperty="docId">
 		INSERT INTO document (
@@ -146,7 +161,7 @@
 		ORDER BY al.approval_order
 	</select>
 
-	<!-- 수정 -->
+	<!-- 임시저장 및 반려 문서 내용 수정 -->
 	<update id="updateDraft" parameterType="document">
 		UPDATE document
 		SET title
@@ -159,12 +174,15 @@
 		due_date = #{dueDate},
 		approval_type = #{approvalType}
 		WHERE doc_id = #{docId}
+		<!-- 본인 소유 문서만 수정 가능 -->
 		AND employee_id = #{employeeId}
+		<!-- 임시저장(DRAFT) 문서 및 반려 이력 보존을 위한 반려(REJECTED) 상태 문서 수정 허용 -->
 		AND
-		status =
-		'DRAFT'
+		status IN ('DRAFT', 'REJECTED')
 	</update>
-	<!-- 삭제 -->
+	
+	
+	<!-- 임시저장 문서 일괄 삭제 -->
 	<delete id="deleteDrafts">
 		delete from document
 		WHERE doc_id IN
@@ -172,8 +190,46 @@
 			close=")">
 			#{id}
 		</foreach>
+		<!-- 로그인한 본인 작성 문서만 삭제 가능 -->
+		AND employee_id = #{employeeId}
+		<!-- 임시저장(DRAFT) 상태의 문서만 삭제 대상 -->
+		AND status = 'DRAFT'
+		<!-- 승인/반려 이력이 있는 문서는 데이터 보존을 위해 삭제 불가 (결재 진행 이력 검증) -->
+		AND NOT EXISTS (SELECT 1 FROM approval_line al
+		WHERE al.doc_id = document.doc_id
+		AND al.approval_status IN ('APPROVED', 'REJECTED'))
+	</delete>
+
+	<!-- 삭제 가능한 임시저장(DRAFT) 문서 ID 목록 조각 -->
+	<!-- (본인 소유, DRAFT 상태, 결재 진행 이력이 없는 문서 검증) -->
+	<sql id="deletableDrafts">
+		SELECT doc_id FROM document d
+		WHERE doc_id IN
+		<foreach collection="docIds" item="id" open="(" separator=","
+			close=")">
+			#{id}
+		</foreach>
 		AND employee_id = #{employeeId}
 		AND status = 'DRAFT'
+		AND NOT EXISTS (SELECT 1 FROM approval_line al
+		WHERE al.doc_id = d.doc_id
+		AND al.approval_status IN ('APPROVED', 'REJECTED'))
+	</sql>
+
+	<!-- 임시저장 문서 삭제 시 관련 결재선 전체 삭제 (FK 제약조건 방지) -->
+	<delete id="deleteDraftApprovalLines">
+		DELETE FROM approval_line
+		WHERE doc_id IN (
+		<include refid="deletableDrafts" />
+		)
+	</delete>
+
+	<!-- 임시저장 문서에 딸린 휴가 정보 삭제. 휴가 신청서를 임시저장하면 딸린다 -->
+	<delete id="deleteDraftVacations">
+		DELETE FROM vacation_request
+		WHERE doc_id IN (
+		<include refid="deletableDrafts" />
+		)
 	</delete>
 
 	<!-- 임시저장 결재선 삭제.
@@ -229,7 +285,7 @@
 		</foreach>
 	</insert>
 
-	<!-- 상신 -->
+	<!-- 상신 (최초 상신 및 반려 문서 재상신) -->
 	<update id="submitDocument" parameterType="document">
 		UPDATE document
 		SET
@@ -238,10 +294,13 @@
 		is_urgent = #{isUrgent}, due_date = #{dueDate},
 		approval_type = #{approvalType}
 		WHERE doc_id = #{docId} AND
-		employee_id = #{employeeId} AND status =
-		'DRAFT'
+		employee_id = #{employeeId}
+		<!-- status 조건: DRAFT(신규 상신) 또는 REJECTED(재상신) 상태의 본인 문서만 처리 -->
+		AND status IN ('DRAFT', 'REJECTED')
 	</update>
-	<!-- 상신 취소 : 아무도 결재하지 않았을 때만 임시저장으로 되돌린다 -->
+	
+	
+	<!-- 상신 취소 (결재 진행 전 DRAFT 상태로 원복) : 본인 작성 문서, 현재 PENDING 상태, 하위 결재선에 결재 처리(승인/반려) 이력이 없는 경우 -->
 	<update id="cancelSubmission">
 		UPDATE document
 		SET status = 'DRAFT', updated_at = NOW()
@@ -253,14 +312,7 @@
 		AND al.approval_status != 'PENDING')
 	</update>
 	
-	<!-- 재상신 준비 : 반려 문서 임시저장(DRAFT) 상태로 변경 -->
-	<update id="reopenRejected">
-		UPDATE document
-		SET status = 'DRAFT', updated_at = NOW()
-		WHERE doc_id = #{docId}
-		AND employee_id = #{employeeId}
-		AND status = 'REJECTED'
-	</update>
+
 
 	<!-- 문서 결재 이력 조회 (전체 차수의 승인/반려 건만 조회) -->
 	<select id="selectApprovalHistory"
@@ -320,7 +372,7 @@
 		LEFT JOIN team dt ON de.team_id = dt.team_id
 		JOIN
 		approval_line al ON d.doc_id = al.doc_id
-		AND <include refid="latestRound" />
+		AND <include refid="visibleRound" />
 		JOIN employee e ON
 		al.approver_id = e.employee_id
 		LEFT JOIN team t ON e.team_id =
@@ -400,7 +452,7 @@
 		LEFT JOIN team dt ON de.team_id = dt.team_id
 		JOIN
 		approval_line al ON d.doc_id = al.doc_id
-		AND <include refid="latestRound" />
+		AND <include refid="visibleRound" />
 		JOIN employee e ON
 		al.approver_id = e.employee_id
 		LEFT JOIN team t ON e.team_id =
@@ -467,7 +519,7 @@
 		LEFT JOIN team dt ON de.team_id = dt.team_id
 		JOIN
 		approval_line al ON d.doc_id = al.doc_id
-		AND <include refid="latestRound" />
+		AND <include refid="visibleRound" />
 		JOIN employee e ON
 		al.approver_id = e.employee_id
 		LEFT JOIN team t ON e.team_id =
@@ -519,7 +571,7 @@
 		dt.team_id
 		JOIN approval_line al ON d.doc_id =
 		al.doc_id
-		AND <include refid="latestRound" />
+		AND <include refid="visibleRound" />
 		JOIN employee e
 		ON al.approver_id = e.employee_id
 		LEFT JOIN
