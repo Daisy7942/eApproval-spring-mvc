@@ -20,6 +20,7 @@ import com.eapproval.approval.vo.VacationRequestVO;
 import com.eapproval.approval.vo.VacationTypeVO;
 import com.eapproval.common.vo.PageVO;
 import com.eapproval.employee.dao.EmployeeMapper;
+import com.eapproval.employee.service.SignatureService;
 import com.eapproval.employee.vo.EapprovalVO;
 
 @Service
@@ -30,6 +31,9 @@ public class DocumentService {
 
 	@Autowired
 	private EmployeeMapper employeeMapper;
+	
+	@Autowired
+	private SignatureService signatureService;
 
 	// 임시저장
 	@Transactional
@@ -112,12 +116,20 @@ public class DocumentService {
 	// 상신
 	@Transactional
 	public void submitDocument(DocumentVO documentVO) {
+		
 
 		// 결재선 존재 유무 검증 / null 을 먼저 검사 — 리스트가 없으면 isEmpty() 자체가 터진다
 		List<ApprovalLineVO> lines = documentVO.getApprovalLine();
+		 // null 이면 뒤에는 아예 실행되지도 않음, 결재선 목록(lines)이 아예 존재하지 않거나(null), 목록에 아무 요소도 없다면(isEmpty), '결재선이 없습니다.'라는 예외를 발생
 		if (lines == null || lines.isEmpty()) {
 			throw new IllegalStateException("결재선이 없습니다.");
 		}
+		
+		//서명조회
+		Long empId = documentVO.getEmployeeId();
+		Long sign = signatureService.getActiveSignatureId(empId);
+		documentVO.setDraftSignatureId(sign);
+		
 
 		// 화면이 보낸 결재 방식을 그대로 쓴다. 안 왔거나 모르는 값이면 순차
 		documentVO.setApprovalType(normalizeApprovalType(documentVO.getApprovalType()));
@@ -351,7 +363,8 @@ public class DocumentService {
 	// 문서 승인
 	@Transactional
 	public void approve(Long docId, Long empId, String comment) {
-		int updated = documentMapper.updateApprovalStatus(docId, empId, "APPROVED", comment);
+		Long signatureId = signatureService.getActiveSignatureId(empId);
+		int updated = documentMapper.updateApprovalStatus(docId, empId, "APPROVED", comment, signatureId);
 		if (updated == 0) {
 			throw new IllegalStateException("결재 권한이 없거나 이미 처리된 문서입니다.");
 		}
@@ -374,7 +387,7 @@ public class DocumentService {
 	// 문서 반려
 	@Transactional
 	public void reject(Long docId, Long empId, String comment) {
-		int updated = documentMapper.updateApprovalStatus(docId, empId, "REJECTED", comment);
+		int updated = documentMapper.updateApprovalStatus(docId, empId, "REJECTED", comment,null);
 		if (updated == 0) {
 			throw new IllegalStateException("결재 권한이 없거나 이미 처리된 문서입니다.");
 		}

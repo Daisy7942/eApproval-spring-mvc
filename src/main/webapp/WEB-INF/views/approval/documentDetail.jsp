@@ -341,7 +341,7 @@
 }
 
 .stamp-col {
-	width: 78px;
+	width: 94px;
 	border-right: 1px solid #8b939f;
 	text-align: center;
 }
@@ -352,7 +352,7 @@
 }
 
 .stamp-col .pos {
-	font-size: 11.5px;
+	font-size: 12px;
 	color: #3d4756;
 	padding: 5px 0;
 	border-bottom: 1px solid #8b939f;
@@ -363,15 +363,15 @@
 
 /* 도장이 찍히는 칸. 비어 있어도 높이가 유지돼야 칸이 안 찌그러진다 */
 .stamp-col .mark {
-	height: 60px;
+	height: 54px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 }
 
 .stamp {
-	width: 44px;
-	height: 44px;
+	width: 46px;
+	height: 46px;
 	border: 2px solid #e05252;
 	border-radius: 50%;
 	color: #e05252;
@@ -383,6 +383,13 @@
 	transform: rotate(-8deg);
 	word-break: keep-all;
 	line-height: 1.1;
+}
+
+/* 등록한 서명으로 찍힌 칸. 동그라미 도장이 차지하던 자리에 그림만 얹는다
+   (칸 높이는 .mark 가 잡고 있으므로 여기서 높이를 정하지 않는다) */
+.stamp-img {
+	max-width: 76px;
+	max-height: 46px;
 }
 
 .stamp.reject {
@@ -411,9 +418,31 @@
 	background: #fffaf2;
 }
 
+/* 도장 밑칸 : 성명. 서명 이미지는 흘림체라 누구 것인지 읽기 어려우므로
+   종이 결재란처럼 이름을 따로 인쇄해 둔다 */
+.stamp-col .who {
+	font-size: 12px;
+	color: #98a3b5;
+	padding: 0 0 5px;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+/* 지금 차례인 사람. 예전에 도장칸 이름이 하던 강조를 이 줄이 이어받는다 */
+.stamp-col.now .who {
+	color: #f0932b;
+	font-weight: 600;
+}
+
+/* 차례가 오지 않은 채 끝난 칸 */
+.stamp-col .who.cancel {
+	text-decoration: line-through;
+	color: #cbd2dc;
+}
+
 /* 맨 아랫칸 : 처리한 날짜. 아직이면 비워 둔다 */
 .stamp-col .day {
-	font-size: 11px;
+	font-size: 11.5px;
 	color: #5b6576;
 	padding: 5px 0;
 	border-top: 1px solid #8b939f;
@@ -1015,8 +1044,20 @@ span.soon {
 						<div class="stamp-col">
 							<div class="pos">${doc.drafterPosition}</div>
 							<div class="mark">
-								<span class="stamp">${doc.drafterName}</span>
+								<%-- 상신할 때 찍힌 서명이 있으면 그 그림, 없으면 지금까지처럼 이름 동그라미.
+								     서명을 등록 안 한 사람과 예전 문서가 모두 아래쪽으로 간다 --%>
+								<c:choose>
+									<c:when test="${not empty doc.draftSignatureId}">
+										<img class="stamp-img"
+											src="${pageContext.request.contextPath}/signature/image/${doc.draftSignatureId}"
+											alt="${doc.drafterName} 서명">
+									</c:when>
+									<c:otherwise>
+										<span class="stamp">${doc.drafterName}</span>
+									</c:otherwise>
+								</c:choose>
 							</div>
+							<div class="who">${doc.drafterName}</div>
 							<div class="day">${fn:replace(fn:substring(doc.createdAt, 0, 10), '-', '/')}</div>
 						</div>
 
@@ -1031,22 +1072,31 @@ span.soon {
 								<div class="mark">
 									<c:choose>
 										<c:when test="${a.approvalStatus eq 'APPROVED'}">
-											<span class="stamp">${a.name}</span>
+											<%-- 결재한 그 시점의 서명. 나중에 서명을 바꿔도 이 그림은 안 바뀐다 --%>
+											<c:choose>
+												<c:when test="${not empty a.signatureId}">
+													<img class="stamp-img"
+														src="${pageContext.request.contextPath}/signature/image/${a.signatureId}"
+														alt="${a.name} 서명">
+												</c:when>
+												<c:otherwise>
+													<span class="stamp">${a.name}</span>
+												</c:otherwise>
+											</c:choose>
 										</c:when>
 										<c:when test="${a.approvalStatus eq 'REJECTED'}">
 											<span class="stamp reject">반려</span>
 										</c:when>
-										<%-- 차례가 오지 않은 채 끝난 칸. 대기와 같은 모습이면
-										     아직 기다리는 것처럼 보이므로 취소선으로 구분한다 --%>
+										<%-- 차례가 오지 않은 채 끝난 칸. 이름은 밑칸에서 취소선으로 구분한다 --%>
 										<c:when test="${a.approvalStatus eq 'CANCELED'}">
-											<span class="waiting cancel">${a.name}</span>
+											<span class="waiting cancel">취소</span>
 										</c:when>
 										<c:otherwise>
-											<%-- 아직 안 찍힌 칸 : 도장 없이 이름만. 내 차례면 주황색이 된다 --%>
-											<span class="waiting">${a.name}</span>
+											<%-- 아직 안 찍힌 칸 : 비워 둔다. 종이 결재란도 도장 자리는 비어 있다 --%>
 										</c:otherwise>
 									</c:choose>
 								</div>
+								<div class="who ${a.approvalStatus eq 'CANCELED' ? 'cancel' : ''}">${a.name}</div>
 								<div class="day">
 									<c:if test="${not empty a.approvedAt}">${fn:replace(fn:substring(a.approvedAt, 0, 10), '-', '/')}</c:if>
 								</div>

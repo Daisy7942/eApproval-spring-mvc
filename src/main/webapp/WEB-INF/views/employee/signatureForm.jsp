@@ -2,6 +2,12 @@
 	pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+
+<%-- 미리보기 칸 맨 아래에 넣을 날짜. 문서에서는 결재한 날이 찍히는 자리라
+     "오늘 결재하면 이렇게 보인다" 는 뜻으로 오늘 날짜를 쓴다 --%>
+<jsp:useBean id="todayDate" class="java.util.Date" />
+<fmt:formatDate value="${todayDate}" pattern="yyyy/MM/dd" var="todayText" />
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -278,18 +284,59 @@
 }
 
 .sig-item .thumb {
-	height: 92px;
+	display: flex;
+	justify-content: center;
+	padding: 8px 0 12px;
+}
+
+/* ===== 결재란 미리보기 =====
+   문서 도장판(documentDetail.jsp)의 칸 하나를 그대로 옮겨 온 것이다.
+   고르기 전에 "문서에서 이렇게 보인다" 를 알 수 있어야 하기 때문. */
+.stamp-col {
+	width: 94px;
+	border: 1px solid #8b939f;
+	background: #fff;
+	text-align: center;
+}
+
+.stamp-col .pos {
+	font-size: 12px;
+	color: #3d4756;
+	padding: 5px 0;
+	border-bottom: 1px solid #8b939f;
+	background: #fafbfc;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+/* 도장이 없어도 높이가 유지돼야 칸이 안 찌그러진다 */
+.stamp-col .mark {
+	height: 54px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: #fbfcfe;
-	border-radius: 6px;
-	margin-bottom: 10px;
 }
 
-.sig-item .thumb img {
-	max-width: 92%;
-	max-height: 82px;
+.stamp-col .mark img {
+	max-width: 76px;
+	max-height: 46px;
+}
+
+/* 도장 밑칸 : 성명. 서명 그림만으로는 누구 것인지 읽기 어려워 따로 인쇄한다 */
+.stamp-col .who {
+	font-size: 12px;
+	color: #98a3b5;
+	padding: 0 0 5px;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.stamp-col .day {
+	font-size: 11.5px;
+	color: #5b6576;
+	padding: 5px 0;
+	border-top: 1px solid #8b939f;
+	white-space: nowrap;
 }
 
 .sig-item .meta {
@@ -326,6 +373,55 @@
 	display: block;
 }
 
+/* ===== 등록 전 확인 창 =====
+   등록은 되돌리기가 번거로운 동작이라(지워도 행이 남는다) 한 번 물어본다.
+   문서에 찍힐 모습을 그대로 보여줘야 확인하는 의미가 있다 */
+.modal {
+	display: none;
+	position: fixed;
+	inset: 0;
+	background: rgba(20, 28, 45, .45);
+	z-index: 1100;
+	align-items: center;
+	justify-content: center;
+}
+
+.modal.on {
+	display: flex;
+}
+
+.modal-box {
+	background: #fff;
+	border-radius: 12px;
+	width: 340px;
+	padding: 24px 24px 20px;
+	text-align: center;
+	box-shadow: 0 18px 44px rgba(20, 28, 45, .28);
+}
+
+.modal-box h4 {
+	font-size: 15px;
+	color: var(--ink);
+	font-weight: 600;
+}
+
+.modal-box p {
+	font-size: 12.5px;
+	color: #98a3b5;
+	margin-top: 6px;
+	line-height: 1.6;
+}
+
+.modal-box .preview {
+	display: flex;
+	justify-content: center;
+	margin: 18px 0 20px;
+}
+
+.modal-box .btns {
+	justify-content: center;
+}
+
 /* 서버가 되돌려 보낸 알림 한 줄 (개수 초과 등) */
 .notice {
 	background: #fff8e6;
@@ -340,8 +436,8 @@
 /* 기본 도장 칸. 문서 도장판(documentDetail.jsp) 과 같은 모양을 그대로 가져온다 --
    여기서 고른 모습이 문서에 그대로 찍혀야 하기 때문 */
 .stamp {
-	width: 44px;
-	height: 44px;
+	width: 46px;
+	height: 46px;
 	border: 2px solid #e05252;
 	border-radius: 50%;
 	color: #e05252;
@@ -472,7 +568,10 @@
 			<div class="card">
 				<div class="card-head">
 					<h3>등록해 둔 서명</h3>
-					<p>하나를 눌러 대표 서명으로 정하세요. 지난 서명도 과거 문서에 찍힌 채로 남아 있습니다.</p>
+					<p>
+						칸 모양 그대로 문서 결재란에 찍힙니다. 하나를 눌러 대표 서명으로 정하세요.<br> 지난 서명도 과거
+						문서에는 찍힌 채로 남아 있습니다.
+					</p>
 				</div>
 
 				<div class="card-body">
@@ -489,7 +588,14 @@
 							type="radio" name="signatureId" value="" onclick="pickSig(this)">
 							<div class="badge">대표</div>
 							<div class="thumb">
-								<span class="stamp">${sessionScope.loginUser.name}</span>
+								<div class="stamp-col">
+									<div class="pos">${sessionScope.loginUser.position}</div>
+									<div class="mark">
+										<span class="stamp">${sessionScope.loginUser.name}</span>
+									</div>
+									<div class="who">${sessionScope.loginUser.name}</div>
+									<div class="day">${todayText}</div>
+								</div>
 							</div>
 							<div class="meta">
 								<span>기본 도장 (서명 없음)</span>
@@ -503,12 +609,19 @@
 								onclick="pickSig(this)">
 								<div class="badge">대표</div>
 								<div class="thumb">
-									<img
-										src="${pageContext.request.contextPath}/signature/image/${sg.signatureId}"
-										alt="서명">
+									<div class="stamp-col">
+										<div class="pos">${sessionScope.loginUser.position}</div>
+										<div class="mark">
+											<img
+												src="${pageContext.request.contextPath}/signature/image/${sg.signatureId}"
+												alt="서명">
+										</div>
+										<div class="who">${sessionScope.loginUser.name}</div>
+										<div class="day">${todayText}</div>
+									</div>
 								</div>
 								<div class="meta">
-									<span>${fn:substring(sg.createdAt, 0, 10)}</span> <span class="del"
+									<span>${fn:substring(sg.createdAt, 0, 10)} 등록</span> <span class="del"
 										onclick="removeSig(event, ${sg.signatureId})">삭제</span>
 								</div>
 							</label>
@@ -518,6 +631,30 @@
 				</div>
 			</div>
 
+		</div>
+	</div>
+
+	<%-- 등록 직전에 뜨는 확인 창. 목록 칸과 같은 모양이라 문서에 찍힐 모습이 그대로 보인다 --%>
+	<div class="modal" id="confirmBox">
+		<div class="modal-box">
+			<h4>이 서명으로 등록할까요?</h4>
+			<p>등록하면 대표 서명이 되어 앞으로 결재할 때 이 모습으로 찍힙니다.</p>
+
+			<div class="preview">
+				<div class="stamp-col">
+					<div class="pos">${sessionScope.loginUser.position}</div>
+					<div class="mark">
+						<img id="previewImg" alt="미리보기">
+					</div>
+					<div class="who">${sessionScope.loginUser.name}</div>
+					<div class="day">${todayText}</div>
+				</div>
+			</div>
+
+			<div class="btns">
+				<button type="button" class="btn primary" onclick="doSave()">등록</button>
+				<button type="button" class="btn" onclick="closeConfirm()">취소</button>
+			</div>
 		</div>
 	</div>
 
@@ -651,6 +788,9 @@
 		   저장이 끝나면 서버가 목록 화면으로 되돌려 준다 */
 		var isFull = ${fn:length(sigList) >= maxSignature};
 
+		/* 확인 창을 띄우는 동안 들고 있을 그림. 등록을 눌러야 서버로 간다 */
+		var waiting = null;
+
 		function send(imageData) {
 			/* 서버도 막지만 여기서 먼저 걸러야 그린 그림이 날아가지 않는다 */
 			if (isFull) {
@@ -658,9 +798,37 @@
 				return;
 			}
 
-			document.getElementById("imageData").value = imageData;
+			waiting = imageData;
+			document.getElementById("previewImg").src = imageData;
+			document.getElementById("confirmBox").className = "modal on";
+		}
+
+		function closeConfirm() {
+			waiting = null;
+			document.getElementById("confirmBox").className = "modal";
+		}
+
+		function doSave() {
+			if (!waiting) {
+				return;
+			}
+
+			document.getElementById("imageData").value = waiting;
 			document.getElementById("saveForm").submit();
 		}
+
+		/* 어두운 바깥이나 ESC 로도 닫는다 (헤더 프로필 메뉴와 같은 방식) */
+		document.getElementById("confirmBox").addEventListener("click", function(e) {
+			if (e.target === this) {
+				closeConfirm();
+			}
+		});
+
+		document.addEventListener("keydown", function(e) {
+			if (e.key === "Escape") {
+				closeConfirm();
+			}
+		});
 
 		/* 고른 칸 하나만 파랗게 하고 바로 전송한다.
 		   되돌아온 화면은 서버가 정한 대표를 다시 그리므로 이 표시는 잠깐 보이는 것뿐이다 */

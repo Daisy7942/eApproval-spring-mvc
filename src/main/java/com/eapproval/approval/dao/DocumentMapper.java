@@ -93,7 +93,7 @@ public interface DocumentMapper {
 
 	// 내 결재선 줄 상태 바꾸기(승인·반려 공용)
 	int updateApprovalStatus(@Param("docId") Long docId, @Param("approverId") Long approverId,
-			@Param("approvalStatus") String approvalStatus, @Param("comment") String comment);
+			@Param("approvalStatus") String approvalStatus, @Param("comment") String comment, @Param("signatureId") Long signatureId);
 
 	// PENDING 개수 세기 - 이 숫자로 최종상태 반영을 위함 0일때 승인으로 처리
 	int countPendingLines(@Param("docId") Long docId);
