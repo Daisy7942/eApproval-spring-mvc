@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.eapproval.employee.dao.SignatureMapper">
+
+	<!-- 서명 등록 화면 목록. soft delete // 삭제되지 않은 서명만-->
+	<select id="selectByEmployee" parameterType="long"
+		resultType="signature">
+		SELECT signature_id, owner_type, employee_id, image_path,
+		is_active, is_deleted, created_at
+		FROM signature
+		WHERE employee_id = #{employeeId}
+		AND is_deleted = 'N' 
+		ORDER BY signature_id DESC
+	</select>
+
+	<!-- 활성화된 대표 서명 한 행-->
+	<select id="selectActive" parameterType="long"
+		resultType="signature">
+		SELECT signature_id, owner_type, employee_id, image_path,
+		is_active, is_deleted, created_at
+		FROM signature
+		WHERE employee_id = #{employeeId}
+		AND is_deleted = 'N'
+		AND is_active = 'Y'
+	</select>
+
+	<!-- 서명 ID로 단건 조회 (서명 이미지 로드용)// 지운 서명도 과거 문서에는 찍혀 있으므로 is_deleted 를 따지지 않는다 -->
+	<select id="selectSignature" parameterType="long"
+		resultType="signature">
+		SELECT signature_id, owner_type, employee_id, image_path,
+		is_active, is_deleted, created_at
+		FROM signature
+		WHERE signature_id = #{signatureId}
+	</select>
+
+	<!-- 신규 서명 등록 -->
+	<insert id="insertSignature" parameterType="signature"
+		useGeneratedKeys="true" keyProperty="signatureId">
+		INSERT INTO signature (owner_type, employee_id, image_path)
+		VALUES (#{ownerType}, #{employeeId}, #{imagePath})
+	</insert>
+
+	<!-- 대표로 지정하기 전 /기존 대표 서명 초기화 (해제) -->
+	<update id="clearActive" parameterType="long">
+		UPDATE signature
+		SET is_active = 'N'
+		WHERE employee_id = #{employeeId}
+	</update>
+
+	<!-- 특정 서명을 대표 서명으로 지정//타인의 서명을 대표로 지정하지 못하도록 employee_id를 검증 -->
+	<update id="activate">
+		UPDATE signature
+		SET is_active = 'Y'
+		WHERE signature_id = #{signatureId}
+		AND employee_id = #{employeeId}
+	</update>
+
+	<!-- 삭제(Soft Delete) 플래그(is_deleted='Y')처리.대표 서명이었다면 활성화 플래그도 함께 해제(is_active='N')한다 -->
+	<update id="markDeleted">
+		UPDATE signature
+		SET is_deleted = 'Y', is_active = 'N'
+		WHERE signature_id = #{signatureId}
+		AND employee_id = #{employeeId}
+	</update>
+
+</mapper>

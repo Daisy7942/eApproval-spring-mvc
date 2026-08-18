@@ -80,6 +80,8 @@ CREATE TABLE `signature` (
   `owner_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `employee_id` bigint DEFAULT NULL,
   `image_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `is_active` char(1) NOT NULL DEFAULT 'N',
+  `is_deleted` char(1) NOT NULL DEFAULT 'N',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`signature_id`),
   KEY `employee_id` (`employee_id`),
@@ -210,3 +212,10 @@ CREATE TABLE `delegation` (
 
 ALTER TABLE document
   ADD COLUMN due_date DATE NULL AFTER is_urgent;
+
+
+
+  
+ALTER TABLE `signature`
+  ADD COLUMN `is_active`  char(1) NOT NULL DEFAULT 'N' AFTER `image_path`,
+  ADD COLUMN `is_deleted` char(1) NOT NULL DEFAULT 'N' AFTER `is_active`;

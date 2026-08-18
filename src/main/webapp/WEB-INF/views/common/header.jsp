@@ -89,7 +89,7 @@
 				<a href="#" onclick="alert('내 정보는 준비 중입니다.'); return false;">
 					<span class="mi">&#9673;</span> 내 정보
 				</a>
-				<a href="#" onclick="alert('서명 등록은 준비 중입니다.'); return false;">
+				<a href="${pageContext.request.contextPath}/signature">
 					<span class="mi">&#9998;</span> 서명 등록
 				</a>
 
