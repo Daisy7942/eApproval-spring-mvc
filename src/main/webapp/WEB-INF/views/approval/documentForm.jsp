@@ -469,6 +469,10 @@ $(document).ready(function() {
               // 팝업이 방식을 안 주면(옛 호출) 지금 값을 그대로 둔다
               if (mode) { approvalType = mode; }
 
+              // 결재선은 입력칸이 아니라 팝업으로 정한다. 제목·마감일처럼 input 이벤트가 없어서
+              // 여기서 지워 주지 않으면 다 고쳐 놓고도 경고가 남는다
+              if (approvalLine.length > 0) { $('#apprErr').hide(); }
+
               renderSignArea();
               renderApprFlow();
               renderApprHidden();
