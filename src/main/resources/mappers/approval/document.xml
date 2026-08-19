@@ -781,6 +781,7 @@
 		SELECT
 		vr.*,
 		vt.type_name,
+		vt.deduct_balance,
 		d.status,
 		DATE_FORMAT(vr.created_at, '%Y-%m-%d') AS created_at
 		FROM

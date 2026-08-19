@@ -227,16 +227,38 @@
 	background: #c8cdd6;
 }
 
-.bar.approved {
-	background: #22a06b;
+/* 막대 색 = 휴가 종류. 클래스 이름은 vacation_type_id 를 그대로 쓴다.
+   상태(승인/대기/반려)는 오른쪽 칩이 맡는다 */
+.bar.type-ANNUAL {
+	background: #5b83c9;
 }
 
-.bar.pending {
+.bar.type-SICK {
+	background: #e05252;
+}
+
+.bar.type-EVENT {
+	background: #a05ccc;
+}
+
+.bar.type-OFFICIAL {
+	background: #159b8a;
+}
+
+.bar.type-MATERNITY {
+	background: #e0709a;
+}
+
+.bar.type-SPOUSE {
 	background: #f0932b;
 }
 
-.bar.rejected {
-	background: #e05252;
+.bar.type-COMP {
+	background: #5b9c3f;
+}
+
+.bar.type-FAMILY {
+	background: #c08a2e;
 }
 
 .leave-main {
@@ -312,6 +334,15 @@
 	border-color: #f7c2c2;
 	background: #fdf0f0;
 	color: #c53c3c;
+}
+
+/* 연차를 깎지 않는 휴가(병가·공가 등) 표시.
+   테두리·배경 없이 아래 l2 줄과 같은 톤으로 조용히 붙인다 */
+.leave-main .l1 .nodeduct {
+	font-size: 12px;
+	font-weight: 400;
+	color: #98a3b5;
+	margin-left: 4px;
 }
 
 .empty {
@@ -751,17 +782,9 @@
 					</div>
 
 					<c:forEach var="lv" items="${upcomingList}">
-						<%-- 왼쪽 세로 막대 색 = 문서 상태 --%>
-						<c:set var="cls" value="pending" />
-						<c:if test="${lv.status eq 'APPROVED'}">
-							<c:set var="cls" value="approved" />
-						</c:if>
-						<c:if test="${lv.status eq 'REJECTED'}">
-							<c:set var="cls" value="rejected" />
-						</c:if>
-
 						<div class="leave-row">
-							<span class="bar ${cls}"></span>
+							<%-- 막대 색은 휴가 종류로 정한다. type-ANNUAL 처럼 CSS 클래스가 만들어진다 --%>
+							<span class="bar type-${lv.vacationTypeId}"></span>
 
 							<div class="leave-main">
 								<a
@@ -771,6 +794,10 @@
 										<%-- 문서번호는 컬럼이 없어 화면에서 조립한다. 상세 화면과 같은 방식 --%>
 										<em>LV-<fmt:formatNumber value="${lv.docId}"
 												minIntegerDigits="4" groupingUsed="false" /></em>
+										<%-- 연차를 깎지 않는 유형이면 표시를 붙인다 --%>
+										<c:if test="${not lv.deductBalance}">
+											<span class="nodeduct">· 연차미차감</span>
+										</c:if>
 									</div>
 									<div class="l2">
 										${lv.startDate}
@@ -818,16 +845,9 @@
 					</div>
 
 					<c:forEach var="lv" items="${pastList}">
-						<c:set var="cls" value="pending" />
-						<c:if test="${lv.status eq 'APPROVED'}">
-							<c:set var="cls" value="approved" />
-						</c:if>
-						<c:if test="${lv.status eq 'REJECTED'}">
-							<c:set var="cls" value="rejected" />
-						</c:if>
-
 						<div class="leave-row">
-							<span class="bar ${cls}"></span>
+							<%-- 막대 색은 휴가 종류로 정한다. type-ANNUAL 처럼 CSS 클래스가 만들어진다 --%>
+							<span class="bar type-${lv.vacationTypeId}"></span>
 
 							<div class="leave-main">
 								<a
@@ -836,6 +856,10 @@
 										${lv.typeName}
 										<em>LV-<fmt:formatNumber value="${lv.docId}"
 												minIntegerDigits="4" groupingUsed="false" /></em>
+										<%-- 연차를 깎지 않는 유형이면 표시를 붙인다 --%>
+										<c:if test="${not lv.deductBalance}">
+											<span class="nodeduct">· 연차미차감</span>
+										</c:if>
 									</div>
 									<div class="l2">
 										${lv.startDate}
