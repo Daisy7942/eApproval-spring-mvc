@@ -39,14 +39,19 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 .role-chip { border:1px solid #e3e7ed; background:#fff; color:#7b8494;
              border-radius:20px; padding:3px 12px; font-size:11.5px;
              cursor:pointer; }
-.role-chip.on { background:#e9f7ef; border-color:#a9dfc0; color:#1f8a4c;
+/* 고른 칩 : 안은 비우고 테두리와 글씨로만 표시한다.
+   색은 documentForm.jsp 의 .appr-mode 뱃지와 같은 계열 — 순차 회색, 병렬 보라 */
+.role-chip.on { background:#fff; border-color:#5b6576; color:#3d4756;
                 font-weight:700; }
+.role-chip.on[data-mode="PARALLEL"] { border-color:#7c4dcc; color:#7c4dcc; }
 
 /* 맨 위 탭 : 결재선 / 참조자 / 열람자 */
 .tabs { display:flex; gap:18px; padding:12px 14px 0; border-bottom:1px solid #eceff3; }
 .tabs .tab { padding:0 2px 9px; font-size:13px; color:#9aa3b0; cursor:pointer;
              border-bottom:2px solid transparent; margin-bottom:-1px; }
 .tabs .tab.on { color:#2b3444; font-weight:700; border-bottom-color:#2b3444; }
+/* 아직 못 만든 탭 : 눌리기 전에 커서로 알려 준다 */
+.tabs .tab.soon { cursor:not-allowed; }
 .tabs .req { color:#e5484d; margin-right:2px; }
 
 /* 그 아래 탭 : 조직도 / 나의 결재선 */
@@ -98,6 +103,10 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
                 color:#5b6576; font-size:10px; display:flex;
                 align-items:center; justify-content:center; }
 .node.emp.picked .av { background:#2f6bff; color:#fff; }
+
+/* 정원이 찼을 때 : 이미 고른 사람은 그대로 두고 나머지만 못 고르게 보인다 */
+.node.emp.full { opacity:.4; cursor:not-allowed; }
+.node.emp.full:hover { background:none; }
 
 /* --- 오른쪽 : 기안자 + 결재선 --- */
 .sec-title { text-align:center; font-size:11.5px; color:#9aa3b0;
@@ -176,8 +185,9 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 					<div class="tab on" onclick="pickTab(this,'LINE')">
 						<span class="req">*</span>결재선
 					</div>
-					<div class="tab" onclick="pickTab(this,'REF')">참조자</div>
-					<div class="tab" onclick="pickTab(this,'VIEW')">열람자</div>
+					<!-- 아직 안 만든 탭. 눌러도 알림만 뜨므로 커서로 먼저 알려 준다 -->
+					<div class="tab soon" onclick="pickTab(this,'REF')">참조자</div>
+					<div class="tab soon" onclick="pickTab(this,'VIEW')">열람자</div>
 				</div>
 
 				<div class="subtabs">
@@ -205,7 +215,7 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 				<div class="sec-title">신청 (기안자)</div>
 				<div class="card me" id="drafterCard"></div>
 
-				<div class="sec-title" style="margin-top: 18px;">승인 결재선</div>
+				<div class="sec-title" style="margin-top: 18px;">결재선</div>
 				<div id="lineList"></div>
 
 				<div class="flow-box">
@@ -364,6 +374,8 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 
 					t.emps.forEach(function (e) {
 						var on = isPicked(e.eid) ? " picked" : "";
+						// 정원이 차면 아직 안 고른 사람만 흐리게. 고른 사람은 빼야 하니 그대로 둔다
+						if (on === "" && apprCount() >= MAX_APPR) on = " full";
 						h += '<div class="node emp' + on + '" onclick="toggleEmp(\'' + e.eid + '\')">'
 						   +   '<span class="av">' + e.name.substring(0, 1) + '</span>'
 						   +   '<span class="nm"><span>' + e.name + '</span>'
@@ -427,6 +439,14 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 		}
 
 		// ===== 3. 결재자 담기 / 빼기 =====
+		// 도장판이 기안 1칸 + 결재 3칸까지 들어가서 그 이상은 못 담게 막는다.
+		// 정원은 '결재' 역할만 센다. 합의는 성격이 다른 칸이라 나중에 따로 정한다
+		var MAX_APPR = 3;
+
+		function apprCount() {
+			return picked.filter(function (p) { return p.role !== "AGREEMENT"; }).length;
+		}
+
 		function isPicked(eid) {
 			return picked.some(function (p) { return p.eid === eid; });
 		}
@@ -436,6 +456,10 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 				picked = picked.filter(function (p) { return p.eid !== eid; });
 			} else {
 				if (eid === MY_ID) { alert("기안자는 결재자로 넣을 수 없습니다."); return; }
+				if (apprCount() >= MAX_APPR) {
+					alert("결재자는 최대 " + MAX_APPR + "명까지 지정할 수 있습니다.");
+					return;
+				}
 				var o = ORG.filter(function (x) { return x.eid === eid; })[0];
 				// dname 은 결재선에 찍을 본부. 본부장은 팀이 없어 빌려온 ownDept 가 진짜 본부다
 				var row = { eid:o.eid, name:o.name, pos:rank(o), lvl:o.lvl,
@@ -495,7 +519,7 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 					   +   '<button type="button" class="mv" onclick="move(' + i + ',-1)">▲</button>'
 					   +   '<button type="button" class="mv" onclick="move(' + i + ',1)">▼</button>'
 					   +   '<select onchange="setRole(' + i + ', this.value)">'
-					   +     '<option value="APPROVAL"' + (p.role === "APPROVAL" ? " selected" : "") + '>승인</option>'
+					   +     '<option value="APPROVAL"' + (p.role === "APPROVAL" ? " selected" : "") + '>결재</option>'
 					   +     '<option value="AGREEMENT"' + (p.role === "AGREEMENT" ? " selected" : "") + '>합의</option>'
 					   +   '</select>'
 					   +   '<button type="button" class="del" onclick="removeAt(' + i + ')">✕</button>'
@@ -508,12 +532,13 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 			picked.forEach(function (p) {
 				f += '<span class="arw">▶</span>'
 				   + '<span class="step' + (p.role === "AGREEMENT" ? " agree" : "") + '">'
-				   + p.name + ' (' + (p.role === "AGREEMENT" ? "합의" : "승인") + ')</span>';
+				   + p.name + ' (' + (p.role === "AGREEMENT" ? "합의" : "결재") + ')</span>';
 			});
 			document.getElementById("flow").innerHTML = f;
 
+			// 몇 명까지 되는지 세는 김에 같이 보여준다. 막힌 뒤에 알면 늦다
 			document.getElementById("footCnt").innerHTML =
-				"결재자 " + picked.length + "명 설정됨";
+				"결재자 " + apprCount() + " / " + MAX_APPR + "명 설정됨";
 		}
 
 		// ===== 4-1. 나의 결재선 =====
@@ -543,7 +568,7 @@ body { margin:0; background:#f7f8fa; color:#2b3444;
 					position   : p.pos,
 					department : p.tname,
 					dept       : p.dname,          // 부서 (본부)
-					role       : (p.role === "AGREEMENT" ? "합의" : "승인"),
+					role       : (p.role === "AGREEMENT" ? "합의" : "결재"),
 					roleCode   : p.role,           // 저장할 때 쓸 값
 					order      : i + 1             // 결재 순서
 				};

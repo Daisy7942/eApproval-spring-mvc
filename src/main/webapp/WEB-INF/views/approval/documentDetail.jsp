@@ -250,11 +250,19 @@
 }
 
 /* ===== ② 문서 영역 : 종이 한 장 ===== */
+/* 화면의 종이를 인쇄물과 같은 크기로 만든다.
+   인쇄는 @page margin:14mm 이라 A4(210x297mm)에서 글이 들어가는 폭이 182mm 다.
+   화면에서도 폭 210mm 에 padding 14mm 를 주면 안쪽이 똑같이 182mm 가 돼서
+   줄바꿈 위치까지 인쇄 결과와 맞아떨어진다. box-sizing 은 common.css 에서 이미 border-box */
 .paper {
+	width: 210mm;
+	max-width: 100%;
+	min-height: 297mm;
+	margin: 0 auto;
 	background: #fff;
 	border: 1px solid #d5dbe4;
 	border-radius: 4px;
-	padding: 46px 46px 52px;
+	padding: 14mm;
 	box-shadow: 0 1px 3px rgba(28, 36, 51, .06);
 }
 
@@ -285,22 +293,23 @@
 }
 
 /* ===== 왼쪽 : 문서정보 표 ===== */
+/* 문서번호 표 폭. 종이 안쪽 182mm(≈688px) 안에서 도장판과 마주 놓이는 크기다 */
 .info-tbl {
 	border-collapse: collapse;
-	width: 340px;
-	flex: 0 1 340px;
-	font-size: 13px;
+	width: 238px;
+	flex: 0 0 238px;
+	font-size: 12.5px;
 }
 
 .info-tbl th, .info-tbl td {
 	border: 1px solid #c9d0da;
-	padding: 8px 12px;
+	padding: 6px 10px;
 	text-align: left;
 	line-height: 1.5;
 }
 
 .info-tbl th {
-	width: 92px;
+	width: 78px;
 	background: #f2f4f7;
 	color: #3d4756;
 	font-weight: 600;
@@ -318,30 +327,43 @@
 /* ===== 오른쪽 : 결재 도장판 =====
    칸 하나가 사람 한 명. 위=직급, 가운데=도장, 아래=처리일.
    왼쪽에 세로로 '기안' / '결재' 라벨이 붙어 두 덩어리를 구분한다 */
+/* 칸 폭은 74px 로 고정한다. 결재자가 적어도 칸이 커지지 않는다 (종이 결재란과 같은 방식).
+   결재자는 3명까지라 최대 4칸 —
+   기안(1+20+74+1=96) + 간격 6 + 결재(1+20+74*3+1=244) = 346px 이고,
+   가운데 남는 자리는 justify-content:space-between 이 벌려 준다 */
 .stamp-box {
 	display: flex;
-	border: 1px solid #8b939f;
+	align-items: flex-start;
+	gap: 6px;
 	width: fit-content;
 	flex: 0 0 auto;
+}
+
+/* 예전엔 테두리 하나가 기안과 결재를 같이 감쌌다. 그러면 기안자도
+   결재자 중 한 명처럼 보여서, 네모를 나누고 살짝 띄운다 */
+.stamp-group {
+	display: flex;
+	border: 1px solid #8b939f;
 	background: #fff;
 }
 
 .stamp-side {
-	width: 24px;
+	width: 20px;
 	border-right: 1px solid #8b939f;
 	background: #f2f4f7;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 11.5px;
+	font-size: 11px;
 	color: #3d4756;
-	letter-spacing: 3px;
+	letter-spacing: 2px;
 	writing-mode: vertical-rl;
 	padding: 4px 0;
 }
 
 .stamp-col {
-	width: 94px;
+	width: 74px;
+	flex: 0 0 74px;
 	border-right: 1px solid #8b939f;
 	text-align: center;
 }
@@ -363,19 +385,19 @@
 
 /* 도장이 찍히는 칸. 비어 있어도 높이가 유지돼야 칸이 안 찌그러진다 */
 .stamp-col .mark {
-	height: 54px;
+	height: 50px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 }
 
 .stamp {
-	width: 46px;
-	height: 46px;
+	width: 44px;
+	height: 44px;
 	border: 2px solid #e05252;
 	border-radius: 50%;
 	color: #e05252;
-	font-size: 12px;
+	font-size: 11.5px;
 	font-weight: 600;
 	display: flex;
 	align-items: center;
@@ -388,8 +410,8 @@
 /* 등록한 서명으로 찍힌 칸. 동그라미 도장이 차지하던 자리에 그림만 얹는다
    (칸 높이는 .mark 가 잡고 있으므로 여기서 높이를 정하지 않는다) */
 .stamp-img {
-	max-width: 76px;
-	max-height: 46px;
+	max-width: 64px;
+	max-height: 44px;
 }
 
 .stamp.reject {
@@ -421,7 +443,7 @@
 /* 도장 밑칸 : 성명. 서명 이미지는 흘림체라 누구 것인지 읽기 어려우므로
    종이 결재란처럼 이름을 따로 인쇄해 둔다 */
 .stamp-col .who {
-	font-size: 12px;
+	font-size: 11.5px;
 	color: #98a3b5;
 	padding: 0 0 5px;
 	white-space: nowrap;
@@ -442,12 +464,13 @@
 
 /* 맨 아랫칸 : 처리한 날짜. 아직이면 비워 둔다 */
 .stamp-col .day {
-	font-size: 11.5px;
+	font-size: 11px;
 	color: #5b6576;
-	padding: 5px 0;
+	height: 23px;
+	line-height: 22px; /* border-top 1px 을 뺀 값 */
 	border-top: 1px solid #8b939f;
-	min-height: 12px;
 	white-space: nowrap;
+	overflow: hidden;
 }
 
 /* 본문. 글쓴이가 엔터로 나눈 줄을 그대로 살리려면 pre-wrap 이 필요하다.
@@ -674,13 +697,22 @@
 		max-width: none !important;
 		width: auto !important;
 	}
+	/* 210mm 를 그대로 들고 가면 인쇄 여백 밖으로 넘쳐 잘리므로 크기 지정을 푼다.
+	   위아래 여백은 @page 가 0 이라 여기 padding 이 대신 잡는다.
+	   좌우는 @page 가 잡아서 2장째에도 여백이 유지된다 */
 	.paper {
 		border: none;
 		box-shadow: none;
-		padding: 0;
+		padding: 14mm 0;
+		width: auto;
+		max-width: none;
+		min-height: 0;
+		margin: 0;
 	}
+	/* 위아래 여백을 0 으로 두면 크롬은 머리말(제목·URL)과 꼬리말(날짜·쪽번호)을
+	   넣을 자리가 없다고 보고 아예 안 찍는다. 좌우 14mm 는 그대로 둔다 */
 	@page {
-		margin: 14mm;
+		margin: 0 14mm;
 	}
 }
 
@@ -1046,6 +1078,8 @@ span.soon {
 
 					<%-- 오른쪽 : 도장판. 기안자는 approval_line 에 없는 사람이라 따로 그린다 --%>
 					<div class="stamp-box">
+						<%-- 기안 덩어리 : 기안자 한 명 --%>
+						<div class="stamp-group">
 						<div class="stamp-side">기안</div>
 						<div class="stamp-col">
 							<div class="pos">${doc.drafterPosition}</div>
@@ -1066,7 +1100,10 @@ span.soon {
 							<div class="who">${doc.drafterName}</div>
 							<div class="day">${fn:replace(fn:substring(doc.createdAt, 0, 10), '-', '/')}</div>
 						</div>
+						</div>
 
+						<%-- 결재 덩어리 : 결재선에 오른 사람들 --%>
+						<div class="stamp-group">
 						<div class="stamp-side">결재</div>
 						<c:forEach var="a" items="${doc.approvalLine}">
 							<%-- 병렬은 아직 안 찍은 사람 모두가 지금 차례다.
@@ -1108,6 +1145,7 @@ span.soon {
 								</div>
 							</div>
 						</c:forEach>
+						</div>
 					</div>
 				</div>
 
