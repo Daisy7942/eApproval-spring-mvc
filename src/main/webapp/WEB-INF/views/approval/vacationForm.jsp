@@ -813,7 +813,7 @@ $(document).ready(function() {
               }
 
               $('#daysNum').text(days);
-              $('#daysCalc').text('주말 제외 · 공휴일은 아직 반영되지 않습니다');
+              $('#daysCalc').text('주말은 자동 제외됩니다.(공휴일은 반영 X )');
               return days;
       }
 

@@ -1,6 +1,7 @@
 package com.eapproval.approval.dao;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -121,5 +122,12 @@ public interface DocumentMapper {
 
 	// 휴가신청 종류 조회
 	VacationTypeVO selectVacationType(String vacationTypeId);
+	
+	
+	//휴가 중복 검증
+	int countOverlapVacation(@Param("employeeId") Long employeeId,
+			@Param("startDate") LocalDate startDate,
+			@Param("endDate") LocalDate endDate,
+			@Param("docId") Long docId);
 
 }

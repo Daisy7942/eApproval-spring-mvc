@@ -146,6 +146,15 @@ public class DocumentService {
 			if (v.getStartDate() == null || v.getEndDate() == null || v.getStartDate().isAfter(v.getEndDate())) {
 				throw new IllegalStateException("휴가 시작일이 종료일보다 늦습니다.");
 			}
+
+			// 같은 기간에 이미 낸 휴가가 있는지 확인 (중복 신청 방지)
+			// 임시저장에서 올라온 문서는 자기 줄이 이미 들어가 있어 docId 로 제외한
+			int overlap = documentMapper.countOverlapVacation(documentVO.getEmployeeId(), v.getStartDate(),
+					v.getEndDate(), documentVO.getDocId());
+			if (overlap > 0) {
+				throw new IllegalStateException("해당 기간에 이미 신청한 휴가가 있습니다.");
+			}
+
 			v.setDays(calcDays(v)); // 연차 계산해서 세팅
 			VacationTypeVO type = documentMapper.selectVacationType(v.getVacationTypeId());
 			if (type != null && type.isDeductBalance()) { // 연차가 차감되는 휴가 유형이라면
