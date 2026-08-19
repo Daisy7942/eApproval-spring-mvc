@@ -983,14 +983,20 @@ span.soon {
 								<div class="val none">-</div>
 							</c:when>
 							<c:otherwise>
+								<%-- 결재가 끝난 문서는 날짜만 남긴다. 재촉할 상대가 없어
+								     빨간 글씨와 남은 날수가 읽는 사람을 불필요하게 붙잡는다 --%>
+								<c:set var="docDone"
+									value="${doc.status eq 'APPROVED' or doc.status eq 'REJECTED'}" />
 								<div
-									class="val due ${doc.overdue ? 'over' : (doc.daysLeft eq 0 ? 'today' : (doc.daysLeft le 3 ? 'near' : ''))}">
+									class="val due ${docDone ? '' : (doc.overdue ? 'over' : (doc.daysLeft eq 0 ? 'today' : (doc.daysLeft le 3 ? 'near' : '')))}">
 									${doc.dueDate}
-									<c:choose>
-										<c:when test="${doc.overdue}">(${doc.daysLeft * -1}일 지남)</c:when>
-										<c:when test="${doc.daysLeft eq 0}">(오늘) ★</c:when>
-										<c:when test="${doc.daysLeft le 3}">(${doc.daysLeft}일 남음)</c:when>
-									</c:choose>
+									<c:if test="${not docDone}">
+										<c:choose>
+											<c:when test="${doc.overdue}">(${doc.daysLeft * -1}일 지남)</c:when>
+											<c:when test="${doc.daysLeft eq 0}">(오늘) ★</c:when>
+											<c:when test="${doc.daysLeft le 3}">(${doc.daysLeft}일 남음)</c:when>
+										</c:choose>
+									</c:if>
 								</div>
 							</c:otherwise>
 						</c:choose>

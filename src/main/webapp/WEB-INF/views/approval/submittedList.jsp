@@ -806,13 +806,19 @@ span.soon {
 									고른 문서에만 붙는다. 남은 날수를 같이 적는 이유는
 									날짜만 보면 며칠 남았는지 머리로 빼야 하기 때문이다 --%>
 									<c:if test="${not empty doc.dueDate}">
+										<%-- 결재가 끝난 문서는 날짜만 남긴다. 재촉할 상대가 없어
+										     빨간 글씨와 남은 날수가 읽는 사람을 불필요하게 붙잡는다 --%>
+										<c:set var="docDone"
+											value="${doc.status eq 'APPROVED' or doc.status eq 'REJECTED'}" />
 										<span
-											class="due ${doc.overdue ? 'over' : (doc.daysLeft eq 0 ? 'today' : (doc.daysLeft le 3 ? 'near' : ''))}">
-											마감 ${doc.dueDate} <c:choose>
-												<c:when test="${doc.overdue}">(${doc.daysLeft * -1}일 지남)</c:when>
-												<c:when test="${doc.daysLeft eq 0}">(오늘) ★</c:when>
-												<c:when test="${doc.daysLeft le 3}">(${doc.daysLeft}일 남음)</c:when>
-											</c:choose>
+											class="due ${docDone ? '' : (doc.overdue ? 'over' : (doc.daysLeft eq 0 ? 'today' : (doc.daysLeft le 3 ? 'near' : '')))}">
+											마감 ${doc.dueDate} <c:if test="${not docDone}">
+												<c:choose>
+													<c:when test="${doc.overdue}">(${doc.daysLeft * -1}일 지남)</c:when>
+													<c:when test="${doc.daysLeft eq 0}">(오늘) ★</c:when>
+													<c:when test="${doc.daysLeft le 3}">(${doc.daysLeft}일 남음)</c:when>
+												</c:choose>
+											</c:if>
 										</span>
 									</c:if></td>
 
