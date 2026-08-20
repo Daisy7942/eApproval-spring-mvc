@@ -124,6 +124,10 @@ public class DocumentService {
 		if (lines == null || lines.isEmpty()) {
 			throw new IllegalStateException("결재선이 없습니다.");
 		}
+		// 결재자수 3명 초과시 에러메시지대응
+		if(lines.size()>3){
+			throw new IllegalStateException("결재는 최대 3명까지 가능합니다.");
+		}
 		
 		//서명조회
 		Long empId = documentVO.getEmployeeId();
