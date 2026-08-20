@@ -294,7 +294,7 @@ body { background:#f4f6fa; padding:26px; }
                                       <div class="stat-row">
                                               <div class="stat total">
                                                       <div class="n" id="statGrant"><c:choose><c:when test="${empty summary}">-</c:when><c:otherwise><fmt:formatNumber value="${summary.totalDays}" maxFractionDigits="1"/></c:otherwise></c:choose></div>
-                                                      <div class="l">부여</div>
+                                                      <div class="l" id="statGrantLabel">부여</div>
                                               </div>
                                               <div class="stat used">
                                                       <div class="n" id="statUsed"><c:choose><c:when test="${empty summary}">-</c:when><c:otherwise><fmt:formatNumber value="${summary.usedDays}" maxFractionDigits="1"/></c:otherwise></c:choose></div>
@@ -747,12 +747,16 @@ $(document).ready(function() {
                       $('#statUsed').text(dayText(annualUsed));
                       $('#statWait').text(dayText(annualPending));
                       $('#statLeft').text(dayText(annualRemain));
+                      $('#statGrantLabel').text('부여'); // 연차는 실제로 받아둔 일수다
               } else {
                       // 나머지는 사람마다 다른 값이 없어 법정일수만 보여준다
                       $('#statGrant').text(dayText($chip.data('days')));
                       $('#statUsed').text('-');
                       $('#statWait').text('-');
                       $('#statLeft').text('-');
+                      // 연차 외 휴가는 미리 받아둔 잔고가 없다.
+                      // default_days 는 받은 일수가 아니라 신청할 수 있는 상한이라 '한도' 로 부른다.
+                      $('#statGrantLabel').text('한도');
               }
       }
 
