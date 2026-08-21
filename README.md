@@ -1,9 +1,11 @@
 # eapproval — 사내 전자결재 · 휴가관리 시스템
 
-기안부터 결재 · 반려 · 재상신까지, 종이 결재의 흐름을 그대로 옮긴 웹 전자결재 시스템입니다.
+기안부터 결재 · 반려 · 재상신까지 종이 결재의 흐름을 그대로 옼기고,
+휴가 신청과 연차 차감을 그 결재 흐름 위에서 함께 처리하는 시스템입니다.
 
 - 개발 기간 : 2026-07-18 ~ 2026-08-20 (약 5주)
 - 형태 : **기업 연계 개인 프로젝트** (1인 개발)
+- 기획 · 화면 설계 문서 : [Notion](https://autumn-clarinet-ba3.notion.site/PRJ-ab90f67e5771834d87770179da1824e5)
 - **본 문서는 1차 구현 기준입니다.** 핵심 결재 흐름과 휴가 관리를 우선 완성했고,
   이후 계획은 8장에 정리했습니다.
 
@@ -17,7 +19,7 @@
 
 `web.xml` 에 DispatcherServlet 을 등록하고, `servlet-context.xml` 에 ViewResolver 와 Interceptor 를,
 `datasource.xml` 에 SqlSessionFactory 와 트랜잭션 매니저를 직접 올렸습니다.
-자동 설정에 기대지 않고 요청이 어디를 거쳐 어디로 가는지 직접 확인하며 만들었습니다.
+덕분에 자동 설정에 기대지 않고 요청이 어디를 거쳐 어디로 가는지 직접 확인하며 만들었습니다.
 
 ### 역할 분담
 
@@ -34,16 +36,20 @@
 
 ## 2. 기술 스택
 
-| 구분 | 사용 기술 |
-|------|-----------|
-| Language | Java 11 |
-| Framework | Spring Framework 5.3.6 (Spring MVC, XML 설정) |
-| Persistence | MyBatis 3.5.19 / mybatis-spring 2.1.2 |
-| Database | MySQL 8 |
-| View | JSP + JSTL 1.2, jQuery |
-| Build | Maven (packaging: war) |
-| WAS | Apache Tomcat 9 |
-| 도구 | Eclipse, Git |
+| 구분 | 사용 기술 | 버전 |
+|------|-----------|------|
+| Language | Java (Temurin OpenJDK) | 11.0.31 |
+| Framework | Spring Framework (Spring MVC, XML 설정) | 5.3.6 |
+| Persistence | MyBatis / mybatis-spring | 3.5.19 / 2.1.2 |
+| Database | MySQL | 8 |
+| View | JSP + JSTL, jQuery | JSTL 1.2 |
+| Build | Maven (packaging: war) | — |
+| WAS | Apache Tomcat | 9.0 |
+| IDE | Spring Tool Suite 3 (Eclipse 4.21 기반) | 3.9.18 |
+| 형상관리 | Git / GitHub | — |
+| 화면 설계 | Figma | — |
+| ERD | diagrams.net (draw.io) | — |
+| 일정 · 문서 관리 | Notion | — |
 
 ---
 
@@ -92,7 +98,10 @@
 대표 서명을 바꿔도 과거 문서의 결재란이 함께 바뀌지 않도록,
 결재 시점의 서명 ID 를 `approval_line` 에 기록합니다.
 
-#### 조직도
+<details>
+<summary><b>조직도</b> — 결재선이 어떤 계층에서 나오는지</summary>
+
+<br>
 
 <img src="docs/images/11-org-chart.png" alt="조직도" width="720">
 
@@ -103,6 +112,8 @@
 
 휴가신청서는 결재선을 매번 고를 필요가 없어, 이 계층을 타고 올라가 **팀장·본부장을 자동으로 채웁니다.**
 기본기안은 내용에 따라 결재자가 달라져서 자동 추천을 두지 않고 직접 지정하게 했습니다.
+
+</details>
 
 ---
 
@@ -201,13 +212,17 @@ private int writableRound(Long docId) {
 | `vacation_request` | 휴가 문서에 딸리는 신청 정보 (기간 · 일수 · 반차) |
 | `vacation_type` | 휴가 종류. 안내 문구 · 한도 · 연차 차감 여부 · 반차 허용 여부 |
 | `signature` | 전자서명 이미지 |
+  
 
-### ERD
+
+### ERD  
+테이블을 두 가지로 나누었습니다.
+
+- **필수 구현 테이블** — 결재와 휴가가 돌아가는 데 반드시 필요한 테이블입니다. 전부 구현했습니다.
+- **확장 구현 테이블** — 알림 · 위임 · 첨부 · 즐겨찾기. 설계와 테이블까지 만들어 두고 2차 구현으로 미뤄둔 기능입니다 (8장 참고).
 
 ![ERD](docs/images/erd.png)
 
-연보라색은 지금 구현된 테이블, 흰색은 설계만 해둔 확장 테이블입니다.
-(알림 · 위임 · 첨부 · 즐겨찾기 — 8장 참고)
 
 ### 문서 상태 흐름
 
@@ -215,7 +230,7 @@ private int writableRound(Long docId) {
   DRAFT ───── 상신 ─────> PENDING ───── 전원 승인 ─────> APPROVED
     ^                        │
     │                        │
-    └───── 상신취소 ─────────┤
+    └───── 상신취소 ──────────┤
                              │
                              └───── 반려 ─────> REJECTED
                                                     │
@@ -230,13 +245,13 @@ private int writableRound(Long docId) {
 
 ## 7. 실행 방법
 
-**요구 사항** : JDK 11, Maven, MySQL 8, Apache Tomcat 9
+**개발 환경** : JDK 11 (Temurin 11.0.31) · MySQL 8 · Apache Tomcat 9.0 · STS 3.9.18
 
 ### 1) 저장소 받기
 
 ```bash
-git clone <저장소 주소>
-cd eapproval
+git clone https://github.com/Daisy7942/eApproval-spring-mvc.git
+cd eApproval-spring-mvc
 ```
 
 ### 2) 데이터베이스 준비
@@ -247,7 +262,7 @@ CREATE DATABASE eapproval_Backend
   COLLATE utf8mb4_general_ci;
 ```
 
-두 가지 방법이 있습니다. **A 를 권장합니다.**
+데이터베이스를 생성한 뒤, 테이블과 데이터를 채우는 방법은 두 가지입니다. **A 를 권장합니다.**
 
 #### A. 덤프 한 번으로 끝내기 (권장)
 
@@ -263,9 +278,11 @@ mysql -u root -p eapproval_Backend < docs/schema-with-data.sql
 
 데이터 없이 테이블만 만들려면 `docs/schema.sql` 을 대신 실행하세요.
 
-#### B. 초기 데이터 스크립트로 직접 만들기
+<details>
+<summary><b>B. 초기 데이터 스크립트로 직접 만들기</b> (초기 데이터 구성 과정이 궁금할 때)</summary>
 
-초기 데이터를 어떻게 구성했는지 확인하고 싶을 때 사용합니다.
+<br>
+
 `src/main/resources/db/` 의 파일을 **아래 순서대로** 실행합니다.
 
 | 순서 | 파일 | 하는 일 |
@@ -281,6 +298,10 @@ mysql -u root -p eapproval_Backend < docs/schema-with-data.sql
 
 > B 로 만들면 재직자가 있는 부서만 생성되어 조직도 규모가 A 보다 작고, 문서 · 휴가 데이터는 비어 있습니다.
 > 화면을 확인하는 것이 목적이라면 A 를 사용하세요.
+
+</details>
+
+<br>
 
 데이터만 비우고 싶으면 아래 순서로 지웁니다 (외래키 때문에 순서가 중요합니다).
 
@@ -322,13 +343,34 @@ db.password=본인비밀번호
 > `datasource.properties` 는 `.gitignore` 처리되어 커밋되지 않습니다.
 > 저장소에는 계정 정보가 들어가지 않습니다.
 
-### 4) 빌드 후 Tomcat 배포
+### 4) 빌드 및 실행
+
+두 가지 방법이 있습니다.
+
+#### 방법 1 — STS 3 에서 실행 (개발할 때)
+
+1. `File → Import → Maven → Existing Maven Projects` 로 프로젝트를 가져옵니다.
+2. Servers 탭에서 Tomcat 9 서버를 등록합니다.
+3. 프로젝트 우클릭 → `Run As → Run on Server`
+
+처음 한 번만 `Run on Server` 를 쓰고, 그 뒤로 코드를 고쳤을 때는
+Servers 탭에서 서버 우클릭 → `Publish` → `Start` 로 다시 올립니다.
+
+> 코드를 고쳤는데 화면이 그대로라면 `Project → Clean` 을 먼저 실행하세요.
+> 컴파일된 `.class` 가 서버에 반영되지 않아 매퍼 XML 오류처럼 보이는 경우가 있습니다.
+
+#### 방법 2 — war 파일로 배포
 
 ```bash
 mvn clean package
 ```
 
-생성된 war 를 Tomcat 에 배포한 뒤 `http://localhost:8080/eapproval` 로 접속합니다.
+Maven 이 설치된 환경에서 `target/eapproval.war` 가 만들어집니다.
+Tomcat 의 `webapps/` 에 넣고 서버를 시작합니다.
+IDE 없이 돌리거나, 톰캣 연동을 지원하지 않는 IDE 를 쓸 때 사용합니다.
+
+두 방법 모두 `http://localhost:8080/eapproval` 로 접속합니다.
+(Eclipse 가 다른 포트를 쓰도록 설정되어 있다면 그 포트를 사용합니다.)
 
 ### 5) 로그인
 
