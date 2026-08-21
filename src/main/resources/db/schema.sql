@@ -216,6 +216,6 @@ ALTER TABLE document
 
 
   
-ALTER TABLE `signature`
-  ADD COLUMN `is_active`  char(1) NOT NULL DEFAULT 'N' AFTER `image_path`,
-  ADD COLUMN `is_deleted` char(1) NOT NULL DEFAULT 'N' AFTER `is_active`;
+-- signature.is_active / is_deleted 는 위 CREATE TABLE 에 이미 들어 있다.
+-- 예전에 ALTER 로 추가했다가 CREATE 쪽에도 반영해서 중복됐고,
+-- 그대로 두면 Duplicate column 에러로 스크립트가 멈춘다.
