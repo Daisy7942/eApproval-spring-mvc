@@ -14,5 +14,7 @@
 			type="com.eapproval.employee.vo.EapprovalVO" />
 		<typeAlias alias="document"
 			type="com.eapproval.approval.vo.DocumentVO" />
+		<typeAlias alias="signature"
+			type="com.eapproval.employee.vo.SignatureVO" />
 	</typeAliases>
 </configuration>

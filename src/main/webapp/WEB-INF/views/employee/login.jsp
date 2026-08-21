@@ -102,7 +102,7 @@ button:hover {
 
 		<form action="${pageContext.request.contextPath}/login" method="post">
 			<label for="employeeCode">사원번호</label> 
-			<input type="text" id="employeeCode" name="employeeCode" placeholder="예: EMP20240001" autofocus>
+			<input type="text" id="employeeCode" name="employeeCode" placeholder="예: EMP0001" autofocus>
 			<button type="submit">로그인</button>
 		</form>
 	</div>

@@ -3,7 +3,90 @@
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.eapproval.approval.dao.DocumentMapper">
+	<!--resultType 이 짧은건 alias 된거임 config에서 설정해놓음 -->
 
+	<!-- 문서 1건 + 결재선 여러 명을 한 덩어리로 묶는 지도 -->
+	<resultMap id="documentWithLineMap" type="document">
+		<id property="docId" column="doc_id" />
+		<result property="title" column="title" />
+		<result property="documentType" column="document_type" />
+		<result property="status" column="status" />
+		<result property="isUrgent" column="is_urgent" />
+		<result property="dueDate" column="due_date" />
+		<result property="employeeId" column="employee_id" />
+		<result property="createdAt" column="created_at" />
+		<result property="updatedAt" column="updated_at" />
+		<result property="drafterName" column="drafter_name" />
+		<result property="drafterPosition" column="drafter_position" />
+		<result property="drafterTeam" column="drafter_team" />
+		<result property="content" column="content" />
+		<!-- 순차/병렬(상세 화면 판단용) -->
+		<result property="approvalType" column="approval_type" />
+		<result property="draftSignatureId" column="draft_signature_id" />
+
+
+		<!-- 휴가신청서일 때만 딸리는 값 한 줄. 문서 1건에 1개라 association -->
+		<association property="vacation"
+			javaType="com.eapproval.approval.vo.VacationRequestVO">
+			<id property="vacationId" column="vacation_id" />
+			<result property="startDate" column="start_date" />
+			<result property="endDate" column="end_date" />
+			<result property="days" column="days" />
+			<result property="reason" column="reason" />
+			<result property="startHalf" column="start_half" />
+			<result property="endHalf" column="end_half" />
+			<result property="vacationTypeId" column="vacation_type_id" />
+			<result property="typeName" column="type_name" />
+			<result property="deductBalance" column="deduct_balance" />
+		</association>
+
+
+		<!-- 이 문서에 딸린 결재자들. doc_id 가 같은 줄들이 여기 List 로 쌓인다(최신순으로 가져오기) -->
+		<collection property="approvalLine"
+			ofType="com.eapproval.approval.vo.ApprovalLineVO">
+			<id property="approvalLineId" column="approval_line_id" />
+			<result property="approverId" column="approver_id" />
+			<result property="approvalOrder" column="approval_order" />
+			<result property="round" column="round" />
+			<result property="approvalStatus" column="approval_status" />
+			<result property="name" column="name" />
+			<result property="position" column="position" />
+			<result property="teamName" column="team_name" />
+			<result property="comment" column="comment" />
+			<result property="approvedAt" column="approved_at" />
+			<result property="signatureId" column="signature_id" />
+
+		</collection>
+
+
+	</resultMap>
+
+	<!-- 결재선 조회 시 최신 회차(round) 조건 조각 (문서: d, 결재선: al) -->
+	<!-- 과거 회차의 결재 이력은 selectApprovalHistory에서 별도 조회 -->
+	<sql id="latestRound">
+		al.round = (SELECT MAX(r.round) FROM approval_line r WHERE
+		r.doc_id = d.doc_id)
+	</sql>
+
+	<!-- 결재자/조회용 화면 노출 회차(round) 조건 조각 -->
+	<!-- PENDING / APPROVED: 작성/진행 중인 최신 회차 노출 -->
+	<!-- DRAFT / REJECTED : 최신 결재 이력 회차 노출 (미상신 작성 중 결재선 노출 및 이력 왜곡 방지) -->
+	<!-- 결재 미진행 문서 : 결재 이력이 없는 경우 최신 회차 적용 (COALESCE) -->
+	<!-- 작성자 편집 화면(selectDraft)은 작성 중인 결재선 확인을 위해 latestRound 사용 -->
+	<sql id="visibleRound">
+		al.round = COALESCE(
+		(SELECT MAX(r.round) FROM approval_line
+		r
+		WHERE r.doc_id = d.doc_id
+		AND (d.status IN ('PENDING', 'APPROVED')
+		OR
+		r.approval_status &lt;&gt; 'PENDING')),
+		(SELECT MAX(r2.round) FROM
+		approval_line r2 WHERE r2.doc_id = d.doc_id))
+	</sql>
+
+
+	<!-- 신규 기안 문서 등록 -->
 	<insert id="insertDocument" parameterType="document"
 		useGeneratedKeys="true" keyProperty="docId">
 		INSERT INTO document (
@@ -13,7 +96,9 @@
 		employee_id,
 		approval_type,
 		status,
-		is_urgent
+		is_urgent,
+		due_date,
+		draft_signature_id, signed_at
 		) VALUES (
 		#{documentType},
 		#{title},
@@ -21,49 +106,97 @@
 		#{employeeId},
 		#{approvalType},
 		#{status},
-		#{isUrgent}
+		#{isUrgent},
+		#{dueDate},#{draftSignatureId}, NOW()
 		)
 	</insert>
 
-	<!--리스트 조회 // 아래는 resultType 에 "document" 쓰면 되는데 그게 뭘 의미하는건지 적기위해서 이번에는 
-		풀어서 씀 alias 된거임 config에서 설정해놓음 -->
-	<select id="selectDraftList" parameterType="long"
-		resultType="com.eapproval.approval.vo.DocumentVO">
-		SELECT *
-		FROM
-		document
+
+	<!-- 임시저장함 조회 조건. 목록·건수 아래 두 쿼리가 같이 쓴다 -->
+	<sql id="draftWhere">
 		WHERE employee_id = #{employeeId}
-		AND
-		status = 'DRAFT'
-		ORDER BY
-		doc_id DESC
+		AND status = 'DRAFT'
+		<if test="p.keyword != null">
+			AND title LIKE CONCAT('%', #{p.keyword}, '%')
+		</if>
+		<if test="p.docType != null">
+			AND document_type = #{p.docType}
+		</if>
+	</sql>
+
+	<!--임시저장 리스트 조회 // offset 몇줄 건너뛰기라는 의미 -->
+	<select id="selectDraftList"
+		resultType="com.eapproval.approval.vo.DocumentVO">
+		SELECT * FROM document
+		<include refid="draftWhere" />
+		ORDER BY doc_id DESC
+		LIMIT #{p.size} OFFSET #{p.offset}
+	</select>
+
+
+	<!-- 임시저장 전체 건수 (페이지 수 계산용) -->
+	<select id="countDrafts" resultType="int">
+		SELECT COUNT(*) FROM document
+		<include refid="draftWhere" />
 	</select>
 
 	<!-- 임시저장 1건 조회 -->
-	<select id="selectDraft"
-		resultType="com.eapproval.approval.vo.DocumentVO">
-		SELECT *
-		FROM document
-		WHERE employee_id = #{employeeId}
+	<select id="selectDraft" resultMap="documentWithLineMap">
+		SELECT d.*,
+		al.approval_line_id, al.approver_id, al.approval_order,
+		al.round,
+		al.approval_status,
+		e.name, e.position, t.team_name,
+		vr.vacation_id,
+		vr.vacation_type_id, vr.start_date, vr.end_date,
+		vr.days, vr.reason,
+		vr.start_half, vr.end_half,
+		vt.type_name,
+		vt.deduct_balance
+		FROM
+		document d
+		LEFT JOIN approval_line al ON d.doc_id
+		= al.doc_id
 		AND
-		status = 'DRAFT'
-		and doc_id = #{docId}
+		<include refid="latestRound" />
+		LEFT JOIN
+		employee e ON al.approver_id = e.employee_id
+		LEFT JOIN team t
+		ON
+		e.team_id = t.team_id
+		LEFT JOIN vacation_request vr ON d.doc_id =
+		vr.doc_id
+		LEFT JOIN vacation_type vt ON vr.vacation_type_id =
+		vt.vacation_type_id
+		WHERE d.employee_id = #{employeeId} AND d.doc_id =
+		#{docId}
+		ORDER BY al.approval_order
 	</select>
-	
-	<!-- 수정 -->
+
+	<!-- 임시저장 및 반려 문서 내용 수정 -->
 	<update id="updateDraft" parameterType="document">
 		UPDATE document
 		SET title
-		= #{title} ,
+		=
+		#{title} ,
 		content = #{content},
-		updated_at = NOW(),
+		updated_at =
+		NOW(),
 		is_urgent
-		=#{isUrgent}
-		WHERE doc_id = #{docId} AND employee_id = #{employeeId}
-		AND status =
-		'DRAFT'
+		=#{isUrgent},
+		due_date = #{dueDate},
+		approval_type =
+		#{approvalType}
+		WHERE doc_id = #{docId}
+		<!-- 본인 소유 문서만 수정 가능 -->
+		AND employee_id = #{employeeId}
+		<!-- 임시저장(DRAFT) 문서 및 반려 이력 보존을 위한 반려(REJECTED) 상태 문서 수정 허용 -->
+		AND
+		status IN ('DRAFT', 'REJECTED')
 	</update>
-		<!-- 삭제 -->
+
+
+	<!-- 임시저장 문서 일괄 삭제 -->
 	<delete id="deleteDrafts">
 		delete from document
 		WHERE doc_id IN
@@ -71,29 +204,605 @@
 			close=")">
 			#{id}
 		</foreach>
+		<!-- 로그인한 본인 작성 문서만 삭제 가능 -->
+		AND employee_id = #{employeeId}
+		<!-- 임시저장(DRAFT) 상태의 문서만 삭제 대상 -->
+		AND status = 'DRAFT'
+		<!-- 승인/반려 이력이 있는 문서는 데이터 보존을 위해 삭제 불가 (결재 진행 이력 검증) -->
+		AND NOT EXISTS (SELECT 1 FROM approval_line al
+		WHERE al.doc_id =
+		document.doc_id
+		AND al.approval_status IN ('APPROVED', 'REJECTED'))
+	</delete>
+
+	<!-- 삭제 가능한 임시저장(DRAFT) 문서 ID 목록 조각 -->
+	<!-- (본인 소유, DRAFT 상태, 결재 진행 이력이 없는 문서 검증) -->
+	<sql id="deletableDrafts">
+		SELECT doc_id FROM document d
+		WHERE doc_id IN
+		<foreach collection="docIds" item="id" open="(" separator=","
+			close=")">
+			#{id}
+		</foreach>
 		AND employee_id = #{employeeId}
 		AND status = 'DRAFT'
+		AND NOT EXISTS
+		(SELECT 1 FROM approval_line al
+		WHERE al.doc_id = d.doc_id
+		AND
+		al.approval_status IN ('APPROVED', 'REJECTED'))
+	</sql>
+
+	<!-- 임시저장 문서 삭제 시 관련 결재선 전체 삭제 (FK 제약조건 방지) -->
+	<delete id="deleteDraftApprovalLines">
+		DELETE FROM approval_line
+		WHERE doc_id IN (
+		<include refid="deletableDrafts" />
+		)
+	</delete>
+
+	<!-- 임시저장 문서에 딸린 휴가 정보 삭제. 휴가 신청서를 임시저장하면 딸린다 -->
+	<delete id="deleteDraftVacations">
+		DELETE FROM vacation_request
+		WHERE doc_id IN (
+		<include refid="deletableDrafts" />
+		)
+	</delete>
+
+	<!-- 임시저장 결재선 삭제. 지금 쓰고 있는 차수만 지운다. 차수를 안 걸면 반려 때 찍힌 지난 결재까지 같이 날아가서 이력이 
+		사라지기 때문 -->
+	<delete id="deleteApprovalLines">
+		DELETE FROM approval_line
+		WHERE doc_id = #{docId}
+		AND
+		round = #{round}
+		AND
+		doc_id IN (
+		SELECT doc_id FROM document
+		WHERE doc_id
+		= #{docId} AND
+		employee_id = #{employeeId}
+		)
+	</delete>
+
+	<!-- 이 문서 결재선의 마지막 차수. 결재선이 아직 없으면 null 이 온다 -->
+	<select id="selectMaxRound" resultType="java.lang.Integer">
+		SELECT MAX(round) FROM
+		approval_line WHERE doc_id = #{docId}
+	</select>
+
+	<!-- 그 차수에서 누군가 이미 손을 댄 줄 수 (승인·반려·취소). 0 이면 아직 아무도 안 본 차수라 덮어쓰기 -->
+	<select id="countDoneLines" resultType="int">
+		SELECT COUNT(*) FROM
+		approval_line
+		WHERE doc_id = #{docId}
+		AND round = #{round}
+		AND
+		approval_status != 'PENDING'
+	</select>
+
+	<!-- 임시저장 휴가정보 삭제 -->
+	<delete id="deleteVacationRequest">
+		DELETE FROM vacation_request
+		WHERE doc_id = #{docId}
+		AND doc_id IN (
+		SELECT doc_id FROM document
+		WHERE doc_id = #{docId} AND
+		employee_id = #{employeeId}
+		)
 	</delete>
 
 	<!-- 결재자 수만큼 insert (여러건의 경우) -->
 	<insert id="insertApprovalLines">
 		INSERT INTO approval_line
-		(doc_id, approver_id, approval_order,
+		(doc_id, approver_id, approval_order, round,
 		approval_type, approval_status)
 		VALUES
 		<foreach collection="lines" item="line" separator=",">
 			(#{line.docId}, #{line.approverId}, #{line.approvalOrder},
+			#{line.round},
 			#{line.approvalType}, #{line.approvalStatus})
 		</foreach>
 	</insert>
-	
-	<!-- 상신 -->
+
+	<!-- 상신 (최초 상신 및 반려 문서 재상신) -->
 	<update id="submitDocument" parameterType="document">
 		UPDATE document
-		SET status = 'PENDING', updated_at = NOW()
-		WHERE doc_id = #{docId} AND employee_id = #{employeeId} AND status =
-		'DRAFT'
+		SET
+		status = 'PENDING', updated_at = NOW(),
+		title =
+		#{title}, content = #{content},
+		draft_signature_id =
+		#{draftSignatureId}, signed_at = NOW(),
+		is_urgent = #{isUrgent},
+		due_date = #{dueDate},
+		approval_type = #{approvalType}
+		WHERE doc_id =
+		#{docId} AND
+		employee_id = #{employeeId}
+		<!-- status 조건: DRAFT(신규 상신) 또는 REJECTED(재상신) 상태의 본인 문서만 처리 -->
+		AND status IN ('DRAFT', 'REJECTED')
 	</update>
+
+
+	<!-- 상신 취소 (결재 진행 전 DRAFT 상태로 원복) : 본인 작성 문서, 현재 PENDING 상태, 하위 결재선에 결재 
+		처리(승인/반려) 이력이 없는 경우 -->
+	<update id="cancelSubmission">
+		UPDATE document
+		SET status = 'DRAFT', updated_at =
+		NOW()
+		WHERE doc_id = #{docId}
+		AND employee_id = #{employeeId}
+		AND status
+		= 'PENDING'
+		AND NOT EXISTS (SELECT 1 FROM approval_line al
+		WHERE
+		al.doc_id = #{docId}
+		AND al.approval_status != 'PENDING')
+	</update>
+
+
+
+	<!-- 문서 결재 이력 조회 (전체 차수의 승인/반려 건만 조회) -->
+	<select id="selectApprovalHistory"
+		resultType="com.eapproval.approval.vo.ApprovalLineVO">
+		SELECT al.approval_line_id, al.approver_id,
+		al.approval_order, al.round,
+		al.approval_status, al.comment,
+		al.approved_at,
+		e.name, e.position, t.team_name
+		FROM approval_line al
+		JOIN employee e ON al.approver_id = e.employee_id
+		LEFT JOIN team t ON
+		e.team_id = t.team_id
+		WHERE al.doc_id = #{docId}
+		AND al.approval_status
+		IN ('APPROVED', 'REJECTED')
+		ORDER BY al.round, al.approval_order
+	</select>
+
+
+	<!-- 상신함에 뜰 문서 조건 : 내가 쓴 문서 중 임시저장이 아닌 것 -->
+	<sql id="submittedWhere">
+		WHERE employee_id = #{employeeId}
+		AND status != 'DRAFT'
+		<if test="p.keyword != null">
+			AND title LIKE CONCAT('%', #{p.keyword}, '%')
+		</if>
+		<if test="p.docType != null">
+			AND document_type = #{p.docType}
+		</if>
+		<if test="p.status != null">
+			AND status = #{p.status}
+		</if>
+	</sql>
+
+	<!--상신함 조회 -->
+	<select id="selectSubmittedList" resultMap="documentWithLineMap">
+		SELECT d.doc_id, d.title, d.document_type, d.status,
+		d.is_urgent,d.due_date,
+		d.approval_type,
+		d.employee_id, d.created_at,
+		d.updated_at,
+		de.name AS
+		drafter_name, de.position AS drafter_position,
+		dt.team_name AS
+		drafter_team,
+		al.approval_line_id, al.approver_id,
+		al.approval_order, al.round,
+		al.approval_status,
+		e.name, e.position,
+		t.team_name
+		FROM document d
+		<!-- 이 쪽에 보여줄 문서번호만 먼저 고른다. 결재선을 붙이기 전이라 여기서는 문서 1건이 1줄이라 LIMIT 이 곧 문서 
+			건수가 된다. -->
+		JOIN (SELECT doc_id FROM document
+		<include refid="submittedWhere" />
+		ORDER BY doc_id DESC
+		<if test="!p.all">
+			LIMIT #{p.size} OFFSET #{p.offset}
+		</if>
+		) p ON p.doc_id = d.doc_id
+		JOIN employee de ON d.employee_id =
+		de.employee_id
+		LEFT JOIN team dt ON de.team_id = dt.team_id
+		JOIN
+		approval_line al ON d.doc_id = al.doc_id
+		AND
+		<include refid="visibleRound" />
+		JOIN employee e ON
+		al.approver_id = e.employee_id
+		LEFT JOIN team t ON
+		e.team_id =
+		t.team_id
+		ORDER BY d.doc_id DESC, al.approval_order
+	</select>
+
+	<!-- 상신함 전체 건수 -->
+	<select id="countSubmitted" resultType="int">
+		SELECT COUNT(*) FROM document
+		<include refid="submittedWhere" />
+	</select>
+
+
+
+
+	<!-- 결재 대기함에 뜰 문서 조건 : 내 차례가 온 문서. 내 결재선이 PENDING 이고, 나보다 앞 순서가 모두 APPROVED 
+		인 것 -->
+	<sql id="pendingDocs">
+		SELECT DISTINCT al2.doc_id
+		FROM approval_line al2
+		JOIN document pd ON
+		pd.doc_id = al2.doc_id
+		JOIN employee pe ON pd.employee_id =
+		pe.employee_id
+		WHERE al2.approver_id = #{employeeId}
+		AND
+		al2.approval_status = 'PENDING'
+		AND pd.status = 'PENDING'
+		AND
+		(pd.approval_type = 'PARALLEL'
+		<!-- 동일 차수의 이전 순번 결재 미완료(APPROVED 외) 존재 여부 체크 : 차수를 안 걸면 반려됐던 지난 차수의 REJECTED·CANCELED 
+			줄이 앞사람으로 잡혀서 재상신 문서가 영영 대기함에 안 뜬다 -->
+		OR NOT EXISTS (SELECT 1 FROM
+		approval_line prev
+		WHERE prev.doc_id =
+		al2.doc_id
+		AND prev.round = al2.round
+		AND
+		prev.approval_order &lt;
+		al2.approval_order
+		AND prev.approval_status !=
+		'APPROVED'))
+		<!-- 검색 조건: 제목 또는 기안자명 -->
+		<if test="p.keyword != null">
+			AND (pd.title LIKE CONCAT('%', #{p.keyword}, '%')
+			OR
+			pe.name LIKE CONCAT('%', #{p.keyword}, '%'))
+		</if>
+		<if test="p.docType != null">
+			AND pd.document_type = #{p.docType}
+		</if>
+	</sql>
+
+	<!--결재 대기함 조회 -->
+	<select id="selectPendingList" resultMap="documentWithLineMap">
+		SELECT d.doc_id, d.title, d.document_type, d.status,
+		d.is_urgent,d.due_date,
+		d.approval_type,
+		d.employee_id, d.created_at,
+		d.updated_at,
+		de.name AS
+		drafter_name, de.position AS drafter_position,
+		dt.team_name AS
+		drafter_team,
+		al.approval_line_id, al.approver_id,
+		al.approval_order, al.round,
+		al.approval_status,
+		e.name, e.position,
+		t.team_name
+		FROM document d
+		<!-- 이 쪽에 보여줄 문서번호만 먼저 고르기 -->
+		JOIN (SELECT doc_id FROM (
+		<include refid="pendingDocs" />
+		) pick
+		ORDER BY doc_id DESC
+		<if test="!p.all">
+			LIMIT #{p.size} OFFSET #{p.offset}
+		</if>
+		) p ON p.doc_id = d.doc_id
+		JOIN employee de ON d.employee_id =
+		de.employee_id
+		LEFT JOIN team dt ON de.team_id = dt.team_id
+		JOIN
+		approval_line al ON d.doc_id = al.doc_id
+		AND
+		<include refid="visibleRound" />
+		JOIN employee e ON
+		al.approver_id = e.employee_id
+		LEFT JOIN team t ON
+		e.team_id =
+		t.team_id
+		ORDER BY d.doc_id DESC, al.approval_order
+	</select>
+
+	<!-- 결재 대기함 전체 건수 -->
+	<select id="countPending" resultType="int">
+		SELECT COUNT(*) FROM (
+		<include refid="pendingDocs" />
+		) c
+	</select>
+
+
+	<!-- 완료 문서함 : 내 차례가 끝난 문서 -->
+	<sql id="completedDocs">
+		SELECT DISTINCT al2.doc_id
+		FROM approval_line al2
+		JOIN document cd ON
+		cd.doc_id = al2.doc_id
+		JOIN employee ce ON cd.employee_id =
+		ce.employee_id
+		WHERE al2.approver_id = #{employeeId}
+		AND
+		al2.approval_status != 'PENDING'
+		<if test="p.keyword != null">
+			AND (cd.title LIKE CONCAT('%', #{p.keyword}, '%')
+			OR
+			ce.name LIKE CONCAT('%', #{p.keyword}, '%'))
+		</if>
+		<if test="p.docType != null">
+			AND cd.document_type = #{p.docType}
+		</if>
+		<if test="p.status != null">
+			AND cd.status = #{p.status}
+		</if>
+	</sql>
+
+	<!--완료함 조회 -->
+	<select id="selectCompletedList" resultMap="documentWithLineMap">
+		SELECT d.doc_id, d.title, d.document_type, d.status,
+		d.is_urgent,d.due_date,
+		d.approval_type,
+		d.employee_id, d.created_at,
+		d.updated_at,
+		de.name AS
+		drafter_name, de.position AS drafter_position,
+		dt.team_name AS
+		drafter_team,
+		al.approval_line_id, al.approver_id,
+		al.approval_order, al.round,
+		al.approval_status,
+		e.name, e.position,
+		t.team_name
+		FROM document d
+		JOIN
+		(SELECT doc_id FROM (
+		<include refid="completedDocs" />
+		) pick
+		ORDER BY doc_id DESC
+		<if test="!p.all">
+			LIMIT #{p.size} OFFSET #{p.offset}
+		</if>
+		) p ON p.doc_id = d.doc_id
+		JOIN employee de ON d.employee_id =
+		de.employee_id
+		LEFT JOIN team dt ON de.team_id = dt.team_id
+		JOIN
+		approval_line al ON d.doc_id = al.doc_id
+		AND
+		<include refid="visibleRound" />
+		JOIN employee e ON
+		al.approver_id = e.employee_id
+		LEFT JOIN team t ON
+		e.team_id =
+		t.team_id
+		ORDER BY d.doc_id DESC, al.approval_order
+	</select>
+
+	<!-- 완료 문서함 전체 건수 -->
+	<select id="countCompleted" resultType="int">
+		SELECT COUNT(*) FROM (
+		<include refid="completedDocs" />
+		) c
+	</select>
+
+
+	<!-- 문서 상세 1건 조회 -->
+	<select id="selectDocumentDetail"
+		resultMap="documentWithLineMap">
+		SELECT d.doc_id, d.title, d.document_type, d.status,d.due_date,
+		d.is_urgent, d.approval_type,
+		d.employee_id, d.created_at,
+		d.updated_at,
+		d.draft_signature_id,
+		al.signature_id,
+		de.name AS
+		drafter_name, de.position AS drafter_position,
+		dt.team_name
+		AS
+		drafter_team,
+		al.approval_line_id, al.approver_id,
+		al.approval_order,
+		al.round,
+		al.approval_status,
+		e.name, e.position,
+		t.team_name,d.content,
+		al.comment,
+		al.approved_at,
+		vr.vacation_id,
+		vr.vacation_type_id,
+		vr.start_date, vr.end_date,
+		vr.days, vr.reason,
+		vr.start_half,
+		vr.end_half, vt.type_name,vt.deduct_balance
+		FROM document
+		d
+		JOIN
+		employee
+		de ON
+		d.employee_id =
+		de.employee_id
+		LEFT JOIN
+		team dt ON
+		de.team_id =
+		dt.team_id
+		JOIN approval_line al ON d.doc_id =
+		al.doc_id
+		AND
+		<include refid="visibleRound" />
+		JOIN employee e
+		ON al.approver_id = e.employee_id
+		LEFT JOIN
+		team t ON
+		e.team_id =
+		t.team_id
+		LEFT JOIN vacation_request vr ON
+		d.doc_id =
+		vr.doc_id
+		LEFT JOIN
+		vacation_type vt ON vr.vacation_type_id
+		=
+		vt.vacation_type_id
+		WHERE
+		d.doc_id = #{docId}
+		ORDER BY
+		al.approval_order
+	</select>
+
+	<!-- 내 결재선 줄 상태 바꾸기(승인·반려 공용) -->
+	<update id="updateApprovalStatus">
+		UPDATE approval_line
+		SET approval_status =
+		#{approvalStatus},
+		signature_id = #{signatureId},
+		comment = #{comment},
+		approved_at = NOW()
+		WHERE doc_id
+		= #{docId}
+		AND approver_id =
+		#{approverId}
+		AND approval_status =
+		'PENDING'
+		AND doc_id IN (SELECT
+		doc_id FROM document
+		WHERE doc_id =
+		#{docId} AND status = 'PENDING')
+	</update>
+
+	<!-- PENDING 개수 세기 - 이 숫자로 최종상태 반영을 위함 0일때 승인으로 처리. 전 차수의 잔여 PENDING으로 인한 
+		최종 승인 누락을 막기 위해 현재(최신) 차수만 집계 -->
+	<select id="countPendingLines" resultType="int">
+		SELECT COUNT(*)
+		FROM
+		approval_line
+		WHERE doc_id = #{docId}
+		AND approval_status = 'PENDING'
+		AND round = (SELECT MAX(r.round) FROM approval_line r WHERE
+		r.doc_id =
+		#{docId})
+	</select>
+
+	<!-- 반려된 문서의 남은 대기 결재선 취소. 이번 차수만 -->
+	<update id="cancelRemainingLines">
+		UPDATE approval_line
+		SET approval_status = 'CANCELED'
+		WHERE doc_id = #{docId}
+		AND approval_status = 'PENDING'
+		AND round =
+		(SELECT MAX(r.round) FROM (SELECT round, doc_id FROM
+		approval_line) r
+		WHERE r.doc_id = #{docId})
+	</update>
+
+	<!-- 문서 전체 상태 바꾸기(승인·반려 공용) -->
+	<update id="updateDocumentStatus">
+		UPDATE document
+		SET status = #{status},
+		updated_at =
+		NOW()
+		WHERE doc_id = #{docId}
+	</update>
+
+	<!-- vacation 종류 칩 조회 -->
+	<select id="selectVacationTypes"
+		resultType="com.eapproval.approval.vo.VacationTypeVO">
+		SELECT *
+		FROM
+		vacation_type
+	</select>
+	<!-- 휴가정보 저장 -->
+	<insert id="insertVacationRequest"
+		parameterType="com.eapproval.approval.vo.VacationRequestVO">
+		INSERT INTO
+		vacation_request (
+		doc_id, employee_id,
+		vacation_type_id,start_date
+		,end_date,start_half
+		,end_half, days,reason
+		) VALUES (
+		#{docId},
+		#{employeeId},
+		#{vacationTypeId},
+		#{startDate},
+		#{endDate},
+		#{startHalf},
+		#{endHalf},
+		#{days},
+		#{reason}
+		)
+	</insert>
+
+
+	<!-- 잔여 연차 차감 -->
+	<update id="deductLeave">
+		UPDATE employee
+		SET remain_leave = remain_leave -
+		#{days}
+		WHERE employee_id = #{employeeId}
+	</update>
+
+
+	<!-- 연차 요약 : 승인=사용, 대기=예정. 연차 종류만(deduct_balance=1) -->
+	<select id="selectLeaveSummary" parameterType="long"
+		resultType="com.eapproval.approval.vo.LeaveSummaryVO">
+		SELECT
+		SUM(CASE WHEN d.status = 'APPROVED' THEN vr.days ELSE
+		0 END) AS usedDays,
+		SUM(CASE WHEN d.status = 'PENDING' THEN vr.days
+		ELSE 0 END) AS
+		pendingDays
+		FROM vacation_request vr
+		JOIN document d ON
+		d.doc_id = vr.doc_id
+		JOIN vacation_type vt ON vt.vacation_type_id =
+		vr.vacation_type_id
+		WHERE vr.employee_id = #{employeeId} AND
+		vt.deduct_balance = 1
+
+	</select>
+
+
+	<!-- 기간이 겹치는 휴가 건수 (중복 신청 방지) -->
+	<select id="countOverlapVacation" resultType="int">
+		SELECT COUNT(*) FROM vacation_request vr JOIN document d ON d.doc_id =
+		vr.doc_id
+		WHERE vr.employee_id = #{employeeId} AND
+		d.status IN
+		('PENDING','APPROVED')
+		AND vr.start_date &lt;= #{endDate}
+		AND vr.end_date >= #{startDate}
+		<if test="docId != null"> AND vr.doc_id != #{docId} </if>
+	</select>
+
+
+	<!-- 내 휴가 신청 내역 목록 조회 쿼리	-->
+	<select id="selectMyLeaveList" parameterType="long"
+		resultType="com.eapproval.approval.vo.VacationRequestVO">
+		SELECT
+		vr.*,
+		vt.type_name,
+		vt.deduct_balance,
+		d.status,
+		DATE_FORMAT(vr.created_at, '%Y-%m-%d') AS created_at
+		FROM
+		vacation_request vr
+		JOIN document d ON d.doc_id = vr.doc_id
+		JOIN
+		vacation_type vt ON vt.vacation_type_id = vr.vacation_type_id
+		WHERE
+		vr.employee_id = #{employeeId}
+		ORDER BY vr.vacation_id DESC
+	</select>
+
+	<!-- 휴가 유형 ID(vacationTypeId)로 휴가 유형 정보를 1건 조회하는 쿼리 -->
+	<select id="selectVacationType" parameterType="string"
+		resultType="com.eapproval.approval.vo.VacationTypeVO">
+		SELECT * FROM vacation_type WHERE vacation_type_id =
+		#{vacationTypeId}
+	</select>
+
+
+
 
 
 </mapper>

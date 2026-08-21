@@ -7,14 +7,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>eApproval - 임시 저장함</title>
+<title>eApproval - 결재 대기 문서</title>
 <link rel="stylesheet"
 	href="${pageContext.request.contextPath}/resources/css/common.css">
 <style>
 /* ===== 이 화면에서만 쓰는 스타일 =====
-   레이아웃(헤더/사이드바/메인)은 common.css 에 있다. */
-
-/* 결재함 3종(상신·대기·완료)과 같은 모양으로 맞췄다 */
+   목록 전체를 흰 카드 하나로 묶었다. 카드 머리에 필터·검색·도구가 있고
+   그 아래가 표다. 테두리를 카드 하나로 통일해서 요소들이 따로 놀지 않게 했다. */
 
 /* 제목 줄 : 왼쪽 제목, 오른쪽 건수 */
 .title-row {
@@ -37,11 +36,13 @@
 	color: #8a93a3;
 }
 
+/* ===== 카드 : 바탕은 흰색, 테두리는 최소한만 ===== */
 .list-card {
 	background: #fff;
 }
 
-/* 표 위 도구 줄. 바깥 본문 배경(--bg)과 같은 색이라 흰 표만 도드라진다 */
+/* 표 위 도구 줄. 바깥 본문 배경(common.css 의 --bg)과 같은 색이라
+   흰 표만 판처럼 도드라진다 */
 .card-head {
 	display: flex;
 	align-items: center;
@@ -57,7 +58,7 @@
 	gap: 14px;
 }
 
-/* 검색 - 도구 줄 왼쪽. 상신 문서함과 같은 모양으로 맞췄다 */
+/* 검색 - 도구 줄 왼쪽. 연회색으로 채워 판 위에서도 눈에 띄게 */
 .search-box {
 	flex: 1;
 	min-width: 0;
@@ -113,12 +114,6 @@
 
 .search-box .clear:hover {
 	color: #2b3444;
-}
-
-.divider {
-	width: 1px;
-	height: 14px;
-	background: #dbe1ea;
 }
 
 /* ===== 머리글 필터 =====
@@ -217,9 +212,78 @@
 	color: #2f6bff;
 }
 
-/* 표 아래 페이지 번호 줄.
-   칸마다 테두리를 두르면 표 밑에 또 표가 생긴 것처럼 시끄러워서,
-   평소엔 글자만 두고 지금 쪽과 마우스 올린 칸에만 바탕을 깐다 */
+/* ===== 머리글 도움말 =====
+   결재선 동그라미의 색이 뭘 뜻하는지는 하나하나 마우스를 올려 봐야 알 수 있었다.
+   머리글 옆 물음표에 마우스를 올리면 한 번에 읽을 수 있게 한다 */
+.help {
+	position: relative;
+	cursor: help;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	margin-left: 4px;
+	border: 1px solid #c3c9d4;
+	border-radius: 50%;
+	font-size: 9.5px;
+	font-weight: 600;
+	color: #98a3b5;
+	vertical-align: middle;
+}
+
+.help:hover {
+	border-color: #2f6bff;
+	color: #2f6bff;
+}
+
+/* 말풍선. 표 위에 뜨는 안내라 어두우면 화면이 무거워져서 흰 카드로 띄운다 */
+.help::after {
+	content: attr(data-tip);
+	position: absolute;
+	top: calc(100% + 9px);
+	right: -6px;
+	background: #fff;
+	color: #3d4756;
+	border: 1px solid #dfe4ec;
+	box-shadow: 0 6px 18px rgba(16, 24, 40, .14);
+	font-size: 11.5px;
+	font-weight: 400;
+	line-height: 1.7;
+	text-align: left;
+	padding: 10px 13px;
+	border-radius: 8px;
+	/* 줄바꿈(&#10;)을 그대로 살린다. 안 그러면 한 줄로 뭉개진다 */
+	white-space: pre;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .12s;
+	pointer-events: none;
+	z-index: 40;
+}
+
+/* 말풍선 꼬리 */
+.help::before {
+	content: "";
+	position: absolute;
+	top: calc(100% + 4px);
+	right: 0px;
+	border: 5px solid transparent;
+	border-bottom-color: #fff;
+	filter: drop-shadow(0 -1px 0 #dfe4ec);
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .12s;
+	pointer-events: none;
+	z-index: 41;
+}
+
+.help:hover::after, .help:hover::before {
+	opacity: 1;
+	visibility: visible;
+}
+
+/* 표 아래 페이지 번호 줄. 문서함 네 곳이 같은 모양이다 */
 .paging {
 	display: flex;
 	justify-content: center;
@@ -254,7 +318,6 @@
 	font-weight: 600;
 }
 
-/* 이전·다음 화살표. 번호와 살짝 떼어 둔다 */
 .paging .arrow {
 	font-size: 16px;
 	line-height: 1;
@@ -271,44 +334,26 @@
 	cursor: default;
 }
 
+/* 카드 머리 2줄 : 도구 */
 .act {
-	display: inline-flex;
-	align-items: center;
-	gap: 7px;
-	background: none;
-	border: none;
-	padding: 0;
-	font-size: 13.5px;
-	color: #3d4756;
-	cursor: pointer;
-}
-
-.act:hover {
-	color: #2f6bff;
-}
-
-.act .ico {
-	font-size: 15px;
-	color: #8a93a3;
-}
-
-.act:hover .ico {
-	color: #2f6bff;
-}
-
-.opt {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
 	background: none;
 	border: none;
+	padding: 0;
 	font-size: 13px;
 	color: #3d4756;
 	cursor: pointer;
 }
 
-.opt:hover {
+.act:hover, .act:hover .ico {
 	color: #2f6bff;
+}
+
+.act .ico {
+	font-size: 14px;
+	color: #8a93a3;
 }
 
 .card-head select {
@@ -320,19 +365,31 @@
 	background: #fff;
 }
 
-/* 표 */
+.divider {
+	width: 1px;
+	height: 13px;
+	background: #dfe4ec;
+}
+
+/* ===== 표 =====
+   표는 화면 폭을 그대로 쓴다. 감싸는 테두리도, 양옆 색 여백도 두지 않는다 */
+.table-wrap {
+	background: transparent;
+}
+
 .doc-table {
 	width: 100%;
 	border-collapse: collapse;
-	background: #fff;
 }
 
+/* 상신함·완료함과 같은 머리글 : 흰 바탕에 위아래 회색선 */
 .doc-table thead th {
 	text-align: left;
 	font-size: 13px;
 	color: #5b6576;
 	font-weight: 500;
 	padding: 12px 14px;
+	background: #fff;
 	border-top: 1px solid #d9dee7;
 	border-bottom: 1px solid #d9dee7;
 	white-space: nowrap;
@@ -355,20 +412,36 @@
 }
 
 .col-check {
-	width: 44px;
+	width: 42px;
 	text-align: center;
 }
 
-.col-check input {
-	width: 15px;
-	height: 15px;
-	cursor: pointer;
-	accent-color: #2b3444;
+/* 머리글·본문 둘 다 가운데 정렬해야 ⚠ 가 칸 한가운데 온다 */
+.doc-table th.col-urgent, .doc-table td.col-urgent {
+	width: 80px;
+	text-align: center;
+}
+
+td.form-name {
+	color: #2f6bff;
+	white-space: nowrap;
+}
+
+td.title a {
+	color: #2b3444;
+	text-decoration: none;
+	font-weight: 500;
+}
+
+td.title a:hover {
+	color: #2f6bff;
+	text-decoration: underline;
 }
 
 td.date {
-	color: #3d4756;
+	color: #5b6576;
 	white-space: nowrap;
+	font-size: 13px;
 }
 
 /* 결재 마감일. 기안일 밑에 한 줄 더 붙는다.
@@ -398,65 +471,140 @@ td.date {
 	color: #d99a00;
 }
 
-td.form-name {
-	color: #2f6bff;
-	white-space: nowrap;
-}
-
-td.title a {
-	color: #2b3444;
-	text-decoration: none;
-}
-
-td.title a:hover {
-	color: #2f6bff;
-	text-decoration: underline;
-}
-
-/* 제목 없이 임시저장한 문서 */
-.no-title {
-	color: #9aa3b0;
-	font-style: italic;
-}
-
-/* 긴급 칸 : 머리글과 ⚠ 를 가운데로.
-   앞에 .doc-table 을 붙인 건 위의 thead th / tbody td 규칙보다 세게 만들기 위해서다 */
-.doc-table .col-urgent {
-	width: 80px;
+td.attach {
+	color: #8a93a3;
+	font-size: 12px;
 	text-align: center;
 }
 
-/* 긴급 표시 */
 .urgent-mark {
 	color: #e5484d;
 	font-weight: bold;
 }
 
-/* 결재상태 칩 */
-.chip-draft {
-	display: inline-block;
-	border: 1px solid #b9d0ff;
-	background: #f4f8ff;
-	color: #2f6bff;
+/* 기안자 - 이름 아래 팀 이름을 작게 */
+td.drafter {
+	font-size: 13px;
+	color: #2b3444;
+	white-space: nowrap;
+}
+
+td.drafter span {
+	display: block;
 	font-size: 11.5px;
-	border-radius: 4px;
-	padding: 2px 8px;
-	white-space: nowrap;
+	color: #98a3b5;
+	margin-top: 2px;
 }
 
-/* 첨부 아이콘 자리 */
-td.attach {
-	color: #8a93a3;
-	font-size: 12px;
-	white-space: nowrap;
-}
-
-/* 문서가 하나도 없을 때 */
+/* 상신함·완료함과 같은 빈 목록 : 흰 바탕에 회색 한 줄 */
 .empty {
 	text-align: center;
 	color: #98a3b5;
 	padding: 56px 0;
 	font-size: 13px;
+}
+
+.empty .big {
+	display: block;
+	font-size: 28px;
+	color: #d5dbe4;
+	margin-bottom: 10px;
+}
+
+/* ===== 결재선 동그라미 =====
+   결재자 이름 첫 글자를 상태 색으로 보여준다. 마우스를 올리면
+   아래에 흰 말풍선으로 "이름 직급 (상태)" 가 뜬다.
+   nowrap 이 없으면 사람이 많을 때 줄이 접혀 두 줄로 보인다 */
+td.appr {
+	white-space: nowrap;
+}
+
+.appr-line {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 1px;
+	align-items: center;
+}
+
+.appr-dot {
+	position: relative;
+	flex: 0 0 auto;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 10.5px;
+	font-weight: 600;
+	color: #fff;
+	background: #c8cdd6; /* 기본 = 대기(회색) */
+	cursor: default;
+}
+
+.appr-dot.done {
+	background: #22a06b;
+} /* 승인 */
+.appr-dot.now {
+	background: #f0932b;
+} /* 검토중 = 지금 이 사람 차례 */
+
+/* 병렬은 검토중이 여러 명이라 꽉 찬 주황이 줄줄이 서면 시끄럽다.
+   같은 주황을 쓰되 채우지 않고 테두리로만 그려 색 면적을 줄인다.
+   덕분에 순차(채움)와 병렬(테두리)이 모양으로도 구분된다 */
+.appr-dot.now.par {
+	background: #fff8ef;
+	border: 2px solid #f0932b;
+	color: #d97d15;
+}
+.appr-dot.reject {
+	background: #e05252;
+} /* 반려 */
+
+/* 취소(앞사람 반려로 차례가 사라진 사람). 기본 대기가 '채운 회색'이라
+   같은 회색이면 구분이 안 된다. 비우고 점선으로 그려 '무효'로 읽히게 한다 */
+.appr-dot.cancel {
+	background: #f4f5f7;
+	border: 1px dashed #c8cdd6;
+	color: #a6adb9;
+}
+
+/* 전달(연보라) 은 아직 기능이 없다. 색만 잡아뒀고 걸리는 데이터가 없다 */
+.appr-dot.pass {
+	background: #9b8cf5;
+}
+
+/* 말풍선. 평소엔 숨어 있다가 동그라미에 마우스를 올리면 나타난다.
+   브라우저 기본 title 툴팁은 모양을 못 바꿔서 직접 만들었다 */
+/* 5번째부터 접었을 때 보이는 … */
+.appr-more {
+	position: relative;
+	margin-left: 3px;
+	font-size: 14px;
+	color: #98a3b5;
+	cursor: default;
+}
+
+.appr-dot .tip, .appr-more .tip {
+	display: none;
+	position: absolute;
+	top: 125%;
+	left: 50%;
+	transform: translateX(-50%);
+	background: #fff;
+	border: 1px solid #dfe4ec;
+	box-shadow: 0 4px 12px rgba(16, 24, 40, .14);
+	color: #2b3444;
+	font-size: 11.5px;
+	font-weight: 400;
+	padding: 5px 9px;
+	border-radius: 6px;
+	white-space: nowrap;
+	z-index: 20;
+}
+
+.appr-dot:hover .tip, .appr-more:hover .tip {
+	display: block;
 }
 
 /* ===== 아직 못 만든 버튼 (.soon) =====
@@ -526,43 +674,41 @@ span.soon {
 
 	<%@ include file="/WEB-INF/views/common/header.jsp"%>
 
-	<%-- 사이드바 '개인 문서함 > 임시 저장함' 이 이 값으로 활성 표시된다 --%>
-	<c:set var="menu" value="draft" />
+	<%-- 사이드바 '결재하기 > 결재 대기 문서' 가 이 값으로 활성 표시된다 --%>
+	<c:set var="menu" value="apprWait" />
 	<%@ include file="/WEB-INF/views/common/sidebar.jsp"%>
 
 	<div class="main">
 		<div class="content">
 
-			<%-- 브레드크럼·제목 스타일은 common.css 에 있다 (대시보드와 동일) --%>
 			<div class="crumb">
-				결재 &gt; <b>임시 저장함</b>
+				결재 &gt; <b>결재 대기 문서</b>
 			</div>
 
-			<%-- 페이지를 넘겨도 조건이 유지되도록, 링크에 붙일 값을 한 번만 만들어 둔다 --%>
+			<%-- 페이지를 넘겨도 조건이 유지되도록, 링크에 붙일 값을 한 번만 만들어 둔다.
+			     하나라도 빠뜨리면 그 조건만 슬그머니 풀려서 여기 모아 둔다 --%>
 			<c:set var="qs"
-				value="&size=${pageVO.size}&keyword=${pageVO.keyword}&docType=${pageVO.docType}" />
+				value="&size=${pageVO.size}&keyword=${pageVO.keyword}&docType=${pageVO.docType}&status=${pageVO.status}" />
 
 			<div class="page-title title-row">
-				<h2>임시 저장함</h2>
-				<%-- 화면에 그려진 줄이 아니라 DB 가 센 전체 건수다.
-				     한 쪽에 20줄이라 ${fn:length(draftList)} 는 최대 20까지밖에 안 나온다 --%>
+				<h2>결재 대기 문서</h2>
+				<%-- 화면에 그려진 줄이 아니라 DB 가 센 전체 건수다 --%>
 				<span class="total-count">${pageVO.total}건</span>
 			</div>
 
-			<p class="page-desc">작성 중 보관된 문서입니다.</p>
+			<p class="page-desc">나의 결재가 필요한 문서입니다. 내용을 확인하고 승인하거나 반려해 주세요.</p>
 
 			<div class="list-card">
 
-				<%-- 왼쪽 검색, 오른쪽 도구.
-				     검색은 서버가 한다. 글자를 치고 잠깐 멈추면 알아서 다시 불러온다.
-				     양식 이름은 DB 에 VACATION·FREE 로 들어 있어 '휴가'로는 안 잡히므로 제목만 찾는다 --%>
+				<%-- 한 줄에 왼쪽 검색, 오른쪽 도구.
+				     검색은 서버가 한다. 글자를 치고 잠깐 멈추면 알아서 다시 불러온다 --%>
 				<div class="card-head">
 					<div class="search-box">
 						<span class="ico">⌕</span> <input type="text" id="q"
-							placeholder="제목 검색" value="${pageVO.keyword}" autocomplete="off"
+							placeholder="제목 · 기안자 검색" value="${pageVO.keyword}" autocomplete="off"
 							oninput="scheduleSearch()"
 							onkeydown="if(event.key==='Enter'){doSearch();}">
-						<%-- 검색어가 있을 때만 뜨는 지우개. 누르면 검색 없는 목록으로 돌아간다 --%>
+						<%-- 검색어가 있을 때만 뜨는 지우개 --%>
 						<c:if test="${not empty pageVO.keyword}">
 							<button type="button" class="clear" onclick="clearSearch()"
 								title="검색어 지우기">✕</button>
@@ -574,12 +720,11 @@ span.soon {
 							data-tip="추후 구현 예정">
 							<span class="ico">⭳</span> 목록 다운로드
 						</button>
-						<button type="button" class="act" onclick="deleteChecked()">
-							<span class="ico">🗑</span> 문서 삭제
+						<button type="button" class="act soon" aria-disabled="true"
+							data-tip="추후 구현 예정">
+							<span class="ico">✓</span> 일괄결재
 						</button>
-
 						<span class="divider"></span>
-
 						<%-- 한 쪽에 몇 줄. 고르면 곧바로 그 줄 수로 다시 불러온다 --%>
 						<select onchange="changeSize(this.value)" title="한 쪽에 보여줄 줄 수">
 							<option value="10" ${pageVO.size eq 10 ? 'selected' : ''}>10</option>
@@ -589,55 +734,68 @@ span.soon {
 					</div>
 				</div>
 
-				<form id="deleteForm"
-				action="${pageContext.request.contextPath}/document/delete"
-				method="post">
+				<%-- 체크박스는 일괄결재용이다. 삭제는 남의 문서라 여전히 없다 --%>
+				<div class="table-wrap">
 				<table class="doc-table">
 					<thead>
 						<tr>
-							<th class="col-check"><input type="checkbox" id="checkAll"
+							<th class="col-check"><input type="checkbox"
 								onclick="toggleAll(this)"></th>
-							<%-- 정렬 표시는 뺐다. 지금은 SQL의 ORDER BY doc_id DESC 로 최신순 고정 --%>
-							<th style="width: 130px;">생성일</th>
 							<th style="width: 150px;"><div class="col-filter">
-									<button type="button" class="col-btn ${not empty pageVO.docType ? 'on' : ''}"
-										onclick="toggleMenu(event, 'mType')">
-										결재양식 <span class="caret">▾</span>
-									</button>
-									<div class="col-menu" id="mType">
-										<a href="#" onclick="setFilter('docType',''); return false;"
-											class="${empty pageVO.docType ? 'sel' : ''}">전체</a>
-										<a href="#" onclick="setFilter('docType','FREE'); return false;"
-											class="${pageVO.docType eq 'FREE' ? 'sel' : ''}">기본기안</a>
-										<a href="#" onclick="setFilter('docType','VACATION'); return false;"
-											class="${pageVO.docType eq 'VACATION' ? 'sel' : ''}">휴가신청서</a>
-									</div>
-								</div></th>
+								<button type="button" class="col-btn ${not empty pageVO.docType ? 'on' : ''}"
+									onclick="toggleMenu(event, 'mType')">
+									결재양식 <span class="caret">▾</span>
+								</button>
+								<div class="col-menu" id="mType">
+									<a href="#" onclick="setFilter('docType',''); return false;"
+										class="${empty pageVO.docType ? 'sel' : ''}">전체</a>
+									<a href="#" onclick="setFilter('docType','FREE'); return false;"
+										class="${pageVO.docType eq 'FREE' ? 'sel' : ''}">기본기안</a>
+									<a href="#" onclick="setFilter('docType','VACATION'); return false;"
+										class="${pageVO.docType eq 'VACATION' ? 'sel' : ''}">휴가신청서</a>
+								</div>
+							</div></th>
 							<th class="col-urgent">긴급</th>
 							<th>제목</th>
 							<th style="width: 80px;">첨부</th>
-							<th style="width: 110px;">결재상태</th>
+							<th style="width: 110px;">기안자</th>
+							<th style="width: 130px;">기안일</th>
+							<th class="appr" style="width: 160px;">결재선<span class="help"
+								data-tip="왼쪽부터 기안자 → 결재 순서입니다.&#10;&#10;● 초록  승인 완료&#10;● 주황  검토중 (지금 차례)&#10;○ 주황  검토중 (병렬 · 동시 결재)&#10;● 회색  대기&#10;● 빨강  반려&#10;&#10;동그라미에 마우스를 올리면 이름이 보입니다.">?</span></th>
 						</tr>
 					</thead>
 					<tbody>
 
-						<c:forEach var="doc" items="${draftList}">
+						<%-- data-* 는 화면에서 걸러낼 때 쓰는 값이다.
+						     JS 가 이 둘만 보고 줄을 보이거나 숨긴다 --%>
+						<c:forEach var="doc" items="${pendingList}">
+							<tr class="doc-row" data-status="${doc.status}">
+								<td class="col-check"><input type="checkbox"
+									class="row-check" value="${doc.docId}"></td>
 
-							<%-- 양식 이름은 화면에도 쓰고 검색에도 써서 한 번만 만들어 둔다 --%>
-							<c:set var="formName"><c:choose>
-									<c:when test="${doc.documentType eq 'VACATION'}">휴가신청서</c:when>
-									<c:when test="${doc.documentType eq 'FREE'}">기본기안</c:when>
-									<c:otherwise>${doc.documentType}</c:otherwise>
-								</c:choose></c:set>
+								<td class="form-name"><c:choose>
+										<c:when test="${doc.documentType eq 'VACATION'}">휴가신청서</c:when>
+										<c:when test="${doc.documentType eq 'FREE'}">기본기안</c:when>
+										<c:otherwise>${doc.documentType}</c:otherwise>
+									</c:choose></td>
 
-							<tr class="doc-row">
-								<td class="col-check"><input type="checkbox" name="docIds"
-									class="rowCheck" value="${doc.docId}"></td>
+								<td class="col-urgent"><c:if test="${doc.isUrgent}">
+										<span class="urgent-mark" title="긴급">⚠</span>
+									</c:if></td>
+
+								<%-- 승인·반려 버튼이 붙을 상세 화면은 아직 없다 --%>
+								<td class="title"><a href="#"
+									onclick="openDoc(${doc.docId}); return false;">${doc.title}</a></td>
+
+								<td class="attach"></td>
+
+								<%-- 기안자. document.employee_id 로 employee 를 한 번 더 JOIN 해서 가져온 값이다 --%>
+								<td class="drafter">${doc.drafterName}<span>${doc.drafterTeam}</span></td>
 
 								<%-- LocalDateTime 은 2026-08-06T14:22:31 모양으로 찍힌다. 앞 10글자가 날짜 --%>
 								<td class="date">${fn:substring(doc.createdAt, 0, 10)} <%-- 마감일은 선택이라
-									고른 문서에만 붙는다. 아직 상신 전이라도 미리 잡아둔 마감이 지나가는 게 보여야
-									'이거 빨리 올려야겠다'가 된다 --%>
+									고른 문서에만 붙는다. 안 고른 문서까지 자리를 만들면 빈 줄이 생겨 목록이 들쭉날쭉해진다.
+									남은 날수를 같이 적는 이유는 날짜만 보면 며칠 남았는지 머리로 빼야 하기 때문이다 --%>
 									<c:if test="${not empty doc.dueDate}">
 										<span
 											class="due ${doc.overdue ? 'over' : (doc.daysLeft eq 0 ? 'today' : (doc.daysLeft le 3 ? 'near' : ''))}">
@@ -649,47 +807,80 @@ span.soon {
 										</span>
 									</c:if></td>
 
-								<td class="form-name">${formName}</td>
 
-								<td class="col-urgent"><c:if test="${doc.isUrgent}">
-										<span class="urgent-mark" title="긴급">⚠</span>
-									</c:if></td>
+								<%-- 결재선. 순서대로 훑다가 처음 만나는 PENDING 이 '검토중'(주황),
+								     그 뒤에 남은 PENDING 은 전부 '대기'(회색)다.
+								     metPending 이 그 '처음 하나'를 이미 만났는지 기억한다 --%>
+								<td class="appr">
+									<div class="appr-line">
+										<%-- 맨 왼쪽은 기안자. 결재선 테이블엔 없는 사람이라 따로 그린다 --%>
+										<span class="appr-dot done">${fn:substring(doc.drafterName, 0, 1)}<span
+												class="tip">${doc.drafterName} ${doc.drafterPosition} (기안)</span></span>
 
-								<%-- 임시저장은 제목 없이도 저장된다. 제목이 비면 <a> 안에 글자가
-									 하나도 없어서 클릭할 자리가 사라지므로 대신 보여줄 말을 넣는다 --%>
-								<td class="title"><a href="#"
-									onclick="editDraft(${doc.docId}); return false;"><c:choose>
-											<c:when test="${empty doc.title}">
-												<span class="no-title">(제목 없음)</span>
-											</c:when>
-											<c:otherwise>${doc.title}</c:otherwise>
-										</c:choose></a></td>
+										<%-- 기안자까지 넣어 동그라미는 4개까지. 5번째부터는 … 로 접는다.
+										     상태 판정(metPending)은 접힌 사람도 계속 돌아야 하므로
+										     c:choose 는 항상 실행하고 그리는 것만 c:if 로 막는다 --%>
+										<c:set var="metPending" value="false" />
+										<c:forEach var="a" items="${doc.approvalLine}"
+											varStatus="st">
+											<c:set var="cls" value="" />
+											<c:set var="lbl" value="대기" />
+											<c:choose>
+												<c:when test="${a.approvalStatus eq 'APPROVED'}">
+													<c:set var="cls" value="done" />
+													<c:set var="lbl" value="승인" />
+												</c:when>
+												<c:when test="${a.approvalStatus eq 'REJECTED'}">
+													<c:set var="cls" value="reject" />
+													<c:set var="lbl" value="반려" />
+												</c:when>
+												<%-- 앞사람이 반려해서 차례가 오지 않은 사람.
+												     대기가 아니므로 metPending 은 건드리지 않는다 --%>
+												<c:when test="${a.approvalStatus eq 'CANCELED'}">
+													<c:set var="cls" value="cancel" />
+													<c:set var="lbl" value="취소" />
+												</c:when>
+												<%-- 병렬은 순서를 안 따지므로 아직 안 찍은 사람 모두가 '검토중'이다.
+												     순차는 그 중 맨 앞 한 명만 --%>
+												<c:when
+													test="${doc.approvalType eq 'PARALLEL' or not metPending}">
+													<c:set var="cls"
+													value="${doc.approvalType eq 'PARALLEL' ? 'now par' : 'now'}" />
+													<c:set var="lbl" value="검토중" />
+													<c:set var="metPending" value="true" />
+												</c:when>
+											</c:choose>
+											<c:if test="${st.index lt 3}">
+												<span class="appr-dot ${cls}">${fn:substring(a.name, 0, 1)}<span
+														class="tip">${a.name} ${a.position} (${lbl})</span></span>
+											</c:if>
+										</c:forEach>
 
-								<%-- 첨부파일(attachment) 테이블은 아직 없다 --%>
-								<td class="attach"></td>
-
-								<td><span class="chip-draft">임시저장</span></td>
+										<c:if test="${fn:length(doc.approvalLine) gt 3}">
+											<span class="appr-more">…<span class="tip">외
+													${fn:length(doc.approvalLine) - 3}명</span></span>
+										</c:if>
+									</div>
+								</td>
 							</tr>
 						</c:forEach>
 
 						<%-- 빈 목록이어도 이유가 둘이다. 문서가 없는 건지,
 						     찾는 게 없는 건지 구분해서 말해 줘야 사용자가 헤매지 않는다 --%>
-						<c:if test="${empty draftList}">
+						<c:if test="${empty pendingList}">
 							<tr>
-								<td colspan="7" class="empty"><c:choose>
+								<td colspan="8" class="empty"><span class="big">🗎</span> <c:choose>
 										<c:when test="${not empty pageVO.keyword}">'${pageVO.keyword}' 검색 결과가 없습니다.</c:when>
-										<c:otherwise>임시저장한 문서가 없습니다.</c:otherwise>
+										<c:otherwise>결재할 문서가 없습니다.</c:otherwise>
 									</c:choose></td>
 							</tr>
 						</c:if>
 
 					</tbody>
 				</table>
-				</form>
+				</div>
 
-				<%-- 페이지 번호 줄.
-				     lastPage 는 PageVO 가 전체 건수와 한 쪽 줄 수로 계산해 준 값이다.
-				     한 장뿐이면 번호를 그릴 이유가 없어 통째로 안 그린다 --%>
+				<%-- 페이지 번호 줄. 한 장뿐이면 통째로 안 그린다 --%>
 				<c:if test="${pageVO.lastPage > 1}">
 					<div class="paging">
 
@@ -728,62 +919,19 @@ span.soon {
 
 					</div>
 				</c:if>
-			</div>
 
+
+			</div>
 		</div>
 	</div>
 
 	<script>
-		// 머리글 체크박스로 전체 선택/해제.
-		// 서버가 걸러서 보내므로 화면에 있는 줄이 곧 지금 쪽의 전부다
-		function toggleAll(head) {
-			var rows = document.querySelectorAll(".rowCheck");
-			for (var i = 0; i < rows.length; i++) {
-				rows[i].checked = head.checked;
-			}
+		// 문서 상세 화면으로. 여기서 승인·반려를 한다
+		// from : 상세 화면이 '어느 결재함에서 왔는지' 알아야 목록으로 되돌아갈 수 있다
+		function openDoc(docId) {
+			location.href = "${pageContext.request.contextPath}/document/detail?docId="
+					+ docId + "&from=wait";
 		}
-
-		// 체크된 문서번호 모으기
-		function getCheckedIds() {
-			var ids = [];
-			var rows = document.querySelectorAll(".rowCheck");
-			for (var i = 0; i < rows.length; i++) {
-				if (rows[i].checked) {
-					ids.push(rows[i].value);
-				}
-			}
-			return ids;
-		}
-
-		function deleteChecked() {
-			var ids = getCheckedIds();
-			if (ids.length === 0) {
-				alert("삭제할 문서를 선택해 주세요.");
-				return;
-			}
-			if (!confirm(ids.length + "건을 삭제하시겠습니까?")) {
-				return;
-			}
-			document.getElementById("deleteForm").submit();
-		}
-
-		function editDraft(docId) {
-			var url = "${pageContext.request.contextPath}/document/write?docId="+docId;
-
-			// 화면 정중앙. screen 은 이 창이 놓인 모니터를 가리키므로 모니터가 여러 대여도 맞다
-			var w = 1000, h = 800;
-			var sx = (screen.availLeft !== undefined) ? screen.availLeft : 0;
-			var sy = (screen.availTop  !== undefined) ? screen.availTop  : 0;
-			var left = sx + Math.max(0, Math.round((screen.availWidth  - w) / 2));
-			var top  = sy + Math.max(0, Math.round((screen.availHeight - h) / 2));
-
-			window.open(url, "docWrite_" + docId,
-					"width=" + w + ",height=" + h
-					+ ",left=" + left + ",top=" + top
-					+ ",resizable=yes,scrollbars=yes");
-
-		}
-		
 
 		// ===== 주소 만들기 =====
 		// page·size·keyword·docType·status 다섯 개가 늘 같이 다녀야 한다.
@@ -869,17 +1017,13 @@ span.soon {
 		};
 
 
-		// 한 쪽 줄 수 바꾸기.
-		// 반드시 1페이지로 돌아간다 — 5페이지를 보다가 100줄로 바꾸면
-		// 그 문서들이 1페이지 안으로 들어와 5페이지는 아예 없는 쪽이 된다
-		// 검색어는 입력칸에서 읽는다. EL 을 JS 문자열에 직접 박으면
-		// 제목에 따옴표가 섞였을 때 스크립트가 깨진다
-		function changeSize(size) {
-			var q = document.getElementById("q").value.trim();
-			location.href = "?page=1&size=" + size
-					+ "&keyword=" + encodeURIComponent(q);
-		}
 
+		// 머리글 체크박스로 전체 선택/해제. 일괄결재가 생기면 여기서 골라 넘긴다
+		function toggleAll(head) {
+			document.querySelectorAll(".row-check").forEach(function(c) {
+				c.checked = head.checked;
+			});
+		}
 	</script>
 
 </body>

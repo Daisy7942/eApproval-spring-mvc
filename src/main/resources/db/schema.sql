@@ -12,9 +12,11 @@ CREATE TABLE `department` (
 CREATE TABLE `vacation_type` (
   `vacation_type_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `type_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `deduct_balance` tinyint(1) NOT NULL,
   `is_paid` tinyint(1) NOT NULL,
   `allow_half_day` tinyint(1) NOT NULL,
+  `default_days` decimal(4,1) DEFAULT NULL,
   PRIMARY KEY (`vacation_type_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -78,6 +80,8 @@ CREATE TABLE `signature` (
   `owner_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `employee_id` bigint DEFAULT NULL,
   `image_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `is_active` char(1) NOT NULL DEFAULT 'N',
+  `is_deleted` char(1) NOT NULL DEFAULT 'N',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`signature_id`),
   KEY `employee_id` (`employee_id`),
@@ -132,9 +136,10 @@ CREATE TABLE `vacation_request` (
   `vacation_type_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
+  `start_half` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `end_half` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `days` decimal(4,1) NOT NULL,
   `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `time_unit` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`vacation_id`),
   KEY `doc_id` (`doc_id`),
@@ -202,3 +207,15 @@ CREATE TABLE `delegation` (
   CONSTRAINT `delegation_ibfk_2` FOREIGN KEY (`original_approver_id`) REFERENCES `employee` (`employee_id`),
   CONSTRAINT `delegation_ibfk_3` FOREIGN KEY (`delegated_to_id`) REFERENCES `employee` (`employee_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+ALTER TABLE document
+  ADD COLUMN due_date DATE NULL AFTER is_urgent;
+
+
+
+  
+ALTER TABLE `signature`
+  ADD COLUMN `is_active`  char(1) NOT NULL DEFAULT 'N' AFTER `image_path`,
+  ADD COLUMN `is_deleted` char(1) NOT NULL DEFAULT 'N' AFTER `is_active`;

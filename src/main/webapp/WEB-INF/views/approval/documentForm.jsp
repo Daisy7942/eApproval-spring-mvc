@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
       pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -103,6 +104,13 @@ body { background:#f4f6fa; padding:30px; }
 /* ===== 결재선 영역 ===== */
 .appr-head { display:flex; justify-content:space-between; align-items:center;
              margin-bottom:10px; }
+/* 왼쪽 묶음(제목 + 방식 뱃지). space-between 이라 묶지 않으면 셋이 흩어진다 */
+.appr-head-l { display:flex; align-items:center; gap:8px; }
+/* 결재 방식 뱃지. 팝업에서 고르고 나면 지금까지 화면 어디에도 안 보였다.
+   순차는 파랑, 병렬은 보라 — 아래 흐름의 구분자와 색을 맞춘다 */
+.appr-mode { font-size:11.5px; border-radius:4px; padding:3px 9px;
+             background:#eef2fb; color:#4a5a7a; white-space:nowrap; }
+.appr-mode.parallel { background:#f3ecfd; color:#7c4dcc; }
 .appr-edit { display:inline-flex; align-items:center; gap:6px;
              padding:7px 14px; border:1px solid #dbe1ea; border-radius:8px;
              background:#fff; color:#3d4756; font-size:12.5px; cursor:pointer; }
@@ -141,11 +149,23 @@ body { background:#f4f6fa; padding:30px; }
 .btn.primary { background:#2f6bff; border-color:#2f6bff; color:#fff; }
 .btn:disabled { background:#f2f4f8; color:#b4bcc9; cursor:not-allowed;
                 border-color:#e4e8ef; }
+
 </style>
 </head>
 <body>
 
 <div class="wrap">
+
+      <%-- 반려 문서를 고치는 중인가(재상신). 이 화면은 그때 두 가지가 달라진다 —
+           나갈 곳이 상신함이고, 임시저장 버튼이 없다 --%>
+      <c:set var="isRedraft" value="${doc.status eq 'REJECTED'}" />
+
+      <%-- 이 화면을 그냥 나갔을 때 돌아갈 곳.
+           재상신 중이면 그 문서는 status 가 REJECTED 그대로라 임시저장함에 없다 —
+           거기로 보내면 방금 보던 문서를 못 찾는다.
+           새 문서·임시저장 문서는 지금까지처럼 임시저장함으로 --%>
+      <c:set var="backUrl"
+             value="${isRedraft ? '/document/submitted' : '/document/drafts'}" />
 
       <form id="docForm" method="post"
             action="${pageContext.request.contextPath}/document/write">
@@ -166,7 +186,8 @@ body { background:#f4f6fa; padding:30px; }
                                       <span class="chip"><span class="dot"></span>긴급 문서</span>
                               </label>
                       </div>
-                      <a class="x" href="#" onclick="window.close(); return false;">✕</a>
+                      <a class="x" href="${pageContext.request.contextPath}${backUrl}"
+                         onclick="if (window.opener) { window.close(); return false; }">✕</a>
               </div>
 
               <div class="body">
@@ -224,7 +245,7 @@ body { background:#f4f6fa; padding:30px; }
                               <label class="tit">첨부파일</label>
                               <div class="todo">
                                       <button type="button" class="ghost" disabled >파일 선택</button>
-                                      <span class="note">추후구현 — attachment 테이블 사용 예정</span>
+                                      <span class="note">추후구현 </span>
                               </div>
                       </div>
 
@@ -246,7 +267,13 @@ body { background:#f4f6fa; padding:30px; }
                               <%-- ② 골랐을 때 : 기안자 ▸ 결재자… 흐름. renderApprFlow() 가 그린다 --%>
                               <div id="apprPicked" style="display:none;">
                                       <div class="appr-head">
-                                              <label class="tit" style="margin:0;">결재선 설정</label>
+                                              <div class="appr-head-l">
+                                                      <label class="tit" style="margin:0;">결재선 설정</label>
+                                                      <%-- 순차/병렬은 결재선 팝업에서 고르는데, 닫고 나면
+                                                           고른 값이 화면 어디에도 안 남아서 확인할 방법이 없었다.
+                                                           JS 의 approvalType 을 그대로 뱃지로 띄운다 --%>
+                                                      <span class="appr-mode" id="apprMode"></span>
+                                              </div>
                                               <button type="button" class="appr-edit" id="btnApprovalLineEdit">
                                                       <span>👥</span> 결재선 편집
                                               </button>
@@ -264,13 +291,13 @@ body { background:#f4f6fa; padding:30px; }
                       </div>
 
                       <%-- ===== 결재 마감일 =====
-                           ⚠ 아직 저장되지 않는다. 저장하려면 3곳을 더 손봐야 한다.
-                              ① document 테이블에 due_date DATE NULL 컬럼 추가
-                              ② DocumentVO 에 dueDate 필드 + getter/setter
-                              ③ document.xml 의 INSERT 에 due_date, #{dueDate} 추가 --%>
+                           value 가 있어야 임시저장 문서를 다시 열었을 때 칸이 채워진다.
+                           비워 두면 화면만 빈 게 아니라, 그 상태로 저장하는 순간
+                           updateDraft 가 due_date = null 로 덮어써서 저장해 둔 마감일이 지워진다.
+                           LocalDate 는 그대로 찍으면 'YYYY-MM-DD' 라 input[type=date] 가 바로 받는다 --%>
                       <div class="row">
                               <label class="tit" for="dueDate">결재 마감일 <span class="opt">선택</span></label>
-                              <input type="date" id="dueDate" name="dueDate">
+                              <input type="date" id="dueDate" name="dueDate" value="${doc.dueDate}">
                               <p class="hint">언제까지 결재를 받아야 하는지 지정합니다. 비워두면 마감일 없이 진행됩니다.</p>
                               <p class="err" id="dueDateErr">마감일은 오늘 이후로 지정해주세요.</p>
                       </div>
@@ -279,13 +306,22 @@ body { background:#f4f6fa; padding:30px; }
 
               <!-- ===== 하단 버튼 ===== -->
               <div class="foot">
-                      <a class="btn" href="#" onclick="window.close(); return false;">취소</a>
-                      <button type="submit" class="btn" id="btnSaveDraft">임시저장</button>
+                      <%-- 팝업으로 열렸으면 창을 닫는다. 문서수정·재상신처럼 같은 탭으로 들어온
+                           경우엔 닫을 창이 없어 아무 일도 안 일어나므로 backUrl 로 보낸다 --%>
+                      <a class="btn" href="${pageContext.request.contextPath}${backUrl}"
+                         onclick="if (window.opener) { window.close(); return false; }">취소</a>
+                      <%-- 재상신 중에는 임시저장을 주지 않는다. 반려 문서는 상태가 REJECTED 라
+                           임시저장함에 들어가지도 않고, 저장해 봐야 다음 회차 결재선만 미리 깔려서
+                           결재자 도장판에서 반려 도장이 사라진다.
+                           고쳐서 바로 올리거나, 그만두거나 둘 중 하나다 --%>
+                      <c:if test="${not isRedraft}">
+                              <button type="submit" class="btn" id="btnSaveDraft">임시저장</button>
+                      </c:if>
                       <%-- 상신은 보내는 값이 임시저장과 같고 서버가 할 일만 다르다
                            (status 를 PENDING 으로 바꾸고 결재선을 INSERT).
                            그래서 폼을 따로 만들지 않고 formaction 으로 이 버튼만 다른 주소로 보낸다. --%>
                       <button type="submit" class="btn primary" id="btnSubmitDoc"
-                              formaction="${pageContext.request.contextPath}/document/submit">상신</button>
+                              formaction="${pageContext.request.contextPath}/document/submit">${isRedraft ? '재상신' : '상신'}</button>
               </div>
 
       </form>
@@ -302,7 +338,11 @@ $(document).ready(function() {
       var t = new Date();
       var pad = function(n) { return (n < 10 ? '0' : '') + n; };
       var todayStr = t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
-      $('#dueDate').attr('min', todayStr);
+      // 이미 지난 마감일이 채워진 채로 열렸으면(오래 묵은 임시저장) min 을 걸지 않는다.
+      // 걸어 버리면 브라우저가 그 칸을 '유효하지 않음'으로 잡아 임시저장 버튼조차 안 먹는다
+      if (!$('#dueDate').val() || $('#dueDate').val() >= todayStr) {
+              $('#dueDate').attr('min', todayStr);
+      }
 
       /* ═══════════════ 결재란 ═══════════════
          결재란 = [기안 1칸] + [결재자 수만큼의 칸].
@@ -313,6 +353,10 @@ $(document).ready(function() {
       //   { name:'최준혁', position:'이사', department:'경영진', role:'승인' }
       //   role 은 모달의 '추가 역할' — 합의 | 승인
       var approvalLine = [];
+
+      // 결재 방식 : SEQUENTIAL(순차) / PARALLEL(병렬).
+      // 임시저장한 문서를 다시 열면 저장해 둔 값으로 시작한다
+      var approvalType = '${empty doc.approvalType ? "SEQUENTIAL" : doc.approvalType}';
       var drafterName  = $('#signArea').data('drafter');
 
       // 칸 하나를 만든다. 이름을 문자열로 붙이지 않고 .text() 로 넣어
@@ -370,6 +414,11 @@ $(document).ready(function() {
               $('#apprEmpty').hide();
               $('#apprPicked').show();
 
+              // 결재 방식 뱃지. 팝업에서 고른 값이 여기 말고는 보이는 데가 없다
+              var isPar = (approvalType === 'PARALLEL');
+              $('#apprMode').text(isPar ? '병렬 결재' : '순차 결재')
+                            .toggleClass('parallel', isPar);
+
               $flow.append(makePersonChip(drafterName, '기안자', ''));
 
               $.each(approvalLine, function(i, a) {
@@ -379,7 +428,11 @@ $(document).ready(function() {
                       // 위쪽 결재 도장칸과 같은 이름이 찍힌다. 승인/합의는 칩 색으로 구분한다.
                       // 둘 다 비면 역할이라도 보여준다.
                       var sub = [ a.position, a.dept ].filter(function(v) { return v; }).join(' · ');
-                      $flow.append('<span class="sep">›</span>');
+                      // 기안자 → 첫 결재자는 병렬이어도 순서가 맞으므로 늘 화살표다.
+                      // 병렬에서 순서가 없는 건 결재자들끼리이므로 둘째부터 + 로 잇는다
+                      //   순차 : 기안자 › 결재자1 › 결재자2
+                      //   병렬 : 기안자 › 결재자1 + 결재자2
+                      $flow.append('<span class="sep">' + (isPar && i > 0 ? '+' : '›') + '</span>');
                       $flow.append(makePersonChip(a.name, sub || a.role, kind));
               });
 
@@ -398,14 +451,28 @@ $(document).ready(function() {
                               .val(a.employeeId)
                               .appendTo($box);
               });
+
+              // 결재 방식(순차/병렬)도 같이 보낸다. 이게 없으면 서버는 늘 순차로 저장한다
+              $('<input type="hidden">')
+                      .attr('name', 'approvalType')
+                      .val(approvalType)
+                      .appendTo($box);
       }
 
       // [결재선 설정] 모달과 이어지는 유일한 지점.
       // 모달에서 '결재선 확정'을 누를 때 결재자 배열을 넘겨 이 함수를 부르면 된다.
       //   setApprovalLine([{ name:'최준혁', position:'이사', department:'경영진', role:'승인' }, ...]);
       // 빈 배열이나 아무것도 안 넘기면 '미지정' 상태로 되돌아간다.
-      window.setApprovalLine = function(list) {
+      window.setApprovalLine = function(list, mode) {
               approvalLine = list || [];
+
+              // 팝업이 방식을 안 주면(옛 호출) 지금 값을 그대로 둔다
+              if (mode) { approvalType = mode; }
+
+              // 결재선은 입력칸이 아니라 팝업으로 정한다. 제목·마감일처럼 input 이벤트가 없어서
+              // 여기서 지워 주지 않으면 다 고쳐 놓고도 경고가 남는다
+              if (approvalLine.length > 0) { $('#apprErr').hide(); }
+
               renderSignArea();
               renderApprFlow();
               renderApprHidden();
@@ -415,6 +482,12 @@ $(document).ready(function() {
       // 이게 없으면 [결재선 편집] 을 눌러도 팝업이 늘 빈 화면으로 열린다.
       window.getApprovalLine = function() {
               return approvalLine;
+      };
+
+      // 결재 방식도 같은 이유로 물려준다. 병렬로 골라 놓고 편집을 열면
+      // 팝업이 순차로 돌아가 있어서 다시 저장할 때 방식이 바뀌어 버린다
+      window.getApprovalType = function() {
+              return approvalType;
       };
 
       // [＋ 결재선 지정] → 조직도 팝업. 팝업이 setApprovalLine() 을 불러준다.
@@ -441,6 +514,47 @@ $(document).ready(function() {
       renderApprFlow();
       renderApprHidden();
 
+      /* 문서 종류별 추천 결재선.
+         Controller 가 model 에 담아준 recLine(EapprovalVO 목록)을 그대로
+         setApprovalLine() 에 넣는다. 팝업이 부르는 함수와 같은 것이라
+         화면 그리는 코드를 새로 만들 필요가 없다.
+         FREE 면 서버가 빈 목록을 주므로 아래 if 가 걸러서 '미지정' 상태로 남는다.
+         사용자가 [결재선 편집] 으로 얼마든지 바꿀 수 있다 - 추천일 뿐 고정이 아니다. */
+      var recLine = [
+        <c:forEach items="${recLine}" var="m" varStatus="st">
+          {
+            employeeId : ${m.employeeId},
+            name       : '${m.name}',
+            position   : '${empty m.title ? m.position : m.title}',
+            dept       : '${m.teamName}',
+            roleCode   : 'APPROVAL'
+          }<c:if test="${!st.last}">,</c:if>
+        </c:forEach>
+      ];
+      /* 임시저장 문서를 다시 열었을 때 이미 저장돼 있던 결재선.
+         selectDraft 가 approval_line 을 JOIN 해서 doc.approvalLine 에 담아준다.
+         새 문서면 doc 자체가 없어서 아래 forEach 가 한 줄도 안 돌아 빈 배열이 된다.
+         화면이 쓰는 이름(employeeId·dept)과 VO 의 이름(approverId·teamName)이 달라
+         여기서 갈아 끼운다. */
+      var savedLine = [
+        <c:forEach items="${doc.approvalLine}" var="a" varStatus="st">
+          {
+            employeeId : ${a.approverId},
+            name       : '${a.name}',
+            position   : '${a.position}',
+            dept       : '${a.teamName}',
+            roleCode   : 'APPROVAL'
+          }<c:if test="${!st.last}">,</c:if>
+        </c:forEach>
+      ];
+
+      // 저장해 둔 결재선이 우선이다. 추천은 '아직 아무것도 고른 적 없을 때'만 쓴다.
+      if (savedLine.length > 0) {
+              setApprovalLine(savedLine);
+      } else if (recLine.length > 0) {
+              setApprovalLine(recLine);
+      }
+
       $('#summernote').summernote({
               lang : 'ko-KR',
               height : 300, // 높이, 설정하지 않으면 내용의 길이에 따라 길이가 변한다.
@@ -462,6 +576,19 @@ $(document).ready(function() {
       $('#dueDate').on('input change', function() { $('#dueDateErr').hide(); });
       $('#summernote').on('summernote.change', function() { $('#contentErr').hide(); });
 
+      /* 입력칸에서 엔터를 치면 폼이 통째로 넘어간다. 브라우저가 '첫 번째 submit 버튼'을
+         누른 것으로 치기 때문인데, 재상신 화면에는 임시저장이 없어서 그 첫 버튼이
+         '재상신'이다 — 제목 칸에서 엔터만 쳐도 그대로 상신돼 버린다.
+         textarea 는 줄바꿈을 써야 하므로 input 에만 건다 */
+      $('#docForm').on('keydown', 'input', function(e) {
+              // 한글 조합 중에 누른 엔터는 글자를 확정하는 용도라 막으면 안 된다.
+              // 그것까지 막으면 마지막 글자가 안 들어간다
+              if (e.key === 'Enter'
+                              && !(e.originalEvent && e.originalEvent.isComposing)) {
+                      e.preventDefault();
+              }
+      });
+
       $('#docForm').on('submit', function(e) {
               $('.err').hide();
 
@@ -478,15 +605,19 @@ $(document).ready(function() {
               var first = null;      // 커서를 옮길 첫 번째 문제 칸
               var blank = false;     // 안 채운 칸이 하나라도 있나
 
-              if ($('#title').val().trim() === '') {
+              // 제목·내용은 상신할 때만 필수다. 임시저장은 쓰다 만 문서를
+              // 그대로 쟁여두는 기능이라 빈칸이어도 저장돼야 한다.
+              if (isSubmitDoc && $('#title').val().trim() === '') {
                       $('#titleErr').show();
                       blank = true;
                       first = first || function() { $('#title').focus(); };
               }
 
               // 달력의 min 은 브라우저 UI만 막을 뿐, 직접 입력하면 통과된다.
+              // 제목·내용과 같이 상신할 때만 본다 — 오래 묵혀 둔 임시저장 문서는
+              // 마감일이 이미 지나 있을 수 있는데, 그걸로 임시저장까지 막으면 쟁여둘 수가 없다
               var due = $('#dueDate').val();
-              if (due !== '' && due < todayStr) {   // 'YYYY-MM-DD' 는 문자열끼리 비교해도 날짜순이 맞다
+              if (isSubmitDoc && due !== '' && due < todayStr) {   // 'YYYY-MM-DD' 는 문자열끼리 비교해도 날짜순이 맞다
                       $('#dueDateErr').show();
                       msgs.push('결재 마감일은 오늘 이후로 지정해 주세요.');
                       first = first || function() { $('#dueDate').focus(); };
@@ -494,7 +625,7 @@ $(document).ready(function() {
 
               // 내용을 안 쓰면 <p><br></p> 가 들어옴
               var content = $('#summernote').summernote('code');
-              if (content === '' || content === '<p><br></p>') {
+              if (isSubmitDoc && (content === '' || content === '<p><br></p>')) {
                       $('#contentErr').show();
                       blank = true;
                       first = first || function() { $('#summernote').summernote('focus'); };

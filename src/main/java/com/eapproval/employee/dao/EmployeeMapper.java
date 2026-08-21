@@ -1,5 +1,6 @@
 package com.eapproval.employee.dao;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -15,4 +16,11 @@ public interface EmployeeMapper {
 	List<EapprovalVO> selectEmployeesByName(String name);
 	
 	List<OrgVO> selectOrgTree();
+	
+	// 결재 라인 추천
+	EapprovalVO selectManager(long employeeId);
+	
+	// 잔여 연차만 조회
+	BigDecimal selectRemainLeave(Long employeeId);
+	
 }

@@ -13,6 +13,33 @@ public class ApprovalLineVO {
 	private String approvalStatus; // PENDING 대기 / APPROVED 승인 / REJECTED 반려
 	private String comment; // 결재 의견
 	private LocalDateTime approvedAt; // 결재 처리 시각
+	private String name;      // 결재자 이름
+	private String position;  // 직급 (부장)
+	private String teamName;  // 팀 이름
+
+	public String getName() {
+		return name;
+	}
+
+	public String getPosition() {
+		return position;
+	}
+
+	public String getTeamName() {
+		return teamName;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setPosition(String position) {
+		this.position = position;
+	}
+
+	public void setTeamName(String teamName) {
+		this.teamName = teamName;
+	}
 
 	public Long getApprovalLineId() {
 		return approvalLineId;
