@@ -226,18 +226,80 @@ CREATE DATABASE eapproval_Backend
   COLLATE utf8mb4_general_ci;
 ```
 
-스키마와 초기 데이터는 `docs/schema.sql` 로 함께 제공합니다.
+두 가지 방법이 있습니다. **A 를 권장합니다.**
 
-### 3) 접속 정보 수정
+#### A. 덤프 한 번으로 끝내기 (권장)
 
-`src/main/resources/config/datasource.properties`
+```bash
+mysql -u root -p eapproval_Backend < docs/schema-with-data.sql
+```
+
+테이블과 샘플 데이터(사원 · 조직도 · 문서 · 휴가)가 한 번에 들어갑니다.
+실행 직후 바로 로그인해서 모든 화면을 볼 수 있습니다.
+
+⚠ 포함된 사원 · 조직도 · 문서는 전부 **실습용으로 만든 가상 데이터**입니다.
+실제 인물 · 기업과 무관하며, 개인정보는 포함되어 있지 않습니다.
+
+데이터 없이 테이블만 만들려면 `docs/schema.sql` 을 대신 실행하세요.
+
+#### B. 초기 데이터 스크립트로 직접 만들기
+
+초기 데이터를 어떻게 구성했는지 확인하고 싶을 때 사용합니다.
+`src/main/resources/db/` 의 파일을 **아래 순서대로** 실행합니다.
+
+| 순서 | 파일 | 하는 일 |
+|------|------|---------|
+| 1 | `schema.sql` | 테이블 생성 |
+| 2 | `seed_stg_employee.sql` | 사원 명부 원본을 임시 테이블(`stg_employee`)에 적재 |
+| 3 | `seed_employee.sql` | 명부에서 부서 · 팀 · 사원을 뽑아 정규화, 상급자 · 관리자 권한 설정 |
+| 4 | `seed_leave.sql` | 사원별 잔여 연차 반영, 휴가 종류 등록 |
+
+엑셀 명부를 그대로 넣고 거기서 조직도를 만들어내는 구조라, 사원이 늘어도 스크립트는 그대로입니다.
+명부는 실습용 가상 데이터이며, 전자결재가 사용하지 않는 항목(주민등록번호 · 계좌번호 · 연봉 등)은
+`seed_stg_employee.sql` 에서 제외했습니다.
+
+> B 로 만들면 재직자가 있는 부서만 생성되어 조직도 규모가 A 보다 작고, 문서 · 휴가 데이터는 비어 있습니다.
+> 화면을 확인하는 것이 목적이라면 A 를 사용하세요.
+
+데이터만 비우고 싶으면 아래 순서로 지웁니다 (외래키 때문에 순서가 중요합니다).
+
+```sql
+DELETE FROM approval_line;
+DELETE FROM vacation_request;
+DELETE FROM document;
+```
+
+### 3) 접속 정보 설정
+
+DB 비밀번호가 담기는 파일이라 저장소에는 **예시 파일만** 올려 두었습니다.
+`.example` 을 복사해서 실제 설정 파일을 만듭니다.
+
+```bash
+# Windows (프로젝트 루트에서)
+copy src\main\resources\config\datasource.properties.example src\main\resources\config\datasource.properties
+
+# macOS / Linux
+cp src/main/resources/config/datasource.properties.example src/main/resources/config/datasource.properties
+```
+
+복사한 `datasource.properties` 를 열어 계정 정보를 본인 환경에 맞게 고칩니다.
 
 ```properties
 db.driverClass=com.mysql.cj.jdbc.Driver
-db.url=jdbc:mysql://localhost:3306/eapproval_Backend?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-db.username=<본인 계정>
-db.password=<본인 비밀번호>
+db.url=jdbc:mysql://localhost:3307/eapproval_Backend?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+db.username=본인계정
+db.password=본인비밀번호
 ```
+
+| 항목 | 확인할 것 |
+|------|-----------|
+| 포트 | 예시는 `3307` 입니다. 기본 설치라면 `3306` 으로 바꾸세요 |
+| DB 이름 | 2) 에서 만든 이름과 같아야 합니다 (`eapproval_Backend`) |
+| `serverTimezone` | 빼면 시간대 오류로 접속이 실패할 수 있습니다 |
+| `characterEncoding` | 빼면 한글이 `?` 로 저장됩니다 |
+
+> `datasource.properties` 는 `.gitignore` 처리되어 커밋되지 않습니다.
+> 저장소에는 계정 정보가 들어가지 않습니다.
 
 ### 4) 빌드 후 Tomcat 배포
 
@@ -249,11 +311,45 @@ mvn clean package
 
 ### 5) 로그인
 
-로그인은 **사번(`employee_code`)** 으로 합니다. 예 : `EMP0012`
+로그인은 **사번(`employee_code`)** 으로 합니다. 비밀번호는 없습니다.
 
-이번 범위에서 인증은 검증 대상이 아니라고 판단해 **비밀번호 절차를 의도적으로 두지 않았습니다.**
+인증은 이번 범위의 검증 대상이 아니라고 판단해 **비밀번호 절차를 의도적으로 두지 않았습니다.**
 결재 흐름 · 트랜잭션 · 데이터 정합성에 집중하기 위한 선택이며,
 비밀번호 인증은 8장의 다음 단계에 포함되어 있습니다.
+
+#### 확인용 계정
+
+사원은 1,806명이 들어 있지만, **문서 · 결재 · 서명 데이터는 아래 네 명에게 모여 있습니다.**
+직급에 따라 보이는 화면이 다르므로 순서대로 들어가 보시길 권합니다.
+
+| 사번 | 이름 | 직급 · 직책 | 이 계정으로 볼 수 있는 것 |
+|------|------|-------------|---------------------------|
+| `EMP0822` | 권채원 | 과장 · 팀원 | **기안자 입장.** 본인이 올린 문서 10건, 휴가 신청 · 내 휴가 현황 |
+| `EMP0012` | 윤동현 | 차장 · 팀장 | **결재자 입장.** 결재 대기 문서, 승인 · 반려 처리 |
+| `EMP0004` | 허하준 | 이사 · 본부장 | 최종 결재자. 완료 문서함, 관리자 권한 |
+| `EMP0001` | 윤서연 | 대표이사 | 관리자 권한. 전자서명 여러 개 등록 · 대표 서명 전환 |
+
+그 외 사번으로도 로그인은 되지만 문서가 없어 화면이 비어 보입니다.
+
+#### 데이터 확인 · 수정
+
+들어 있는 데이터를 직접 확인하거나 바꾸고 싶을 때 쓰는 쿼리입니다.
+
+```sql
+-- 문서가 있는 사원 찾기
+SELECT e.employee_code, e.name, COUNT(*) AS 기안수
+FROM document d JOIN employee e ON e.employee_id = d.employee_id
+GROUP BY e.employee_code, e.name ORDER BY 기안수 DESC;
+
+-- 상태별 문서 건수
+SELECT status, COUNT(*) FROM document GROUP BY status;
+
+-- 특정 사원에게 관리자 권한 주기
+UPDATE employee SET role = 'ADMIN' WHERE employee_code = 'EMP0822';
+
+-- 잔여 연차 조정 (휴가 신청 · 차감을 테스트할 때)
+UPDATE employee SET remain_leave = 15 WHERE employee_code = 'EMP0822';
+```
 
 ---
 

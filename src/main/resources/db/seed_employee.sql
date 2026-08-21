@@ -13,8 +13,7 @@
   WHERE (s.`퇴직구분` IS NULL OR s.`퇴직구분` = '')
     AND s.`팀` IS NOT NULL AND s.`팀` <> '';
 
-  -- 3. 사원 적재 (상급자 제외, 기존 계정은 정보만
-  갱신)
+  -- 3. 사원 적재 (상급자 제외, 기존 계정은 정보만 갱신)
   INSERT INTO employee (employee_code, name, email,
   team_id, position, title, position_level, role)
   SELECT
@@ -38,8 +37,7 @@
     title = VALUES(title),
     position_level = VALUES(position_level);
 
-  -- 4. 상급자(manager_id) 채우기 (사원 전체 적재 후
-  2차 처리)
+  -- 4. 상급자(manager_id) 채우기 (사원 전체 적재 후 2차 처리)
   UPDATE employee e
   JOIN stg_employee s ON e.employee_code =
   s.`사원번호`
