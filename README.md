@@ -227,7 +227,30 @@ CREATE DATABASE eapproval_Backend
   COLLATE utf8mb4_general_ci;
 ```
 
-스키마와 초기 데이터는 `docs/schema.sql` 로 함께 제공합니다.
+덤프를 둘 중 하나 골라 실행합니다.
+
+| 파일 | 내용 | 언제 |
+|------|------|------|
+| `docs/schema-with-data.sql` | 테이블 + 사원 · 조직도 · 문서 등 샘플 데이터 | 바로 화면을 보고 싶을 때 (권장) |
+| `docs/schema.sql` | 테이블 구조만 | 빈 상태로 시작하고 싶을 때 |
+
+```bash
+mysql -u root -p eapproval_Backend < docs/schema-with-data.sql
+```
+
+샘플 데이터는 회사 명부를 가공해 넣은 가상 자료이며, 개인정보는 포함하지 않았습니다.
+데이터만 비우고 싶으면 아래 순서로 지우면 됩니다 (외래키 때문에 순서가 중요합니다).
+
+```sql
+DELETE FROM approval_line;
+DELETE FROM vacation_request;
+DELETE FROM document;
+```
+
+> `src/main/resources/db/` 의 `seed_employee.sql` · `seed_leave.sql` 은
+> 초기 데이터를 **어떻게 만들었는지**를 남긴 기록입니다.
+> 개인정보가 포함된 사원 명부 원본을 임시 테이블로 올려둔 상태를 전제로 하므로,
+> 그대로 실행할 수는 없습니다. 설치에는 위 덤프를 사용하세요.
 
 ### 3) 접속 정보 수정
 
