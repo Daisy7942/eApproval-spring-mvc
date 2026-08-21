@@ -142,7 +142,10 @@ CREATE TABLE `vacation_request` (
   `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`vacation_id`),
-  KEY `doc_id` (`doc_id`),
+  -- 문서 하나에 휴가 신청은 하나만 붙는다.
+  -- 서비스가 지우고 다시 넣는 방식이라 둘이 생길 일은 없지만,
+  -- 규칙을 코드에만 두면 직접 INSERT 했을 때 막힐 수 없다.
+  UNIQUE KEY `uk_vacation_request_doc` (`doc_id`),
   KEY `employee_id` (`employee_id`),
   KEY `vacation_type_id` (`vacation_type_id`),
   CONSTRAINT `vacation_request_ibfk_1` FOREIGN KEY (`doc_id`) REFERENCES `document` (`doc_id`),

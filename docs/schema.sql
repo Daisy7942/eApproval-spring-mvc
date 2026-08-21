@@ -259,6 +259,7 @@ CREATE TABLE `vacation_request` (
   `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`vacation_id`),
+  UNIQUE KEY `uk_vacation_request_doc` (`doc_id`),
   KEY `doc_id` (`doc_id`),
   KEY `employee_id` (`employee_id`),
   KEY `vacation_type_id` (`vacation_type_id`),
@@ -296,4 +297,4 @@ CREATE TABLE `vacation_type` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-08-21 10:51:28
+-- Dump completed on 2026-08-21 12:33:57
