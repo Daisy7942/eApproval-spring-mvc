@@ -1,6 +1,6 @@
 # eapproval — 사내 전자결재 · 휴가관리 시스템
 
-기안부터 결재 · 반려 · 재상신까지 종이 결재의 흐름을 그대로 옼기고,
+기안부터 결재 · 반려 · 재상신까지 종이 결재의 흐름을 그대로 옮기고,
 휴가 신청과 연차 차감을 그 결재 흐름 위에서 함께 처리하는 시스템입니다.
 
 - 개발 기간 : 2026-07-18 ~ 2026-08-20 (약 5주)
@@ -250,6 +250,7 @@ private int writableRound(Long docId) {
 ### 1) 저장소 받기
 
 ```bash
+# cmd 또는 Git Bash · 프로젝트를 받을 상위 폴더에서
 git clone https://github.com/Daisy7942/eApproval-spring-mvc.git
 cd eApproval-spring-mvc
 ```
@@ -257,6 +258,7 @@ cd eApproval-spring-mvc
 ### 2) 데이터베이스 준비
 
 ```sql
+-- MySQL Workbench 쿼리 창에서 실행 (Ctrl + Enter)
 CREATE DATABASE eapproval_Backend
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_general_ci;
@@ -267,6 +269,7 @@ CREATE DATABASE eapproval_Backend
 #### A. 덤프 한 번으로 끝내기 (권장)
 
 ```bash
+# cmd · 프로젝트 루트(eApproval-spring-mvc) 에서
 mysql -u root -p eapproval_Backend < docs/schema-with-data.sql
 ```
 
@@ -283,7 +286,8 @@ mysql -u root -p eapproval_Backend < docs/schema-with-data.sql
 
 <br>
 
-`src/main/resources/db/` 의 파일을 **아래 순서대로** 실행합니다.
+MySQL Workbench 에서 `File → Open SQL Script` 로 `src/main/resources/db/` 의 파일을
+하나씩 열어 **아래 순서대로** 실행합니다.
 
 | 순서 | 파일 | 하는 일 |
 |------|------|---------|
@@ -306,6 +310,7 @@ mysql -u root -p eapproval_Backend < docs/schema-with-data.sql
 데이터만 비우고 싶으면 아래 순서로 지웁니다 (외래키 때문에 순서가 중요합니다).
 
 ```sql
+-- MySQL Workbench 쿼리 창에서 실행
 DELETE FROM approval_line;
 DELETE FROM vacation_request;
 DELETE FROM document;
@@ -317,14 +322,14 @@ DB 비밀번호가 담기는 파일이라 저장소에는 **예시 파일만** �
 `.example` 을 복사해서 실제 설정 파일을 만듭니다.
 
 ```bash
-# Windows (프로젝트 루트에서)
+# Windows — cmd · 프로젝트 루트에서
 copy src\main\resources\config\datasource.properties.example src\main\resources\config\datasource.properties
 
-# macOS / Linux
+# macOS / Linux — 터미널 · 프로젝트 루트에서
 cp src/main/resources/config/datasource.properties.example src/main/resources/config/datasource.properties
 ```
 
-복사한 `datasource.properties` 를 열어 계정 정보를 본인 환경에 맞게 고칩니다.
+복사한 `datasource.properties` 를 메모장이나 STS 에서 열어 계정 정보를 본인 환경에 맞게 고칩니다.
 
 ```properties
 db.driverClass=com.mysql.cj.jdbc.Driver
@@ -361,16 +366,39 @@ Servers 탭에서 서버 우클릭 → `Publish` → `Start` 로 다시 올립�
 
 #### 방법 2 — war 파일로 배포
 
+STS 없이 톰캣만으로 실행하는 방법입니다. 완성된 웹앱을 다른 서버에 그대로 넘길 때 사용합니다.
+
+**(1) war 만들기**
+
 ```bash
+# cmd · 프로젝트 루트에서 (Maven 이 PATH 에 등록되어 있어야 합니다)
 mvn clean package
 ```
 
-Maven 이 설치된 환경에서 `target/eapproval.war` 가 만들어집니다.
-Tomcat 의 `webapps/` 에 넣고 서버를 시작합니다.
-IDE 없이 돌리거나, 톰캣 연동을 지원하지 않는 IDE 를 쓸 때 사용합니다.
+`target/eapproval.war` 가 만들어집니다.
+`mvn` 명령이 없다면 STS 내장 Maven 을 쓰면 됩니다.
+`Package Explorer` 에서 **1) 에서 받아 Import 한 프로젝트(`eapproval`)** 를 우클릭 →
+`Run As` → `Maven build...` → `Goals` 칸에 `clean package` 입력 → `Run`.
+
+**(2) 톰캣에 복사**
+
+STS 로 서버를 띄워 둔 상태라면 먼저 중지합니다. 기존에 사용 중인 포트와 충돌할 수 있습니다.
+그다음 `target/eapproval.war` 를 톰캣 설치 폴더의 `webapps/` 안에 복사합니다.
+
+톰캣 설치 경로를 모르겠다면 STS 에서 `Window` → `Preferences` → `Server` → `Runtime Environments` 로 가서
+`Apache Tomcat v9.0` 을 선택하고 `Edit` 을 누르면 `Tomcat installation directory` 에 나옵니다.
+
+**(3) 서버 시작**
+
+톰캣 설치 폴더의 `bin/startup.bat` 을 실행합니다 (macOS · Linux 는 `bin/startup.sh`).
+검은 콘솔 창이 뜨면서 서버가 올라가고, 이 창을 닫으면 서버도 함께 종료됩니다.
+정상 종료는 같은 폴더의 `shutdown.bat` 입니다.
+
+시작되고 나면 `webapps/` 안에 war 와 같은 이름의 `eapproval/` 폴더가 자동으로 생깁니다.
+톰캣이 war 의 압축을 푼 것이며, **이 폴더 이름이 그대로 접속 경로**가 됩니다.
 
 두 방법 모두 `http://localhost:8080/eapproval` 로 접속합니다.
-(Eclipse 가 다른 포트를 쓰도록 설정되어 있다면 그 포트를 사용합니다.)
+8080 은 톰캣 기본 포트입니다. 바꿔 두었다면 톰캣 폴더의 `conf/server.xml` 에서 `Connector port` 값을 확인하세요.
 
 ### 5) 로그인
 
@@ -399,6 +427,8 @@ IDE 없이 돌리거나, 톰캣 연동을 지원하지 않는 IDE 를 쓸 때 �
 들어 있는 데이터를 직접 확인하거나 바꾸고 싶을 때 쓰는 쿼리입니다.
 
 ```sql
+-- MySQL Workbench 쿼리 창에서 실행
+
 -- 문서가 있는 사원 찾기
 SELECT e.employee_code, e.name, COUNT(*) AS 기안수
 FROM document d JOIN employee e ON e.employee_id = d.employee_id
