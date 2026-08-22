@@ -47,6 +47,7 @@
 | View | JSP + JSTL, jQuery | JSTL 1.2 |
 | Build | Maven (packaging: war) | — |
 | WAS | Apache Tomcat | 9.0 |
+| 배포 | AWS EC2 (Ubuntu 24.04) | t3.micro |
 | IDE | Spring Tool Suite 3 (Eclipse 4.21 기반) | 3.9.18 |
 | 형상관리 | Git / GitHub | — |
 | 화면 설계 | Figma | — |
