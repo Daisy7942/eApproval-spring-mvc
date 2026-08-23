@@ -128,6 +128,13 @@ public class DocumentService {
 		if(lines.size()>3){
 			throw new IllegalStateException("결재는 최대 3명까지 가능합니다.");
 		}
+		
+		// 기안자는 자기 문서를 결재 방지
+		for (ApprovalLineVO line : lines) {
+			if (documentVO.getEmployeeId().equals(line.getApproverId())) {
+				throw new IllegalStateException("기안자는 결재선에 포함할 수 없습니다.");
+			}
+		}
 
 		// 서명조회
 		Long empId = documentVO.getEmployeeId();
