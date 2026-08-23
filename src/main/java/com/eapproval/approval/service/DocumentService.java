@@ -31,7 +31,7 @@ public class DocumentService {
 
 	@Autowired
 	private EmployeeMapper employeeMapper;
-	
+
 	@Autowired
 	private SignatureService signatureService;
 
@@ -129,7 +129,14 @@ public class DocumentService {
 			throw new IllegalStateException("결재는 최대 3명까지 가능합니다.");
 		}
 		
-		//서명조회
+		// 기안자는 자기 문서를 결재 방지
+		for (ApprovalLineVO line : lines) {
+			if (documentVO.getEmployeeId().equals(line.getApproverId())) {
+				throw new IllegalStateException("기안자는 결재선에 포함할 수 없습니다.");
+			}
+		}
+
+		// 서명조회
 		Long empId = documentVO.getEmployeeId();
 		Long sign = signatureService.getActiveSignatureId(empId);
 		documentVO.setDraftSignatureId(sign);
@@ -160,6 +167,14 @@ public class DocumentService {
 			}
 
 			v.setDays(calcDays(v)); // 연차 계산해서 세팅
+
+			
+			// 임시저장을 제외하고, 실 근무일이 0일(주말 등)인 신청은 차단 (서버 검증)
+			if (v.getDays().compareTo(BigDecimal.ZERO) <= 0) {
+				throw new IllegalStateException("선택한 기간에 근무일이 없습니다.");
+			}
+			
+			
 			VacationTypeVO type = documentMapper.selectVacationType(v.getVacationTypeId());
 			if (type != null && type.isDeductBalance()) { // 연차가 차감되는 휴가 유형이라면
 
@@ -174,6 +189,21 @@ public class DocumentService {
 			}
 		}
 
+		
+		
+
+
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		// 문서 메인 데이터 저장 (신규 vs 임시저장 구분)
 		if (documentVO.getDocId() == null) {
 			documentVO.setStatus("PENDING"); // 결재'대기'상태로 셋팅
@@ -376,6 +406,8 @@ public class DocumentService {
 	// 문서 승인
 	@Transactional
 	public void approve(Long docId, Long empId, String comment) {
+		checkMyTurn(docId, empId);
+
 		Long signatureId = signatureService.getActiveSignatureId(empId);
 		int updated = documentMapper.updateApprovalStatus(docId, empId, "APPROVED", comment, signatureId);
 		if (updated == 0) {
@@ -400,7 +432,9 @@ public class DocumentService {
 	// 문서 반려
 	@Transactional
 	public void reject(Long docId, Long empId, String comment) {
-		int updated = documentMapper.updateApprovalStatus(docId, empId, "REJECTED", comment,null);
+		checkMyTurn(docId, empId);
+
+		int updated = documentMapper.updateApprovalStatus(docId, empId, "REJECTED", comment, null);
 		if (updated == 0) {
 			throw new IllegalStateException("결재 권한이 없거나 이미 처리된 문서입니다.");
 		}
@@ -408,6 +442,12 @@ public class DocumentService {
 
 		// 남은 결재자들은 더 결재할 이유가 없으므로 대기 줄을 취소 처리
 		documentMapper.cancelRemainingLines(docId);
+	}
+
+	private void checkMyTurn(Long docId, Long empId) {
+		if (documentMapper.countEarlierPendingLines(docId, empId) > 0) {
+			throw new IllegalStateException("앞 순번 결재자가 아직 처리하지 않았습니다.");
+		}
 	}
 
 	// vacation 종류 칩 조회

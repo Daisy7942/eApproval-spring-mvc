@@ -96,6 +96,10 @@ public interface DocumentMapper {
 	int updateApprovalStatus(@Param("docId") Long docId, @Param("approverId") Long approverId,
 			@Param("approvalStatus") String approvalStatus, @Param("comment") String comment, @Param("signatureId") Long signatureId);
 
+	// 순차 결재에서 내 앞 순번이 아직 안 끝났는지 센다. 0 이면 내 차례
+	int countEarlierPendingLines(@Param("docId") Long docId, @Param("approverId") Long approverId);
+	
+	
 	// PENDING 개수 세기 - 이 숫자로 최종상태 반영을 위함 0일때 승인으로 처리
 	int countPendingLines(@Param("docId") Long docId);
 

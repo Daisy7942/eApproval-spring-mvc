@@ -4,6 +4,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,7 +27,13 @@ public class LoginController {
 
 	// --- API 연동 , 로그인 처리 ---
 	@PostMapping(value = "/login")
-	public String login(@RequestParam String employeeCode, HttpServletRequest request) {
+	public String login(@RequestParam String employeeCode, HttpServletRequest request, Model model) {
+
+		// 빈칸으로 눌렀을 때 
+		if (employeeCode == null || employeeCode.trim().isEmpty()) {
+			model.addAttribute("errorMessage", "사번을 입력해주세요.");
+			return "employee/login";
+		}
 
 		EapprovalVO eapprovalVO = loginService.getEmployee(employeeCode);
 
@@ -41,8 +48,8 @@ public class LoginController {
 
 			return "redirect:/";
 		} else {
+			model.addAttribute("errorMessage", "등록되지 않은 사번입니다.");
 			return "employee/login";
-
 		}
 	}
 

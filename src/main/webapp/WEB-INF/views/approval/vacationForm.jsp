@@ -965,7 +965,10 @@ $(document).ready(function() {
                       $('#dateErr').text('종료일은 시작일보다 빠를 수 없습니다.').show();
                       msgs.push('휴가 종료일을 확인해 주세요.');
                       first = first || function() { $('#endDate').focus(); };
-              } else if (recalc() === 0) {
+              } else if (isSubmitDoc && recalc() === 0) {
+                      /* 0일 검사는 신청(상신)일 때만. 임시저장은 쓰다 만 신청서를
+                         그대로 쟁여두는 기능이라 근무일이 0이어도 저장돼야 한다 —
+                         vacation_request.days 는 0 을 받는 컬럼이다 */
                       $('#dateErr').text('사용 일수가 0일입니다. 기간을 다시 선택해주세요.').show();
                       msgs.push('선택한 기간에 근무일이 없습니다.');
                       first = first || function() { $('#startDate').focus(); };
