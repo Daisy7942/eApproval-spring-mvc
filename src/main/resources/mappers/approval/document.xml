@@ -218,6 +218,7 @@
 	<!-- 삭제 가능한 임시저장(DRAFT) 문서 ID 목록 조각 -->
 	<!-- (본인 소유, DRAFT 상태, 결재 진행 이력이 없는 문서 검증) -->
 	<sql id="deletableDrafts">
+		SELECT doc_id FROM (
 		SELECT doc_id FROM document d
 		WHERE doc_id IN
 		<foreach collection="docIds" item="id" open="(" separator=","
@@ -231,6 +232,7 @@
 		WHERE al.doc_id = d.doc_id
 		AND
 		al.approval_status IN ('APPROVED', 'REJECTED'))
+		) AS t
 	</sql>
 
 	<!-- 임시저장 문서 삭제 시 관련 결재선 전체 삭제 (FK 제약조건 방지) -->
