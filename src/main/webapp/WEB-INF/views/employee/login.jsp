@@ -81,13 +81,40 @@ button:hover {
 	background: #2E5395;
 }
 
-.error {
-	background: #fdecea;
+/* 로그인 실패 안내 모달 */
+.modal-back {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, .45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.modal-box {
+	background: #fff;
+	border-radius: 10px;
+	width: 320px;
+	padding: 28px 24px 20px;
+	text-align: center;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
+}
+
+.modal-box .msg {
+	font-size: 14px;
 	color: #b3261e;
-	font-size: 13px;
-	padding: 10px 12px;
-	border-radius: 6px;
-	margin-bottom: 16px;
+	margin-bottom: 20px;
+	line-height: 1.5;
+}
+
+.modal-box button {
+	width: auto;
+	min-width: 90px;
+	padding: 9px 18px;
+	font-size: 14px;
 }
 </style>
 </head>
@@ -96,15 +123,28 @@ button:hover {
 		<h1>eApproval 전자결재</h1>
 		<p class="sub">사원번호로 로그인하세요</p>
 
-		<c:if test="${not empty errorMessage}">
-			<div class="error">${errorMessage}</div>
-		</c:if>
-
 		<form action="${pageContext.request.contextPath}/login" method="post">
 			<label for="employeeCode">사원번호</label> 
 			<input type="text" id="employeeCode" name="employeeCode" placeholder="예: EMP0001" autofocus>
 			<button type="submit">로그인</button>
 		</form>
 	</div>
+
+	<%-- errorMessage 가 있을 때만 모달을 그린다 --%>
+	<c:if test="${not empty errorMessage}">
+		<div class="modal-back" id="errorModal">
+			<div class="modal-box">
+				<p class="msg">${errorMessage}</p>
+				<button type="button" onclick="closeErrorModal()">확인</button>
+			</div>
+		</div>
+	</c:if>
+
+	<script>
+		function closeErrorModal() {
+			document.getElementById("errorModal").style.display = "none";
+			document.getElementById("employeeCode").focus();
+		}
+	</script>
 </body>
 </html>
