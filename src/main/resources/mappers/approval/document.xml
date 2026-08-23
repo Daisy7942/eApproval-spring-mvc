@@ -333,15 +333,22 @@
 		UPDATE document
 		SET status = 'DRAFT', updated_at =
 		NOW()
-		WHERE doc_id = #{docId}
+		WHERE doc_id =
+		#{docId}
 		AND employee_id = #{employeeId}
 		AND status
 		= 'PENDING'
+		<!-- 결재 이력 검사는 최신 차수만 본다. -->
 		AND NOT EXISTS (SELECT 1 FROM approval_line al
-		WHERE
-		al.doc_id = #{docId}
-		AND al.approval_status != 'PENDING')
+		WHERE al.doc_id =
+		#{docId}
+		AND al.round = (SELECT MAX(r.round) FROM (SELECT round, doc_id
+		FROM
+		approval_line) r WHERE r.doc_id = #{docId})
+		AND al.approval_status
+		!= 'PENDING')
 	</update>
+
 
 
 
