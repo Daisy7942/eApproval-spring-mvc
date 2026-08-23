@@ -671,6 +671,30 @@
 		#{docId} AND status = 'PENDING')
 	</update>
 
+	<!-- 순차 결재: 내 앞 차례의 미결재자 수 조회 (0 = 내 차례) -->
+	<select id="countEarlierPendingLines" resultType="int">
+		SELECT COUNT(*)
+		FROM approval_line me
+		JOIN document d ON d.doc_id = me.doc_id
+		AND
+		d.approval_type = 'SEQUENTIAL'
+		JOIN approval_line prev ON prev.doc_id =
+		me.doc_id
+		AND prev.round = me.round
+		AND prev.approval_order &lt;
+		me.approval_order
+		AND prev.approval_status = 'PENDING'
+		WHERE me.doc_id =
+		#{docId}
+		AND me.approver_id = #{approverId}
+		AND me.approval_status =
+		'PENDING'
+		AND me.round = (SELECT MAX(r.round) FROM approval_line r
+		WHERE r.doc_id = #{docId})
+	</select>
+
+
+
 	<!-- PENDING 개수 세기 - 이 숫자로 최종상태 반영을 위함 0일때 승인으로 처리. 전 차수의 잔여 PENDING으로 인한 
 		최종 승인 누락을 막기 위해 현재(최신) 차수만 집계 -->
 	<select id="countPendingLines" resultType="int">
@@ -772,12 +796,13 @@
 		d.status IN
 		('PENDING','APPROVED')
 		AND vr.start_date &lt;= #{endDate}
-		AND vr.end_date >= #{startDate}
+		AND
+		vr.end_date >= #{startDate}
 		<if test="docId != null"> AND vr.doc_id != #{docId} </if>
 	</select>
 
 
-	<!-- 내 휴가 신청 내역 목록 조회 쿼리	-->
+	<!-- 내 휴가 신청 내역 목록 조회 쿼리 -->
 	<select id="selectMyLeaveList" parameterType="long"
 		resultType="com.eapproval.approval.vo.VacationRequestVO">
 		SELECT
