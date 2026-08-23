@@ -167,6 +167,14 @@ public class DocumentService {
 			}
 
 			v.setDays(calcDays(v)); // 연차 계산해서 세팅
+
+			
+			// 임시저장을 제외하고, 실 근무일이 0일(주말 등)인 신청은 차단 (서버 검증)
+			if (v.getDays().compareTo(BigDecimal.ZERO) <= 0) {
+				throw new IllegalStateException("선택한 기간에 근무일이 없습니다.");
+			}
+			
+			
 			VacationTypeVO type = documentMapper.selectVacationType(v.getVacationTypeId());
 			if (type != null && type.isDeductBalance()) { // 연차가 차감되는 휴가 유형이라면
 
@@ -181,6 +189,21 @@ public class DocumentService {
 			}
 		}
 
+		
+		
+
+
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		// 문서 메인 데이터 저장 (신규 vs 임시저장 구분)
 		if (documentVO.getDocId() == null) {
 			documentVO.setStatus("PENDING"); // 결재'대기'상태로 셋팅
