@@ -46,4 +46,18 @@
 		<url-pattern>/</url-pattern>
 	</servlet-mapping>
 
+
+	<!-- 컨트롤러 외부 예외 및 500 에러 처리 (시스템 정보 노출 방지용 최후의 공통 에러 페이지) 이걸 안 걸면 톰캣 기본 화면이 뜨면서 예외 메시지·SQL 전문·스택 트레이스가 사용자 
+		브라우저에 그대로 찍힌다. 테이블명과 톰캣 버전까지 노출된다. @ExceptionHandler 는 컨트롤러 안에서 난 IllegalStateException 
+		만 잡으므로 그 바깥(SQL 오류, 필터, JSP 렌더링)에서 난 것은 여기서 받는다. -->
+	<error-page>
+		<error-code>500</error-code>
+		<location>/WEB-INF/views/error/systemError.jsp</location>
+	</error-page>
+	<error-page>
+		<exception-type>java.lang.Throwable</exception-type>
+		<location>/WEB-INF/views/error/systemError.jsp</location>
+	</error-page>
+
+
 </web-app>
