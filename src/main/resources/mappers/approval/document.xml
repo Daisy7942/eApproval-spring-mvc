@@ -825,6 +825,7 @@
 		vacation_type vt ON vt.vacation_type_id = vr.vacation_type_id
 		WHERE
 		vr.employee_id = #{employeeId}
+		AND d.status IN ('PENDING', 'APPROVED', 'REJECTED')
 		ORDER BY vr.vacation_id DESC
 	</select>
 
