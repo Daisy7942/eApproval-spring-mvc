@@ -245,11 +245,11 @@ body { background:#f4f6fa; padding:26px; }
 
               <%-- 제목은 고른 종류·기간으로 조립해서 넣는다.
                    휴가는 제목이 뻔해서 따로 입력받지 않는다. --%>
-              <input type="hidden" id="title" name="title" value="${doc.title}">
+              <input type="hidden" id="title" name="title" value="${fn:escapeXml(doc.title)}">
 
               <%-- 본문도 입력칸이 없다. 고른 값으로 조립해서 넣는다.
                    상세보기의 본문 칸에 그대로 찍히는 글이다. --%>
-              <input type="hidden" id="content" name="content" value="${doc.content}">
+              <input type="hidden" id="content" name="content" value="${fn:escapeXml(doc.content)}">
 
               <div class="head">
                       <%-- 긴급 여부는 document 표의 is_urgent 다. 휴가 고유값이 아니라

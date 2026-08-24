@@ -108,6 +108,14 @@
 			<version>2.3.3</version>
 			<scope>provided</scope>
 		</dependency>
+
+		<!-- 본문 HTML 정화(XSS 방지). 결재 본문은 Summernote 가 만든 진짜 HTML 이라
+		     이스케이프하면 서식이 깨진다. 허용 태그만 남기고 나머지를 털어내는 방식이 필요하다 -->
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>1.17.2</version>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -18,6 +18,7 @@ import com.eapproval.approval.vo.DocumentVO;
 import com.eapproval.approval.vo.LeaveSummaryVO;
 import com.eapproval.approval.vo.VacationRequestVO;
 import com.eapproval.approval.vo.VacationTypeVO;
+import com.eapproval.common.util.HtmlSanitizer;
 import com.eapproval.common.vo.PageVO;
 import com.eapproval.employee.dao.EmployeeMapper;
 import com.eapproval.employee.service.SignatureService;
@@ -38,6 +39,7 @@ public class DocumentService {
 	// 임시저장
 	@Transactional
 	public int saveDraft(DocumentVO documentVO) {
+		sanitize(documentVO);
 		documentVO.setStatus("DRAFT"); // 상태값 :대기, 승인 등
 		documentVO.setApprovalType(normalizeApprovalType(documentVO.getApprovalType()));
 		int result = documentMapper.insertDocument(documentVO); // 여기서 docId 가 생긴다
@@ -116,6 +118,7 @@ public class DocumentService {
 	// 상신
 	@Transactional
 	public void submitDocument(DocumentVO documentVO) {
+		sanitize(documentVO);
 		
 
 		// 결재선 존재 유무 검증 / null 을 먼저 검사 — 리스트가 없으면 isEmpty() 자체가 터진다
@@ -263,6 +266,21 @@ public class DocumentService {
 		return new BigDecimal(work);
 	}
 
+
+
+	// [보안 처리] 사용자가 입력한 값에서 위험한 코드(XSS 공격)를 빼내는 작업
+	// 본문은 Summernote HTML 이라 허용 태그만 남기고, 제목·사유는 서식이 필요 없어 태그를 다 지운다.
+	// DB에 저장하기 전에 미리 처리하면, 나중에 어디서 띄워 보여주든 안전
+	private void sanitize(DocumentVO documentVO) {
+		documentVO.setTitle(HtmlSanitizer.cleanText(documentVO.getTitle()));
+		documentVO.setContent(HtmlSanitizer.cleanBody(documentVO.getContent()));
+
+		VacationRequestVO v = documentVO.getVacation();
+		if (v != null) {
+			v.setReason(HtmlSanitizer.cleanText(v.getReason()));
+		}
+	}
+
 	// 화면에서 온 빈 문자열은 NUll로 통일
 	private String nullIfEmpty(String s) {
 		return (s == null || s.trim().isEmpty()) ? null : s;
@@ -293,6 +311,7 @@ public class DocumentService {
 	@Transactional
 	// 임시저장 1건 수정저장
 	public int updateDraft(DocumentVO documentVO) {
+		sanitize(documentVO);
 		documentVO.setApprovalType(normalizeApprovalType(documentVO.getApprovalType()));
 		int result = documentMapper.updateDraft(documentVO);
 		saveApprovalLines(documentVO);
@@ -406,6 +425,7 @@ public class DocumentService {
 	// 문서 승인
 	@Transactional
 	public void approve(Long docId, Long empId, String comment) {
+		comment = HtmlSanitizer.cleanText(comment);
 		checkMyTurn(docId, empId);
 
 		Long signatureId = signatureService.getActiveSignatureId(empId);
@@ -432,6 +452,7 @@ public class DocumentService {
 	// 문서 반려
 	@Transactional
 	public void reject(Long docId, Long empId, String comment) {
+		comment = HtmlSanitizer.cleanText(comment);
 		checkMyTurn(docId, empId);
 
 		int updated = documentMapper.updateApprovalStatus(docId, empId, "REJECTED", comment, null);
