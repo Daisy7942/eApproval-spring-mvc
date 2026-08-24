@@ -157,6 +157,18 @@
 	color: #5b45c9;
 }
 
+/* 잔여 연차 밑에 붙는 안내 한 줄.
+   경고가 아니라 안내라 붉은색을 쓰지 않고 조용한 회색으로 둔다. */
+.avail-note {
+	margin-top: 11px;
+	font-size: 12px;
+	color: #6b7686;
+}
+
+.avail-note b {
+	color: #2b3444;
+}
+
 /* ===== 사용률 막대 ===== */
 .usage {
 	margin-top: 18px;
@@ -739,6 +751,19 @@
 								maxFractionDigits="1" />일</b> <span>잔여 연차</span>
 					</div>
 				</div>
+
+				<%-- 잔여 연차는 승인될 때만 깎이므로, 대기 중인 신청은 아직 빠져 있지 않다.
+				     서버가 신청을 막을 때 보는 값은 (잔여 - 대기) 라
+				     화면의 '잔여' 만 보고 신청하면 왜 막혔는지 알 수 없다.
+				     대기가 있을 때만 알려준다 — 없으면 잔여와 같은 숫자라 군더더기다 --%>
+				<c:if test="${summary.pendingDays gt 0}">
+					<p class="avail-note">
+						승인 대기 <fmt:formatNumber value="${summary.pendingDays}"
+							maxFractionDigits="1" />일을 빼면 지금 신청할 수 있는 연차는
+						<b><fmt:formatNumber value="${summary.remainDays - summary.pendingDays}"
+							maxFractionDigits="1" />일</b>입니다.
+					</p>
+				</c:if>
 
 				<%-- 사용률. 부여가 0이면 0으로 나누게 되므로 그때는 막대를 비운다 --%>
 				<%-- 나누기를 먼저 하면 안 된다. usedDays 는 decimal(4,1) 이라
