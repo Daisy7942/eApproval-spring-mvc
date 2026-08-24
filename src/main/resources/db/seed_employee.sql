@@ -1,12 +1,12 @@
 -- 1. 부서 적재 (재직자 기준)
-  INSERT INTO department (department_name)
+  INSERT IGNORE INTO department (department_name)
   SELECT DISTINCT `부서`
   FROM stg_employee
   WHERE (`퇴직구분` IS NULL OR `퇴직구분` = '')
     AND `부서` IS NOT NULL AND `부서` <> '';
 
   -- 2. 팀 적재
-  INSERT INTO team (team_name, department_id)
+  INSERT IGNORE INTO team (team_name, department_id)
   SELECT DISTINCT s.`팀`, d.department_id
   FROM stg_employee s
   JOIN department d ON d.department_name = s.`부서`

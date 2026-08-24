@@ -1,4 +1,4 @@
--- eapproval_backend.department definition
+-- 부서 테이블
 
 CREATE TABLE `department` (
   `department_id` bigint NOT NULL AUTO_INCREMENT,
@@ -7,7 +7,7 @@ CREATE TABLE `department` (
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.vacation_type definition
+-- 휴가 유형 테이블
 
 CREATE TABLE `vacation_type` (
   `vacation_type_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE `vacation_type` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.team definition
+-- 팀 테이블
 
 CREATE TABLE `team` (
   `team_id` bigint NOT NULL AUTO_INCREMENT,
@@ -33,7 +33,7 @@ CREATE TABLE `team` (
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.employee definition
+-- 사원 테이블
 
 CREATE TABLE `employee` (
   `employee_id` bigint NOT NULL AUTO_INCREMENT,
@@ -58,7 +58,7 @@ CREATE TABLE `employee` (
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.notification definition
+-- 알림 테이블
 
 CREATE TABLE `notification` (
   `notification_id` bigint NOT NULL AUTO_INCREMENT,
@@ -73,7 +73,7 @@ CREATE TABLE `notification` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.signature definition
+-- 서명 테이블
 
 CREATE TABLE `signature` (
   `signature_id` bigint NOT NULL AUTO_INCREMENT,
@@ -89,7 +89,7 @@ CREATE TABLE `signature` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.document definition
+-- 전자결재 문서 테이블
 
 CREATE TABLE `document` (
   `doc_id` bigint NOT NULL AUTO_INCREMENT,
@@ -112,7 +112,7 @@ CREATE TABLE `document` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.favorite definition
+-- 즐겨찾기 테이블
 
 CREATE TABLE `favorite` (
   `favorite_id` bigint NOT NULL AUTO_INCREMENT,
@@ -127,7 +127,7 @@ CREATE TABLE `favorite` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.vacation_request definition
+-- 휴가 신청 테이블
 
 CREATE TABLE `vacation_request` (
   `vacation_id` bigint NOT NULL AUTO_INCREMENT,
@@ -142,9 +142,8 @@ CREATE TABLE `vacation_request` (
   `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`vacation_id`),
-  -- 문서 하나에 휴가 신청은 하나만 붙는다.
-  -- 서비스가 지우고 다시 넣는 방식이라 둘이 생길 일은 없지만,
-  -- 규칙을 코드에만 두면 직접 INSERT 했을 때 막힐 수 없다.
+  -- 문서 1건당 휴가 신청 1건만 허용한다.
+  -- 서비스 외부에서 직접 INSERT하더라도 중복 생성을 DB에서 차단한다.
   UNIQUE KEY `uk_vacation_request_doc` (`doc_id`),
   KEY `employee_id` (`employee_id`),
   KEY `vacation_type_id` (`vacation_type_id`),
@@ -154,7 +153,7 @@ CREATE TABLE `vacation_request` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.approval_line definition
+-- 결재선 테이블
 
 CREATE TABLE `approval_line` (
   `approval_line_id` bigint NOT NULL AUTO_INCREMENT,
@@ -178,7 +177,7 @@ CREATE TABLE `approval_line` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.attachment definition
+-- 첨부파일 테이블
 
 CREATE TABLE `attachment` (
   `attachment_id` bigint NOT NULL AUTO_INCREMENT,
@@ -194,7 +193,7 @@ CREATE TABLE `attachment` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
--- eapproval_backend.delegation definition
+-- 결재 위임 테이블
 
 CREATE TABLE `delegation` (
   `delegation_id` bigint NOT NULL AUTO_INCREMENT,
@@ -212,13 +211,24 @@ CREATE TABLE `delegation` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
-
+-- 문서 마감일 컬럼 추가
 ALTER TABLE document
   ADD COLUMN due_date DATE NULL AFTER is_urgent;
 
 
+-- 참고: signature.is_active와 is_deleted는 CREATE TABLE에 포함되어 있으므로
+-- 별도의 ALTER TABLE을 실행하지 않는다. 중복 추가 시 Duplicate column 오류가 발생한다.
 
-  
--- signature.is_active / is_deleted 는 위 CREATE TABLE 에 이미 들어 있다.
--- 예전에 ALTER 로 추가했다가 CREATE 쪽에도 반영해서 중복됐고,
--- 그대로 두면 Duplicate column 에러로 스크립트가 멈춘다.
+-- 부서명·팀명 중복 방지 제약조건
+-- ============================================================
+-- seed_employee.sql을 반복 실행해도 같은 부서와 팀이 중복 생성되지 않도록 한다.
+-- team_name은 seed_employee.sql에서도 전사 유일값으로 조회하므로 단독 UNIQUE를 적용한다.
+ALTER TABLE department ADD UNIQUE KEY uk_department_name (department_name);
+ALTER TABLE team       ADD UNIQUE KEY uk_team_name (team_name);
+
+
+-- 15. 상신함 조회 성능 개선용 복합 인덱스
+-- ============================================================
+-- 상신함의 주요 조회 조건인 employee_id와 status를 하나의 인덱스로 묶는다.
+-- status는 값의 종류가 적어 단독 인덱스의 효율이 낮다.
+ALTER TABLE document ADD KEY idx_document_employee_status (employee_id, status);
