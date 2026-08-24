@@ -1,49 +1,44 @@
 package com.eapproval.common.util;
 
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.safety.Safelist;
 
-/**
- * 화면에서 올라온 값에서 위험한 태그를 털어낸다.
- *
- * 결재 본문은 Summernote 가 만든 HTML 이라 그대로 이스케이프하면 서식이 다 깨진다.
- * 그래서 "글자로 바꾸기"가 아니라 "허용 목록에 없는 태그를 지우기" 방식을 쓴다.
- * script 태그, onclick 같은 이벤트 속성, javascript: 로 시작하는 링크는
- * 허용 목록에 없으므로 전부 사라진다.
- *
- * 제목·사유·결재의견은 서식이 필요 없는 값이라 태그를 통째로 없앤다.
- */
+//[보안 처리] 화면에서 들어온 값에서 위험한 코드를 걸러내는 유틸리티 클래스
 public class HtmlSanitizer {
 
-	// 본문에서 살려 둘 태그 목록
+	// 본문에서 지우지 않고 남겨둘 안전한 태그 목록
 	private static final Safelist BODY = Safelist.relaxed()
-			// Summernote 의 글자색·정렬은 style 속성에 담겨 온다.
-			// 이걸 막으면 서식이 통째로 빠지므로 열어 둔다.
-			// style 값 자체는 Jsoup 이 검사하지 않지만, 요즘 브라우저는
-			// CSS 안의 javascript: 를 실행하지 않아 실행 경로가 없다.
+			// 글자색, 정렬 등 에디터 서식을 위해 style 속성 허용
 			.addAttributes(":all", "style")
-			// 에디터에서 붙여넣은 이미지는 data:image/... 형태로 들어온다.
-			// relaxed 는 http/https 만 허용하므로 data 를 더해 준다.
+			// 에디터에 붙여넣은 이미지(data:image/...)를 보여주기 위해 data 프로토콜 허용
 			.addProtocols("img", "src", "data")
+			// 구분선(<hr>) 태그 허용
 			.addTags("hr");
 
 	private HtmlSanitizer() {
+		// 유틸리티 클래스이므로 객체 생성을 막음
 	}
 
-	/** 결재 본문용. 서식은 남기고 위험한 것만 지운다. */
+	// Jsoup이 줄바꿈을 멋대로 띄어쓰기로 합쳐버리지 않도록 설정
+	// (이걸 안 끄면 여러 줄로 쓴 글이 한 줄로 붙어버린다)
+	private static Document.OutputSettings keepNewLines() {
+		return new Document.OutputSettings().prettyPrint(false);
+	}
+
+	// [본문용] 글자색, 굵게 같은 서식은 남기고, 위험한 스크립트만 제거
 	public static String cleanBody(String html) {
 		if (html == null) {
 			return null;
 		}
-		return Jsoup.clean(html, BODY);
+		return Jsoup.clean(html, "", BODY, keepNewLines());
 	}
 
-	/** 제목·사유·의견용. 태그를 전부 지우고 글자만 남긴다. */
+	// [제목/사유/의견용] 서식이 필요 없는 텍스트이므로 모든 HTML 태그를 싹 지운다
 	public static String cleanText(String text) {
 		if (text == null) {
 			return null;
 		}
-		// clean 은 &lt; 같은 엔티티를 남기므로, 한 번 더 풀어서 사람이 읽는 글자로 되돌린다.
-		return Jsoup.parse(Jsoup.clean(text, Safelist.none())).text();
+		return Jsoup.clean(text, "", Safelist.none(), keepNewLines());
 	}
 }
