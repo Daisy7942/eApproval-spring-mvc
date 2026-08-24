@@ -741,10 +741,14 @@
 				</div>
 
 				<%-- 사용률. 부여가 0이면 0으로 나누게 되므로 그때는 막대를 비운다 --%>
+				<%-- 나누기를 먼저 하면 안 된다. usedDays 는 decimal(4,1) 이라
+				     EL 이 BigDecimal 로 나눌 때 왼쪽 값의 소수 자릿수(한 자리)에 맞춰 반올림한다.
+				     5.5 / 15 가 0.3666.. 이 아니라 0.4 로 잘려서 40% 로 나왔다.
+				     100 을 먼저 곱해 550 / 15 = 36.7 로 만들면 자릿수가 잘려도 값이 남는다 --%>
 				<c:set var="rate" value="0" />
 				<c:if test="${summary.totalDays gt 0}">
 					<c:set var="rate"
-						value="${summary.usedDays / summary.totalDays * 100}" />
+						value="${summary.usedDays * 100 / summary.totalDays}" />
 				</c:if>
 
 				<div class="usage">
