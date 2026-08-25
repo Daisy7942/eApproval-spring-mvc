@@ -119,19 +119,19 @@ public class DocumentService {
 	@Transactional
 	public void submitDocument(DocumentVO documentVO) {
 		sanitize(documentVO);
-		
 
 		// 결재선 존재 유무 검증 / null 을 먼저 검사 — 리스트가 없으면 isEmpty() 자체가 터진다
 		List<ApprovalLineVO> lines = documentVO.getApprovalLine();
-		 // null 이면 뒤에는 아예 실행되지도 않음, 결재선 목록(lines)이 아예 존재하지 않거나(null), 목록에 아무 요소도 없다면(isEmpty), '결재선이 없습니다.'라는 예외를 발생
+		// null 이면 뒤에는 아예 실행되지도 않음, 결재선 목록(lines)이 아예 존재하지 않거나(null), 목록에 아무 요소도
+		// 없다면(isEmpty), '결재선이 없습니다.'라는 예외를 발생
 		if (lines == null || lines.isEmpty()) {
 			throw new IllegalStateException("결재선이 없습니다.");
 		}
 		// 결재자수 3명 초과시 에러메시지대응
-		if(lines.size()>3){
+		if (lines.size() > 3) {
 			throw new IllegalStateException("결재는 최대 3명까지 가능합니다.");
 		}
-		
+
 		// 기안자는 자기 문서를 결재 방지
 		for (ApprovalLineVO line : lines) {
 			if (documentVO.getEmployeeId().equals(line.getApproverId())) {
@@ -143,7 +143,6 @@ public class DocumentService {
 		Long empId = documentVO.getEmployeeId();
 		Long sign = signatureService.getActiveSignatureId(empId);
 		documentVO.setDraftSignatureId(sign);
-		
 
 		// 화면이 보낸 결재 방식을 그대로 쓴다. 안 왔거나 모르는 값이면 순차
 		documentVO.setApprovalType(normalizeApprovalType(documentVO.getApprovalType()));
@@ -171,13 +170,11 @@ public class DocumentService {
 
 			v.setDays(calcDays(v)); // 연차 계산해서 세팅
 
-			
 			// 임시저장을 제외하고, 실 근무일이 0일(주말 등)인 신청은 차단 (서버 검증)
 			if (v.getDays().compareTo(BigDecimal.ZERO) <= 0) {
 				throw new IllegalStateException("선택한 기간에 근무일이 없습니다.");
 			}
-			
-			
+
 			VacationTypeVO type = documentMapper.selectVacationType(v.getVacationTypeId());
 			if (type != null && type.isDeductBalance()) { // 연차가 차감되는 휴가 유형이라면
 
@@ -192,29 +189,16 @@ public class DocumentService {
 			}
 		}
 
-		
-		
-
-
-
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
 		// 문서 메인 데이터 저장 (신규 vs 임시저장 구분)
 		if (documentVO.getDocId() == null) {
 			documentVO.setStatus("PENDING"); // 결재'대기'상태로 셋팅
 			documentMapper.insertDocument(documentVO); // DB에 새로 저장
 		} else {
-			documentMapper.submitDocument(documentVO); // 기존 임시저장 문서를 '상신'으로 업데이트
+			int result = documentMapper.submitDocument(documentVO); // 기존 임시저장 문서를 '상신'으로 업데이트
+			if (result == 0) {
+				throw new IllegalStateException("이미 상신되었거나 결재가 끝난 문서는 다시 상신할 수 없습니다.");
+			}
 		}
-
 		saveApprovalLines(documentVO); // 결재선 저장
 
 		// 휴가 관련정보를 request테이블에 저장
@@ -266,8 +250,6 @@ public class DocumentService {
 		return new BigDecimal(work);
 	}
 
-
-
 	// [보안 처리] 사용자가 입력한 값에서 위험한 코드(XSS 공격)를 빼내는 작업
 	// 본문은 Summernote HTML 이라 허용 태그만 남기고, 제목·사유는 서식이 필요 없어 태그를 다 지운다.
 	// DB에 저장하기 전에 미리 처리하면, 나중에 어디서 띄워 보여주든 안전
@@ -314,6 +296,11 @@ public class DocumentService {
 		sanitize(documentVO);
 		documentVO.setApprovalType(normalizeApprovalType(documentVO.getApprovalType()));
 		int result = documentMapper.updateDraft(documentVO);
+		// 결재 진행·완료된 문서는 수정 불가
+		if (result == 0) {
+			throw new IllegalStateException("이미 결재가 진행되었거나 완료된 문서는 수정할 수 없습니다.");
+		}
+
 		saveApprovalLines(documentVO);
 		saveVacation(documentVO);
 		return result;
