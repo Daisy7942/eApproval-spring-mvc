@@ -127,7 +127,7 @@ CREATE TABLE `department` (
   `department_id` bigint NOT NULL AUTO_INCREMENT,
   `department_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   PRIMARY KEY (`department_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -136,7 +136,7 @@ CREATE TABLE `department` (
 
 LOCK TABLES `department` WRITE;
 /*!40000 ALTER TABLE `department` DISABLE KEYS */;
-INSERT INTO `department` VALUES (1,'개발본부'),(2,'경영지원본부'),(3,'기획본부'),(4,'마케팅본부'),(5,'영업본부'),(6,'경영지원본부'),(7,'기획본부'),(8,'개발본부'),(9,'마케팅본부'),(10,'영업본부');
+INSERT INTO `department` VALUES (1,'개발본부'),(2,'경영지원본부'),(3,'기획본부'),(4,'마케팅본부'),(5,'영업본부');
 /*!40000 ALTER TABLE `department` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -322,7 +322,7 @@ CREATE TABLE `team` (
   PRIMARY KEY (`team_id`),
   KEY `department_id` (`department_id`),
   CONSTRAINT `team_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department` (`department_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -331,7 +331,7 @@ CREATE TABLE `team` (
 
 LOCK TABLES `team` WRITE;
 /*!40000 ALTER TABLE `team` DISABLE KEYS */;
-INSERT INTO `team` VALUES (1,'QA팀',1),(2,'백엔드팀',1),(3,'인프라팀',1),(4,'프론트팀',1),(5,'인사팀',2),(6,'재무팀',2),(7,'총무팀',2),(8,'경영기획팀',3),(9,'전략기획팀',3),(10,'브랜드팀',4),(11,'콘텐츠팀',4),(12,'퍼포먼스팀',4),(13,'국내영업팀',5),(14,'해외영업팀',5),(15,'인사팀',6),(16,'인사팀',2),(17,'총무팀',6),(18,'총무팀',2),(19,'재무팀',6),(20,'재무팀',2),(21,'전략기획팀',7),(22,'전략기획팀',3),(23,'경영기획팀',7),(24,'경영기획팀',3),(25,'백엔드팀',8),(26,'백엔드팀',1),(27,'프론트팀',8),(28,'프론트팀',1),(29,'인프라팀',8),(30,'인프라팀',1),(31,'QA팀',8),(32,'QA팀',1),(33,'브랜드팀',9),(34,'브랜드팀',4),(35,'퍼포먼스팀',9),(36,'퍼포먼스팀',4),(37,'콘텐츠팀',9),(38,'콘텐츠팀',4),(39,'국내영업팀',10),(40,'국내영업팀',5),(41,'해외영업팀',10),(42,'해외영업팀',5);
+INSERT INTO `team` VALUES (1,'QA팀',1),(2,'백엔드팀',1),(3,'인프라팀',1),(4,'프론트팀',1),(5,'인사팀',2),(6,'재무팀',2),(7,'총무팀',2),(8,'경영기획팀',3),(9,'전략기획팀',3),(10,'브랜드팀',4),(11,'콘텐츠팀',4),(12,'퍼포먼스팀',4),(13,'국내영업팀',5),(14,'해외영업팀',5);
 /*!40000 ALTER TABLE `team` ENABLE KEYS */;
 UNLOCK TABLES;
 
